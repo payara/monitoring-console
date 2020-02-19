@@ -366,6 +366,7 @@ MonitoringConsole.View = (function() {
     }
 
     function createPageSettings() {
+        const NAMESPACES = MonitoringConsole.Data.NAMESPACES;
         let nsSelection = $('<select/>');
         nsSelection.append($('<option/>').val('-').text('(Please Select)'));
         nsSelection.on('mouseenter focus', function() {
