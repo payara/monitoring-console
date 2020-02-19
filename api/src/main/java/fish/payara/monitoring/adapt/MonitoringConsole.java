@@ -11,7 +11,7 @@ import java.util.NoSuchElementException;
  * The instance is created by the {@link MonitoringConsoleFactory}. It is implemented by the monitoring console library.
  * 
  * @author Jan Bernitt
- * @since 1.0
+ * @since 1.0 (Payara 5.201)
  */
 public interface MonitoringConsole {
 

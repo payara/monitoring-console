@@ -6,6 +6,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.Map.Entry;
 
+/**
+ * Data structure for generic data related to a certain group of metrics.
+ * 
+ * @author Jan Bernitt
+ * @since 1.0 (Payara 5.201)
+ */
 public class GroupData {
 
     private transient final GroupData parent;

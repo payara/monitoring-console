@@ -17,7 +17,7 @@ import fish.payara.monitoring.collect.MonitoringWatchSource;
  * {@link MonitoringConsole} at the right point in its bootstrapping process.
  * 
  * @author Jan Bernitt
- * @since 1.0
+ * @since 1.0 (Payara 5.201)
  */
 public interface MonitoringConsoleFactory {
 

@@ -1,7 +1,6 @@
 package fish.payara.monitoring.adapt;
 
 import java.io.Serializable;
-import java.util.ServiceLoader;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -15,7 +14,7 @@ import java.util.function.Consumer;
  * and connecting instances to a network of multiple data senders and a central data receiver.
  * 
  * @author Jan Bernitt
- * @since 1.0
+ * @since 1.0 (Payara 5.201)
  */
 public interface MonitoringConsoleRuntime {
 
@@ -47,17 +46,12 @@ public interface MonitoringConsoleRuntime {
     <T extends Serializable> boolean receive(Class<T> type, Consumer<T> receiver);
 
     /**
-     * Lists the available {@link ClassLoader} contexts to use to look for {@link Monitored} and {@link Watched}
-     * implementations using the {@link ServiceLoader} mechanism.
-     * 
-     * Naturally this list can change in-between two invocations of the method.
-     * 
-     * @return a list of available {@link ClassLoader} contexts. In case of an application server this includes the
-     *         server main context as well as application specific contexts.
+     * @return the watch configuration abstraction of this runtime
      */
-    Iterable<ClassLoader> contexts();
-
     MonitoringConsoleWatchConfig getWatchConfig();
 
+    /**
+     * @return the group data repository of this runtime
+     */
     GroupDataRepository getGroupData();
 }

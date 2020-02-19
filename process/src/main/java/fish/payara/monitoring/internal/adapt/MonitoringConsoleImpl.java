@@ -15,6 +15,11 @@ import fish.payara.monitoring.internal.alert.InMemoryAlarmService;
 import fish.payara.monitoring.internal.data.InMemorySeriesRepository;
 import fish.payara.monitoring.model.SeriesLookup;
 
+/**
+ * 
+ * @author Jan Bernitt
+ * @since 1.0 (Payara 5.201)
+ */
 public class MonitoringConsoleImpl implements MonitoringConsole {
 
     private final MonitoringConsoleRuntime runtime;
