@@ -68,9 +68,6 @@ import fish.payara.monitoring.alert.Alert;
 import fish.payara.monitoring.alert.AlertService;
 import fish.payara.monitoring.alert.Watch;
 import fish.payara.monitoring.alert.Alert.Level;
-import fish.payara.monitoring.collect.MonitoringData;
-import fish.payara.monitoring.collect.MonitoringDataCollector;
-import fish.payara.monitoring.collect.MonitoringDataSource;
 import fish.payara.monitoring.collect.MonitoringWatchCollector;
 import fish.payara.monitoring.collect.MonitoringWatchSource;
 import fish.payara.monitoring.data.SeriesRepository;
@@ -79,11 +76,9 @@ import fish.payara.monitoring.model.Metric;
 import fish.payara.monitoring.model.Series;
 import fish.payara.monitoring.model.Unit;
 
-public class InMemoryAlarmService implements AlertService, MonitoringDataSource {
+public class InMemoryAlarmService implements AlertService {
 
     private static final Logger LOGGER = Logger.getLogger("monitoring-console-core");
-
-    private static final String ALERT_COUNT = "AlertCount";
 
     private static final int MAX_ALERTS_PER_SERIES = 10;
 
@@ -160,19 +155,8 @@ public class InMemoryAlarmService implements AlertService, MonitoringDataSource 
         }
     }
 
-    @Override
-    @MonitoringData(ns = "monitoring")
-    public void collect(MonitoringDataCollector collector) {
-        if (receiver) {
-            collector.collect("WatchLoopDuration", evalLoopTime.get());
-            AlertStatistics stats = statistics.get();
-            if (stats != null) {
-                collector.group("Red").collect(ALERT_COUNT, stats.unacknowledgedRedAlerts);
-                collector.group("RedAck").collect(ALERT_COUNT, stats.acknowledgedRedAlerts);
-                collector.group("Amber").collect(ALERT_COUNT, stats.unacknowledgedAmberAlerts);
-                collector.group("AmberAck").collect(ALERT_COUNT, stats.acknowledgedAmberAlerts);
-            }
-        }
+    public long getEvaluationLoopTime() {
+        return evalLoopTime.get();
     }
 
     @Override

@@ -39,6 +39,7 @@
  */
 package fish.payara.monitoring.internal.adapt;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
@@ -47,6 +48,9 @@ import fish.payara.monitoring.adapt.GroupDataRepository;
 import fish.payara.monitoring.adapt.MonitoringConsole;
 import fish.payara.monitoring.adapt.MonitoringConsoleRuntime;
 import fish.payara.monitoring.alert.AlertService;
+import fish.payara.monitoring.alert.AlertService.AlertStatistics;
+import fish.payara.monitoring.collect.MonitoringData;
+import fish.payara.monitoring.collect.MonitoringDataCollector;
 import fish.payara.monitoring.collect.MonitoringDataSource;
 import fish.payara.monitoring.collect.MonitoringWatchSource;
 import fish.payara.monitoring.data.SeriesRepository;
@@ -61,8 +65,11 @@ import fish.payara.monitoring.model.SeriesLookup;
  * @author Jan Bernitt
  * @since 1.0 (Payara 5.201)
  */
-public class MonitoringConsoleImpl implements MonitoringConsole {
+public class MonitoringConsoleImpl implements MonitoringConsole, MonitoringDataSource {
 
+    private static final String ALERT_COUNT = "AlertCount";
+
+    private final boolean receiver;
     private final MonitoringConsoleRuntime runtime;
     private final InMemorySeriesRepository data;
     private final InMemoryAlarmService alerts;
@@ -70,8 +77,14 @@ public class MonitoringConsoleImpl implements MonitoringConsole {
     MonitoringConsoleImpl(String instance, boolean receiver, MonitoringConsoleRuntime runtime, 
             Supplier<? extends List<MonitoringDataSource>> dataSources,
             Supplier<? extends List<MonitoringWatchSource>> watchSources) {
+        this.receiver = receiver;
         this.runtime = runtime;
-        data = new InMemorySeriesRepository(instance, receiver, runtime, dataSources);
+        Supplier<? extends List<MonitoringDataSource>> extendedDataSource = () -> {
+            List<MonitoringDataSource> extended = new ArrayList<>(dataSources.get());
+            extended.add(MonitoringConsoleImpl.this);
+            return extended;
+        };
+        data = new InMemorySeriesRepository(instance, receiver, runtime, extendedDataSource);
         alerts = new InMemoryAlarmService(receiver, runtime, watchSources, data);
     }
 
@@ -94,5 +107,20 @@ public class MonitoringConsoleImpl implements MonitoringConsole {
             return (T) runtime.getGroupData();
         }
         throw new NoSuchElementException("Unknown service: " + type.getName());
+    }
+
+    @Override
+    @MonitoringData(ns = "monitoring")
+    public void collect(MonitoringDataCollector collector) {
+        if (receiver) {
+            collector.collect("WatchLoopDuration", alerts.getEvaluationLoopTime());
+            AlertStatistics stats = alerts.getAlertStatistics();
+            if (stats != null) {
+                collector.group("Red").collect(ALERT_COUNT, stats.unacknowledgedRedAlerts);
+                collector.group("RedAck").collect(ALERT_COUNT, stats.acknowledgedRedAlerts);
+                collector.group("Amber").collect(ALERT_COUNT, stats.unacknowledgedAmberAlerts);
+                collector.group("AmberAck").collect(ALERT_COUNT, stats.acknowledgedAmberAlerts);
+            }
+        }
     }
 }
