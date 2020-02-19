@@ -75,9 +75,9 @@ public interface MonitoringConsoleFactory {
 
     /**
      * @return The {@link MonitoringConsole} instance previously created using
-     *         {@link #create(String, boolean, MonitoringConsoleRuntime)}
+     *         {@link #create(String, boolean, MonitoringConsoleRuntime, Supplier, Supplier)}
      * @throws IllegalStateException if this method is called before
-     *                               {@link #create(String, boolean, MonitoringConsoleRuntime)} was
+     *                               {@link #create(String, boolean, MonitoringConsoleRuntime, Supplier, Supplier)} was
      */
     MonitoringConsole getCreatedConsole() throws IllegalStateException;
 

@@ -61,7 +61,7 @@ import java.math.BigInteger;
 public class ConstantDataset extends SeriesDataset {
 
     /**
-     * The time expected at {@link #time(int)} called with zero. If this time is different the window is out-dated.
+     * The time expected for point at index zero. If this time is different the window is out-dated.
      */
     private final long stableSince;
     /**

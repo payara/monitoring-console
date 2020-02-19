@@ -80,7 +80,7 @@ import fish.payara.monitoring.web.ApiRequests.SeriesQuery;
 public final class ApiResponses {
 
     /**
-     * A {@link SeriesResponse} is the answer to a {@link SeriesRequest}.
+     * A {@link SeriesResponse} is the answer to a {@link ApiRequests.SeriesRequest}.
      * 
      * It consists of an {@link Alerts} statistic and a {@link SeriesMatch} for each {@link SeriesQuery}.
      */

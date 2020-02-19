@@ -2,7 +2,7 @@ package fish.payara.monitoring.data;
 
 /**
  * A {@link MonitoringAnnotationConsumer} observes all monitoring annotations as a sequence of calls to
- * {@link #accept(CharSequence, long, String[])} where all values have been converted to longs.
+ * {@link #accept(CharSequence, long, boolean, String[])} where all values have been converted to longs.
  * 
  * An annotation is linked to the corresponding monitoring data by series name and time.
  * 
