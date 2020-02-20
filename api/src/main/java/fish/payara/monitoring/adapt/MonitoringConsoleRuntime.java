@@ -39,7 +39,6 @@
  */
 package fish.payara.monitoring.adapt;
 
-import java.io.Serializable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -68,21 +67,19 @@ public interface MonitoringConsoleRuntime {
     /**
      * Sends a "package" of monitoring data from a sender (secondary instance) to the receiver (primary instance).
      * 
-     * @param type     Java type of the package
      * @param snapshot the package data
      * @return true, if the message has been send, else false
      */
-    <T extends Serializable> boolean send(Class<T> type, T snapshot);
+    boolean send(byte[] snapshot);
 
     /**
-     * Registers the receiver {@link Consumer} for messages of the given type when those are received.
+     * Registers the receiver {@link Consumer} for messages when those are received.
      * 
-     * @param type     Java type of the expected messages
      * @param receiver the callback to call with the received message when a message is received by the underlying
      *                 implementation.
      * @return true, if the callback was installed successful, else false
      */
-    <T extends Serializable> boolean receive(Class<T> type, Consumer<T> receiver);
+    boolean receive(Consumer<byte[]> receiver);
 
     /**
      * @return the watch configuration abstraction of this runtime

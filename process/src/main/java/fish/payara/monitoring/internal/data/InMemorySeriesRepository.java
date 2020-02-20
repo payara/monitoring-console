@@ -47,6 +47,11 @@ import static java.util.Collections.singleton;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -123,7 +128,7 @@ public class InMemorySeriesRepository implements SeriesRepository {
         this.runtime = runtime;
         this.sources = sources;
         if (isDas) {
-            runtime.receive(SeriesDatasetsSnapshot.class, this::addRemoteDatasets);
+            runtime.receive(this::receiveMesssage);
         }
         instances.add(instanceName);
     }
@@ -140,6 +145,14 @@ public class InMemorySeriesRepository implements SeriesRepository {
     @Override
     public Set<String> instances() {
         return instances;
+    }
+
+    private void receiveMesssage(byte[] msg) {
+        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(msg))) {
+            addRemoteDatasets((SeriesDatasetsSnapshot) ois.readObject());
+        } catch (Exception ex) {
+            LOGGER.log(Level.FINE, "Failed to receive monitoring data message", ex);
+        }
     }
 
     private void addRemoteDatasets(SeriesDatasetsSnapshot snapshot) {
@@ -196,7 +209,18 @@ public class InMemorySeriesRepository implements SeriesRepository {
         SeriesDatasetsSnapshot msg = new SeriesDatasetsSnapshot(instanceName, collectedSecond, estimatedNumberOfSeries);
         collectAll(new ConsumingMonitoringDataCollector(msg, msg));
         estimatedNumberOfSeries = msg.numberOfSeries;
-        runtime.send(SeriesDatasetsSnapshot.class, msg);
+        sendMessaage(msg);
+    }
+
+    private void sendMessaage(SeriesDatasetsSnapshot msg) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+            oos.writeObject(msg);
+            oos.flush();
+            runtime.send(bos.toByteArray());
+        } catch (IOException ex) {
+            LOGGER.log(Level.FINE, "Failed to send monitoring data message", ex);
+        }
     }
 
     private void collectAll(MonitoringDataCollector collector) {
