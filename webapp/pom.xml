@@ -63,7 +63,6 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
-        <monitoring-console-process.version>1.0-SNAPSHOT</monitoring-console-process.version>
         <failOnMissingWebXml>false</failOnMissingWebXml>
     </properties>
 
@@ -71,7 +70,7 @@
         <dependency>
             <groupId>fish.payara.monitoring-console</groupId>
             <artifactId>monitoring-console-process</artifactId>
-            <version>${monitoring-console-process.version}</version>
+            <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
 
