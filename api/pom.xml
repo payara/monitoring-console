@@ -46,11 +46,11 @@
     <parent>
         <groupId>fish.payara.monitoring-console</groupId>
         <artifactId>parent</artifactId>
-        <version>1.0</version>
+        <version>1.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>monitoring-console-api</artifactId>
-    <version>1.0</version><!-- OBS: The API uses its own version as it usually is stable -->
+    <version>1.1-SNAPSHOT</version><!-- OBS: The API uses its own version as it usually is stable -->
     <name>monitoring-console-api</name>
 
     <description>
