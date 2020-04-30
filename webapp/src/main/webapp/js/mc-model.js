@@ -1005,6 +1005,7 @@ MonitoringConsole.Model = (function() {
 		if (UI.switchPage(pageId)) {
 			Charts.clear();
 			Interval.tick();
+			window.location.hash = pageId;
 		}
 		return UI.arrange();		
 	}

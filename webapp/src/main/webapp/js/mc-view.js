@@ -805,10 +805,22 @@ MonitoringConsole.View = (function() {
         Colors: Colors,
         Components: Components,
         onPageReady: function() {
+            let hash = window.location.hash;
+            let targetPageId = hash.length <= 1 ? undefined : hash.substring(1);
             // connect the view to the model by passing the 'onDataUpdate' function to the model
             // which will call it when data is received
-            onPageChange(MonitoringConsole.Model.init(onDataUpdate, onPageChange));
+            let layout = MonitoringConsole.Model.init(onDataUpdate, onPageChange);
+            if (targetPageId === undefined)
+                onPageChange(layout);
             Colors.scheme('Payara', false);
+            if (targetPageId)
+                onPageChange(MonitoringConsole.Model.Page.changeTo(targetPageId));
+            $(window).on('hashchange', function(e) {
+                let pageId = window.location.hash.substring(1);
+                if (pageId != MonitoringConsole.Model.Page.id()) {
+                    onPageChange(MonitoringConsole.Model.Page.changeTo(pageId));
+                }
+            });
         },
         onPageChange: (layout) => onPageChange(layout),
         onPageUpdate: (layout) => onPageUpdate(layout),
