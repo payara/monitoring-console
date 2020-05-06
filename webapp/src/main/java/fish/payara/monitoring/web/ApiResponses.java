@@ -67,12 +67,12 @@ import fish.payara.monitoring.web.ApiRequests.SeriesQuery;
 
 /**
  * Types used in the web API to model mapped responses.
- * 
+ *
  * The purpose of these classes is to decouple the API from internal server classes so that renaming or restructuring of
  * internal classes does not break the API.
- * 
+ *
  * @see ApiRequests
- * 
+ *
  * @author Jan Bernitt
  * @since 5.201
  */
@@ -81,7 +81,7 @@ public final class ApiResponses {
 
     /**
      * A {@link SeriesResponse} is the answer to a {@link ApiRequests.SeriesRequest}.
-     * 
+     *
      * It consists of an {@link Alerts} statistic and a {@link SeriesMatch} for each {@link SeriesQuery}.
      */
     public static final class SeriesResponse {
@@ -143,12 +143,14 @@ public final class ApiResponses {
         public final String instance;
         public final long value;
         public final Map<String, String> attrs;
+        public final boolean permanent;
 
         AnnotationData(SeriesAnnotation annotation) {
             this.time = annotation.getTime();
             this.series = annotation.getSeries().toString();
             this.instance = annotation.getInstance();
             this.value = annotation.getValue();
+            this.permanent = annotation.isPermanent();
             this.attrs = new LinkedHashMap<>(); // keep order
             for (Entry<String, String> attr : annotation) {
                 attrs.put(attr.getKey(), attr.getValue());
@@ -163,7 +165,7 @@ public final class ApiResponses {
         public String unit;
         public boolean stopped;
         public boolean disabled;
-        public boolean programmatic; 
+        public boolean programmatic;
         public CircumstanceData red;
         public CircumstanceData amber;
         public CircumstanceData green;
@@ -254,7 +256,7 @@ public final class ApiResponses {
 
         public SeriesData(SeriesDataset set, boolean truncatePoints) {
             this.instance = set.getInstance();
-            this.series = set.getSeries().toString(); 
+            this.series = set.getSeries().toString();
             this.points = truncatePoints ? new long[] {set.lastTime(), set.lastValue()} : set.points();
             this.observedMax = set.getObservedMax();
             this.observedMin = set.getObservedMin();
