@@ -318,18 +318,24 @@ public class InMemorySeriesRepository implements SeriesRepository {
     }
 
     private void addRemoteAnnotation(SeriesAnnotation annotation) {
-        if (annotation.getValue() == 0L) {
-            SeriesDataset[] remoteSets = remoteInstanceDatasets.get(annotation.getSeries());
-            if (remoteSets != null) {
-                for (SeriesDataset remoteSet : remoteSets) {
-                    if (remoteSet.getInstance().equals(annotation.getInstance())) {
-                        addAnnotation(annotation.permanent());
-                        return;
-                    }
-                }
-            }
+        if (annotation.getValue() == 0L
+                && !instanceSetExists(remoteInstanceDatasets.get(annotation.getSeries()), annotation.getInstance())) {
+            addAnnotation(annotation.permanent());
+            return;
         }
         addAnnotation(annotation);
+    }
+
+    private static boolean instanceSetExists(SeriesDataset[] sets, String instance) {
+        if (sets == null) {
+            return false;
+        }
+        for (SeriesDataset remoteSet : sets) {
+            if (remoteSet.getInstance().equals(instance)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void addAnnotation(SeriesAnnotation annotation) {
