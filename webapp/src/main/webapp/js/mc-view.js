@@ -222,6 +222,7 @@ MonitoringConsole.View = (function() {
     }
 
     function createGlobalSettings(initiallyCollapsed) {
+        let  syncAvailable = MonitoringConsole.Model.Role.isAdmin();
         return { id: 'settings-global', caption: 'Global', collapsed: initiallyCollapsed, entries: [
             { label: 'Data Refresh', input: [
                 { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Refresh.interval(), onChange: (val) => MonitoringConsole.Model.Refresh.interval(val) },
@@ -231,6 +232,8 @@ MonitoringConsole.View = (function() {
                 { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Settings.Rotation.interval(), onChange: (val) => MonitoringConsole.Model.Settings.Rotation.interval(val) },
                 { label: 'enabled', type: 'checkbox', value: MonitoringConsole.Model.Settings.Rotation.isEnabled(), onChange: (checked) => MonitoringConsole.Model.Settings.Rotation.enabled(checked) },
             ]},
+            { label: 'Role', type: 'dropdown', options: {guest: 'Guest', user: 'User', admin: 'Administrator'}, value: MonitoringConsole.Model.Role.get(), onChange: (val) => { MonitoringConsole.Model.Role.set(val); updateSettings(); } },
+            { label: 'Page Sync', available: syncAvailable, input: () => $('<button />', { text: 'Update Remote Pages', title: 'Push local state of all know remote pages to server'}).click(MonitoringConsole.Model.Page.Sync.pushAllLocal) },
             { label: 'Watches', input: $('<button/>').text('Open Settings').click(onOpenWatchSettings) },
         ]};
     }
@@ -413,6 +416,9 @@ MonitoringConsole.View = (function() {
             }
         };
         let collapsed = $('#settings-page').children('tr:visible').length <= 1;
+        let pushAvailable = !MonitoringConsole.Model.Role.isGuest() && MonitoringConsole.Model.Page.Sync.isLocallyChanged() && MonitoringConsole.Model.Role.isAdmin();
+        let pullAvailable = !MonitoringConsole.Model.Role.isGuest();
+        let autoAvailable = MonitoringConsole.Model.Role.isAdmin();
         return { id: 'settings-page', caption: 'Page', collapsed: collapsed, entries: [
             { label: 'Name', type: 'text', value: MonitoringConsole.Model.Page.name(), onChange: pageNameOnChange },
             { label: 'Page Rotation', input: [
@@ -426,7 +432,22 @@ MonitoringConsole.View = (function() {
                 .append($('<button/>', {title: 'Add selected metric', text: 'Add'})
                     .click(() => onPageChange(MonitoringConsole.Model.Page.Widgets.add(widgetSeries.val()))))
             },
+            { label: 'Sync', available: pushAvailable || pullAvailable, input: [
+                { available: autoAvailable, label: 'auto', type: 'checkbox', value: MonitoringConsole.Model.Page.Sync.auto(), onChange: (checked) => MonitoringConsole.Model.Page.Sync.auto(checked),
+                    description: 'When checked changed to the page are automatically pushed to the remote server (shared with others)' },
+                { available: pushAvailable, input: () => $('<button />', { text: 'Push', title: 'Push local page to server (update remote)' }).click(onPagePush) },
+                { available: pullAvailable, input: () => showIfRemotePageExists($('<button />', { text: 'Pull', title: 'Pull remote page from server (update local)', style: 'display: none'}).click(onPagePull)) },
+            ]}
         ]};
+    }
+
+    function showIfRemotePageExists(jQuery) {
+        Controller.requestListOfRemotePageNames((pageIds) => { // OBS: this asynchronously makes the button visible
+            if (pageIds.indexOf(MonitoringConsole.Model.Page.id()) >= 0) {
+                jQuery.show();
+            }
+        });                        
+        return jQuery;
     }
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Event Handlers ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -682,6 +703,19 @@ MonitoringConsole.View = (function() {
         return { id: widget.target + '_annotations', mode: widget.mode, sort: widget.sort, items: items };
     }
 
+    function createRoleSelectionModel(onExit) {
+        return { id: 'RoleSelector', onChange: role => {
+                MonitoringConsole.Model.Role.set(role);
+                $('#RoleSelector').hide();
+                if (onExit !== undefined)
+                    onExit();
+            }, items: [
+            { name: 'guest', label: 'Guest' , description: 'Automatically uses latest server page configuration. Existing local changes are overridden. Local changes during the sesstion do not affect the remote configuration.'},
+            { name: 'user', label: 'User' , description: 'Can select for each individual page if server configuration replaces local page. Can manually update local page with server page configuration during the session.' },
+            { name: 'admin', label: 'Administrator' , description: 'Can select for each individual page if server configuration replaces local page. Can manually update local pages with server page configuration or update server configuration with local changes. For pages with automatic synchronisation local changes do affect server page configurations.' },
+        ]};
+    }
+
     /**
      * This function is called when the watch details settings should be opened
      */
@@ -777,6 +811,18 @@ MonitoringConsole.View = (function() {
         $('#chart-container').append(table);
     }
 
+    function onPagePush() {
+        MonitoringConsole.Model.Page.Sync.pushLocal(onPageRefresh);
+    }
+
+    function onPagePull() {
+        MonitoringConsole.Model.Page.Sync.pullRemote(onPageRefresh);
+    }
+
+    function onPageRefresh() {
+        onPageChange(MonitoringConsole.Model.Page.arrange());
+    }
+
     /**
      * Method to call when page changes to update UI elements accordingly
      */
@@ -821,6 +867,11 @@ MonitoringConsole.View = (function() {
                     onPageChange(MonitoringConsole.Model.Page.changeTo(pageId));
                 }
             });
+            if (!MonitoringConsole.Model.Role.isDefined()) {
+                $('#RoleSelector').replaceWith(Components.createRoleSelector(createRoleSelectionModel()));
+            } else {
+
+            }
         },
         onPageChange: (layout) => onPageChange(layout),
         onPageUpdate: (layout) => onPageUpdate(layout),

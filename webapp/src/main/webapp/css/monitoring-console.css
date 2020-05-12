@@ -705,3 +705,38 @@ table.AnnotationTable {
   width: 200px;
   max-width: 200px;
 }
+
+/* Modal Components */
+.PageManager, .RoleSelector {
+  position: fixed;
+  z-index: 110; 
+  left: 0;
+  top: 0;
+  width: 100%; 
+  height: 100%;
+  overflow: auto; 
+  background-color: rgb(0,0,0); 
+  background-color: rgba(0,0,0,0.4); 
+}
+.PageManager > .content, .RoleSelector > .content {
+  background-color: #fefefe;
+  color: black;
+  margin: 16% auto;
+  padding: 20px;
+  width: 30%; 
+  position: relative;
+  padding-bottom: 50px;
+}
+
+/* Role Selector Components */
+.RoleSelector li {
+  list-style-type: none;
+  margin-top: 1em;
+}
+.RoleSelector li input {
+  position: absolute;
+  left: 20px;
+}
+.RoleSelector button {
+  float: right;
+}

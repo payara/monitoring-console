@@ -233,6 +233,17 @@ MonitoringConsole.View.Units = (function() {
       return str;
    }
 
+   function formatDateTime(dateOrTimestamp) {
+      if (dateOrTimestamp === undefined)
+         return '';
+      if (typeof dateOrTimestamp === 'string')
+         dateOrTimestamp = Number(dateOrTimestamp);
+      if (typeof dateOrTimestamp === 'number')
+         dateOrTimestamp = new Date(dateOrTimestamp);
+      // now dateOrTimestamp should be a Date object
+      return dateOrTimestamp.toDateString() + ' ' + formatTime(dateOrTimestamp);
+   }
+
    function as2digits(number) {
       return number.toString().padStart(2, '0');
    }
@@ -272,6 +283,7 @@ MonitoringConsole.View.Units = (function() {
       names: () => UNIT_NAMES,
 
       formatTime: formatTime,
+      formatDateTime: formatDateTime,
       formatNumber: formatNumber,
       formatMilliseconds: (valueAsNumber) => formatNumber(valueAsNumber, MS_FACTORS),
       formatNanoseconds: (valueAsNumber) => formatNumber(valueAsNumber, NS_FACTORS),

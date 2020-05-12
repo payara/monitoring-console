@@ -46,6 +46,7 @@ import java.util.function.Supplier;
 
 import fish.payara.monitoring.adapt.GroupDataRepository;
 import fish.payara.monitoring.adapt.MonitoringConsole;
+import fish.payara.monitoring.adapt.MonitoringConsolePageConfig;
 import fish.payara.monitoring.adapt.MonitoringConsoleRuntime;
 import fish.payara.monitoring.alert.AlertService;
 import fish.payara.monitoring.alert.AlertService.AlertStatistics;
@@ -61,7 +62,7 @@ import fish.payara.monitoring.model.SeriesLookup;
 /**
  * In memory default implementation of the {@link MonitoringConsole} abstraction that uses the
  * {@link InMemorySeriesRepository} and the {@link InMemoryAlarmService}.
- * 
+ *
  * @author Jan Bernitt
  * @since 1.0 (Payara 5.201)
  */
@@ -74,7 +75,7 @@ public class MonitoringConsoleImpl implements MonitoringConsole, MonitoringDataS
     private final InMemorySeriesRepository data;
     private final InMemoryAlarmService alerts;
 
-    MonitoringConsoleImpl(String instance, boolean receiver, MonitoringConsoleRuntime runtime, 
+    MonitoringConsoleImpl(String instance, boolean receiver, MonitoringConsoleRuntime runtime,
             Supplier<? extends List<MonitoringDataSource>> dataSources,
             Supplier<? extends List<MonitoringWatchSource>> watchSources) {
         this.receiver = receiver;
@@ -105,6 +106,9 @@ public class MonitoringConsoleImpl implements MonitoringConsole, MonitoringDataS
         }
         if (type == GroupDataRepository.class) {
             return (T) runtime.getGroupData();
+        }
+        if (type == MonitoringConsolePageConfig.class) {
+            return (T) runtime.getPageConfig();
         }
         throw new NoSuchElementException("Unknown service: " + type.getName());
     }

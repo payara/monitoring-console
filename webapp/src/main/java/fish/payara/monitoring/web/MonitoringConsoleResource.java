@@ -44,16 +44,23 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.RequestScoped;
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.stream.JsonParser;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -72,6 +79,7 @@ import fish.payara.monitoring.adapt.GroupData;
 import fish.payara.monitoring.adapt.GroupDataRepository;
 import fish.payara.monitoring.adapt.MonitoringConsole;
 import fish.payara.monitoring.adapt.MonitoringConsoleFactory;
+import fish.payara.monitoring.adapt.MonitoringConsolePageConfig;
 import fish.payara.monitoring.alert.Alert;
 import fish.payara.monitoring.alert.AlertService;
 import fish.payara.monitoring.alert.Circumstance;
@@ -105,6 +113,7 @@ public class MonitoringConsoleResource {
     private SeriesRepository dataRepository;
     private AlertService alertService;
     private GroupDataRepository groupDataRepository;
+    private MonitoringConsolePageConfig pageConfig;
 
     @PostConstruct
     private void init() {
@@ -115,6 +124,7 @@ public class MonitoringConsoleResource {
         dataRepository = console.getService(SeriesRepository.class);
         alertService = console.getService(AlertService.class);
         groupDataRepository = console.getService(GroupDataRepository.class);
+        pageConfig = console.getService(MonitoringConsolePageConfig.class);
     }
 
     private static Series seriesOrNull(String series) {
@@ -127,10 +137,63 @@ public class MonitoringConsoleResource {
     }
 
     @GET
+    @Path("/pages/")
+    public String[] getPageNames() {
+        return stream(pageConfig.listPages().spliterator(), false).sorted().toArray(String[]::new);
+    }
+
+    @GET
+    @Path("/pages/data/")
+    public JsonObject getPageData() {
+        JsonObjectBuilder obj = Json.createObjectBuilder();
+        for (String name : pageConfig.listPages()) {
+            String page = pageConfig.getPage(name);
+            if (page != null && !page.isEmpty()) {
+                try (JsonParser parser = Json.createParser(new StringReader(page))) {
+                    if (parser.hasNext()) {
+                        parser.next();
+                        obj.add(name, parser.getObject());
+                    }
+                }
+            }
+        }
+        return obj.build();
+    }
+
+    @GET
+    @Path("/pages/data/{name}/")
+    public String getPageData(@PathParam("name") String name) {
+        return pageConfig.getPage(name);
+    }
+
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Path("/pages/data/{name}/")
+    public Response updatePage(@PathParam("name") String name, String json) {
+        if (name == null || name.isEmpty()) {
+            return badRequest("Name missing");
+        }
+        if (json == null || json.isEmpty() || "{}".equals(json)) {
+            return deletePage(name);
+        }
+        pageConfig.putPage(name, json);
+        return noContent();
+    }
+
+    @DELETE
+    @Path("/pages/data/{name}/")
+    public Response deletePage(@PathParam("name") String name) {
+        if (pageConfig.existsPage(name)) {
+            pageConfig.removePage(name);
+        }
+        return noContent();
+    }
+
+    @GET
     @Path("/annotations/data/{series}/")
     public List<AnnotationData> getAnnotationsData(@PathParam("series") String series) {
         Series key = seriesOrNull(series);
-        return key == null 
+        return key == null
                 ? emptyList()
                         : dataRepository.selectAnnotations(key).stream().map(AnnotationData::new).collect(toList());
     }
@@ -156,13 +219,13 @@ public class MonitoringConsoleResource {
                     || Series.ANY.equalTo(key) && query.truncates(POINTS) // if all alerts are requested don't send any particular data
                     ? emptyList()
                     : dataRepository.selectSeries(key, query.instances);
-            List<SeriesAnnotation> queryAnnotations = key == null || query.excludes(DataType.ANNOTATIONS) 
+            List<SeriesAnnotation> queryAnnotations = key == null || query.excludes(DataType.ANNOTATIONS)
                     ? emptyList()
                     : dataRepository.selectAnnotations(key, query.instances);
-            Collection<Watch> queryWatches = key == null || query.excludes(DataType.WATCHES) 
+            Collection<Watch> queryWatches = key == null || query.excludes(DataType.WATCHES)
                     ? emptyList()
                     : alertService.wachtesFor(key);
-            Collection<Alert> queryAlerts = key == null || query.excludes(DataType.ALERTS) 
+            Collection<Alert> queryAlerts = key == null || query.excludes(DataType.ALERTS)
                     ? emptyList()
                     : alertService.alertsFor(key);
             data.add(queryData);

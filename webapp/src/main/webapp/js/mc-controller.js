@@ -138,6 +138,46 @@ MonitoringConsole.Controller = (function() {
    }
 
    /**
+    * @param {object}   page      - a JS page object as defined and used by the UI
+    * @param {function} onSuccess - a callback function with no arguments
+    * @param {function} onFailure - a callback function with no arguments
+    */
+   function requestUpdateRemotePage(page, onSuccess, onFailure) {
+      requestWithJsonBody('PUT', 'api/pages/data/' + page.id + '/', page, onSuccess, onFailure);
+   }
+
+   /**
+    * @param {string}   pageId    - ID of the page to delete
+    * @param {function} onSuccess - a callback function with no arguments
+    * @param {function} onFailure - a callback function with no arguments
+    */
+   function requestDeleteRemotePage(pageId, onSuccess, onFailure)  {
+      requestWithoutBody('DELETE', 'api/pages/data/' + pageId + '/', onSuccess, onFailure);
+   }
+
+   /**
+    * @param {string}   pageId    - ID of the page to get from server
+    * @param {function} onSuccess - a function with one argument accepting an array request traces as returned by the server (each trace object corresponds to java class RequestTraceResponse)
+    */
+   function requestRemotePage(pageId, onSuccess) {
+      $.getJSON('api/pages/data/' + pageId + '/', onSuccess);
+   }
+
+   /**
+    * @param {function} onSuccess - a callback function with no arguments
+    */
+   function requestListOfRemotePages(onSuccess) {
+      $.getJSON('api/pages/data/', onSuccess);
+   }
+
+      /**
+    * @param {function} onSuccess - a function with one argument accepting an array of page names
+    */
+   function requestListOfRemotePageNames(onSuccess) {
+      $.getJSON("api/pages/", onSuccess);
+   }
+
+   /**
     * Public API to talk to the server.
     * 
     * Note that none of the functions have a direct return value.
@@ -154,5 +194,10 @@ MonitoringConsole.Controller = (function() {
       requestDisableWatch: requestDisableWatch,
       requestEnableWatch: requestEnableWatch,
       requestAcknowledgeAlert: requestAcknowledgeAlert,
+      requestUpdateRemotePage: requestUpdateRemotePage,
+      requestDeleteRemotePage: requestDeleteRemotePage,
+      requestRemotePage: requestRemotePage,
+      requestListOfRemotePages: requestListOfRemotePages,
+      requestListOfRemotePageNames: requestListOfRemotePageNames,
    };
 })();
