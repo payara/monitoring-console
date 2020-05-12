@@ -723,7 +723,7 @@ table.AnnotationTable {
   color: black;
   margin: 16% auto;
   padding: 20px;
-  width: 30%; 
+  width: 640px; 
   position: relative;
   padding-bottom: 50px;
 }
@@ -739,4 +739,29 @@ table.AnnotationTable {
 }
 .RoleSelector button {
   float: right;
+  margin: 1em 0 1em 1em;
+}
+
+.PageManager button {
+  float: right;
+  margin: 1em 0 1em 1em;
+}
+.PageManager table {
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+.PageManager table td, .PageManager table th {
+  padding: 2px 0.5em;
+}
+.PageManager table td {
+  text-align: right;
+}
+.PageManager table td.recent {
+  background-color: LimeGreen;
+}
+.PageManager table tr:nth-child(even) {
+  background-color: #eee;
+}
+.PageManager table th + td, .PageManager table th + td + td, .PageManager table th + td + td + td {
+  width: 30%;
 }

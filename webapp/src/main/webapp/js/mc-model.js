@@ -222,16 +222,18 @@ MonitoringConsole.Model = (function() {
 				let page = localPage !== undefined ? localPage : remotePage;
 				let checked = true;
 				if ((settings.role == 'admin' || settings.role == 'user') && localPage !== undefined) {
-					checked = localPage.sync.preferredOverRemoteLastModified < remotePage.sync.basedOnRemoteLastModified;
+					checked = (localPage.sync.preferredOverRemoteLastModified === undefined 
+							|| localPage.sync.preferredOverRemoteLastModified < remotePage.sync.basedOnRemoteLastModified)
+							&& !(localPage.sync.basedOnRemoteLastModified == remotePage.sync.basedOnRemoteLastModified && localPage.sync.lastModifiedLocally === undefined);
 				}
-				items.push({
+				return {
 					id: page.id,
 					name: page.name,
 					checked: checked,
 					lastLocalChange: localPage != undefined ? localPage.sync.lastModifiedLocally : undefined,
 					lastRemoteChange: remotePage !== undefined ? remotePage.sync.basedOnRemoteLastModified : undefined,
 					lastRemoteUpdate: localPage != undefined ? localPage.sync.basedOnRemoteLastModified : undefined,
-				});
+				};
 			}
 
 			Controller.requestListOfRemotePages(remotePages => {
@@ -682,6 +684,9 @@ MonitoringConsole.Model = (function() {
 			}, 
 
 			Sync: {
+
+				providePullRemoteModel: providePullRemoteModel,
+
 				/*
 				 * Updates the local current page with the remote page
 				 */

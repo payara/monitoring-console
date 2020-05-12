@@ -222,7 +222,8 @@ MonitoringConsole.View = (function() {
     }
 
     function createGlobalSettings(initiallyCollapsed) {
-        let  syncAvailable = MonitoringConsole.Model.Role.isAdmin();
+        const  pushAvailable = MonitoringConsole.Model.Role.isAdmin();
+        const  pullAvailable = !MonitoringConsole.Model.Role.isGuest();
         return { id: 'settings-global', caption: 'Global', collapsed: initiallyCollapsed, entries: [
             { label: 'Data Refresh', input: [
                 { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Refresh.interval(), onChange: (val) => MonitoringConsole.Model.Refresh.interval(val) },
@@ -233,7 +234,10 @@ MonitoringConsole.View = (function() {
                 { label: 'enabled', type: 'checkbox', value: MonitoringConsole.Model.Settings.Rotation.isEnabled(), onChange: (checked) => MonitoringConsole.Model.Settings.Rotation.enabled(checked) },
             ]},
             { label: 'Role', type: 'dropdown', options: {guest: 'Guest', user: 'User', admin: 'Administrator'}, value: MonitoringConsole.Model.Role.get(), onChange: (val) => { MonitoringConsole.Model.Role.set(val); updateSettings(); } },
-            { label: 'Page Sync', available: syncAvailable, input: () => $('<button />', { text: 'Update Remote Pages', title: 'Push local state of all know remote pages to server'}).click(MonitoringConsole.Model.Page.Sync.pushAllLocal) },
+            { label: 'Page Sync', available: pushAvailable || pullAvailable, input: [
+                { available: pushAvailable, input: () => $('<button />', { text: 'Update Remote Pages', title: 'Push local state of all know remote pages to server'}).click(MonitoringConsole.Model.Page.Sync.pushAllLocal) },
+                { available: pullAvailable, input: () => $('<button/>', { text: 'Update Local Pages', title: 'Open Page synchronisation dialoge'}).click(onPagesSync) }, 
+            ]},
             { label: 'Watches', input: $('<button/>').text('Open Settings').click(onOpenWatchSettings) },
         ]};
     }
@@ -843,6 +847,20 @@ MonitoringConsole.View = (function() {
         updateSettings();
     }
 
+    function onPagesSync() {
+        MonitoringConsole.Model.Page.Sync.providePullRemoteModel(model => {
+            let onUpdate = model.onUpdate;
+            model.id = 'PageManager';
+            model.onUpdate = pageIds => {
+                onUpdate(pageIds);
+                $('#PageManager').hide();
+                onPageRefresh();
+            };
+            model.onCancel = () => $('#PageManager').hide();
+            $('#PageManager').replaceWith(Components.createPageManager(model));
+        });
+    }
+
     /**
      * Public API of the View object:
      */
@@ -868,9 +886,9 @@ MonitoringConsole.View = (function() {
                 }
             });
             if (!MonitoringConsole.Model.Role.isDefined()) {
-                $('#RoleSelector').replaceWith(Components.createRoleSelector(createRoleSelectionModel()));
+                $('#RoleSelector').replaceWith(Components.createRoleSelector(createRoleSelectionModel(onPagesSync)));
             } else {
-
+                onPagesSync();
             }
         },
         onPageChange: (layout) => onPageChange(layout),
