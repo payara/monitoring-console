@@ -111,10 +111,14 @@ public class MonitoringConsoleResource {
         Iterator<MonitoringConsoleFactory> iter = ServiceLoader
                 .load(MonitoringConsoleFactory.class, Thread.currentThread().getContextClassLoader()).iterator();
         MonitoringConsoleFactory facory = iter.hasNext() ? iter.next() : null;
-        MonitoringConsole console = facory.getCreatedConsole();
-        dataRepository = console.getService(SeriesRepository.class);
-        alertService = console.getService(AlertService.class);
-        groupDataRepository = console.getService(GroupDataRepository.class);
+        if (facory != null) {
+            MonitoringConsole console = facory.getCreatedConsole();
+            dataRepository = console.getService(SeriesRepository.class);
+            alertService = console.getService(AlertService.class);
+            groupDataRepository = console.getService(GroupDataRepository.class);
+        } else {
+            LOGGER.log(Level.WARNING, "No MonitoringConsoleFactory defined using ServiceLoader mechanism.");
+        }
     }
 
     private static Series seriesOrNull(String series) {
@@ -130,9 +134,9 @@ public class MonitoringConsoleResource {
     @Path("/annotations/data/{series}/")
     public List<AnnotationData> getAnnotationsData(@PathParam("series") String series) {
         Series key = seriesOrNull(series);
-        return key == null 
+        return key == null
                 ? emptyList()
-                        : dataRepository.selectAnnotations(key).stream().map(AnnotationData::new).collect(toList());
+                : dataRepository.selectAnnotations(key).stream().map(AnnotationData::new).collect(toList());
     }
 
     @GET
@@ -156,13 +160,13 @@ public class MonitoringConsoleResource {
                     || Series.ANY.equalTo(key) && query.truncates(POINTS) // if all alerts are requested don't send any particular data
                     ? emptyList()
                     : dataRepository.selectSeries(key, query.instances);
-            List<SeriesAnnotation> queryAnnotations = key == null || query.excludes(DataType.ANNOTATIONS) 
+            List<SeriesAnnotation> queryAnnotations = key == null || query.excludes(DataType.ANNOTATIONS)
                     ? emptyList()
                     : dataRepository.selectAnnotations(key, query.instances);
-            Collection<Watch> queryWatches = key == null || query.excludes(DataType.WATCHES) 
+            Collection<Watch> queryWatches = key == null || query.excludes(DataType.WATCHES)
                     ? emptyList()
                     : alertService.wachtesFor(key);
-            Collection<Alert> queryAlerts = key == null || query.excludes(DataType.ALERTS) 
+            Collection<Alert> queryAlerts = key == null || query.excludes(DataType.ALERTS)
                     ? emptyList()
                     : alertService.alertsFor(key);
             data.add(queryData);

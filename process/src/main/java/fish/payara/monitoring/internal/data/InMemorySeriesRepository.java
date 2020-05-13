@@ -57,6 +57,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -65,6 +66,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -81,21 +83,22 @@ import fish.payara.monitoring.internal.util.JobHandle;
 import fish.payara.monitoring.model.EmptyDataset;
 import fish.payara.monitoring.model.Series;
 import fish.payara.monitoring.model.SeriesAnnotation;
+import fish.payara.monitoring.model.SeriesAnnotations;
 import fish.payara.monitoring.model.SeriesDataset;
 
 /**
  * A simple in-memory store for a fixed size sliding window for each {@link Series}.
- * 
- * 
+ *
+ *
  * <h3>Consistency Remarks</h3>
- * 
+ *
  * The store uses two maps working like a doubled buffered image. While collection writes to the {@link #secondsWrite}
  * map request are served from the {@link #secondsRead} map. This makes sure that a consistent dataset across all series
  * can be used to create a consistent visualisation that isn't half updated while the response is composed. However
  * this requires that callers are provided with a method that returns all the {@link SeriesDataset}s they need in a
  * single method invocation. Making multiple calls to this stores methods does not guarantee a consistent dataset across
  * all series since the {@link #swapLocalBuffer()} can happen inbetween method calls.
- * 
+ *
  * @author Jan Bernitt
  */
 public class InMemorySeriesRepository implements SeriesRepository {
@@ -115,13 +118,13 @@ public class InMemorySeriesRepository implements SeriesRepository {
     private volatile Map<Series, SeriesDataset> secondsWrite = new ConcurrentHashMap<>();
     private volatile Map<Series, SeriesDataset> secondsRead = new ConcurrentHashMap<>();
     private final Map<Series, SeriesDataset[]> remoteInstanceDatasets = new ConcurrentHashMap<>();
-    private final Map<Series, Queue<SeriesAnnotation>> annotationsBySeries = new ConcurrentHashMap<>();
+    private final Map<Series, SeriesAnnotations> annotationsBySeries = new ConcurrentHashMap<>();
     private final Set<String> instances = ConcurrentHashMap.newKeySet();
     private final JobHandle dataCollectionJob = new JobHandle("monitoring data collection");
     private long collectedSecond;
     private int estimatedNumberOfSeries = 50;
 
-    public InMemorySeriesRepository(String instanceName, boolean receiver, MonitoringConsoleRuntime runtime, 
+    public InMemorySeriesRepository(String instanceName, boolean receiver, MonitoringConsoleRuntime runtime,
             Supplier<? extends List<MonitoringDataSource>> sources) {
         this.isDas = receiver;
         this.instanceName = instanceName;
@@ -159,6 +162,11 @@ public class InMemorySeriesRepository implements SeriesRepository {
         String instance = snapshot.instance;
         instances.add(instance);
         long time = snapshot.time;
+        if (snapshot.annotations != null) {
+            for (SeriesAnnotation a : snapshot.annotations) {
+                addRemoteAnnotation(a);
+            }
+        }
         for (int i = 0; i < snapshot.numberOfSeries; i++) {
             Series series = null;
             try {
@@ -170,11 +178,6 @@ public class InMemorySeriesRepository implements SeriesRepository {
                 long value = snapshot.values[i];
                 remoteInstanceDatasets.compute(series, //
                         (key, seriesByInstance) -> addRemotePoint(seriesByInstance, instance, key, time, value));
-            }
-        }
-        if (snapshot.annotations != null) {
-            for (SeriesAnnotation a : snapshot.annotations) {
-                addAnnotation(a);
             }
         }
     }
@@ -293,8 +296,8 @@ public class InMemorySeriesRepository implements SeriesRepository {
     private void addLocalPoint(CharSequence key, long value) {
         Series series = seriesOrNull(key);
         if (series != null) {
-            secondsWrite.compute(series, (s, dataset) -> dataset == null 
-                ?  emptySet(s).add(collectedSecond, value) 
+            secondsWrite.compute(series, (s, dataset) -> dataset == null
+                ?  emptySet(s).add(collectedSecond, value)
                 : dataset.add(collectedSecond, value));
         }
     }
@@ -302,20 +305,42 @@ public class InMemorySeriesRepository implements SeriesRepository {
     private void addLocalAnnotation(CharSequence series, long value, boolean keyed, String[] annotations) {
         Series s = seriesOrNull(series);
         if (s != null) {
-            addAnnotation(new SeriesAnnotation(collectedSecond, s, instanceName, value, keyed, annotations));
+            addLocalAnnotation(new SeriesAnnotation(collectedSecond, s, instanceName, value, keyed, annotations));
         }
     }
 
+    private void addLocalAnnotation(SeriesAnnotation annotation) {
+        if (annotation.getValue() == 0L && !secondsRead.containsKey(annotation.getSeries())) {
+            addAnnotation(annotation.permanent());
+            return;
+        }
+        addAnnotation(annotation);
+    }
+
+    private void addRemoteAnnotation(SeriesAnnotation annotation) {
+        if (annotation.getValue() == 0L
+                && !instanceSetExists(remoteInstanceDatasets.get(annotation.getSeries()), annotation.getInstance())) {
+            addAnnotation(annotation.permanent());
+            return;
+        }
+        addAnnotation(annotation);
+    }
+
+    private static boolean instanceSetExists(SeriesDataset[] sets, String instance) {
+        if (sets == null) {
+            return false;
+        }
+        for (SeriesDataset remoteSet : sets) {
+            if (remoteSet.getInstance().equals(instance)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void addAnnotation(SeriesAnnotation annotation) {
-        Queue<SeriesAnnotation> annotations = annotationsBySeries.computeIfAbsent(annotation.getSeries(), //
-                key -> new ConcurrentLinkedQueue<>());
-        if (annotation.isKeyed()) {
-            annotations.removeIf(a -> Objects.equals(a.getKeyAttribute(), annotation.getKeyAttribute()));
-        }
-        annotations.add(annotation);
-        if (annotations.size() > MAX_ANNOTATIONS_PER_SERIES) {
-            annotations.poll();
-        }
+        annotationsBySeries.computeIfAbsent(annotation.getSeries(), //
+                key -> new SeriesAnnotations(MAX_ANNOTATIONS_PER_SERIES)).add(annotation);
     }
 
     static Series seriesOrNull(CharSequence key) {
@@ -339,12 +364,12 @@ public class InMemorySeriesRepository implements SeriesRepository {
         if (series.isPattern()) {
             return selectAnnotationsForPattern(series, instances);
         }
-        Queue<SeriesAnnotation> annotations = annotationsBySeries.get(series);
+        SeriesAnnotations annotations = annotationsBySeries.get(series);
         if (annotations == null || annotations.isEmpty()) {
             return emptyList();
         }
         if (instances == null || instances.length == 0) {
-            return new ArrayList<>(annotations);
+            return annotations.toList();
         }
         Set<String> filter = new HashSet<>(asList(instances));
         return annotations.stream().filter(a -> filter.contains(a.getInstance())).collect(toList());
@@ -353,7 +378,7 @@ public class InMemorySeriesRepository implements SeriesRepository {
     private List<SeriesAnnotation> selectAnnotationsForPattern(Series pattern, String... instances) {
         List<SeriesAnnotation> matches = new ArrayList<>();
         Set<String> filter = createInstanceFilter(instances);
-        for (Entry<Series, Queue<SeriesAnnotation>> entry : annotationsBySeries.entrySet()) {
+        for (Entry<Series, SeriesAnnotations> entry : annotationsBySeries.entrySet()) {
             if (pattern.matches(entry.getKey())) {
                 for (SeriesAnnotation a : entry.getValue()) {
                     if (filter.contains(a.getInstance())) {
@@ -376,7 +401,7 @@ public class InMemorySeriesRepository implements SeriesRepository {
     }
 
     public Set<String> createInstanceFilter(String... instances) {
-        return instances == null || instances.length == 0 
+        return instances == null || instances.length == 0
                 ? this.instances
                 : new HashSet<>(asList(instances));
     }
