@@ -49,9 +49,9 @@ import java.util.Map.Entry;
 /**
  * An {@link SeriesAnnotation} is meta data linked to a {@link SeriesDataset} by having the same {@link Series} and
  * {@link #instance} and pointing to a {@link #time} that is in the range of {@link SeriesDataset}.
- * 
+ *
  * The meta data attached is a list of key-value pairs.
- * 
+ *
  * @author Jan Bernitt
  * @since 5.201
  */
@@ -63,18 +63,29 @@ public final class SeriesAnnotation implements Serializable, Iterable<Entry<Stri
     private final long value;
     private final boolean keyed;
     private final String[] attrs;
+    private final boolean permanent;
 
-    public SeriesAnnotation(long time, Series series, String instance, long value, boolean keyed, String[] attrs) {
+    public SeriesAnnotation(long time, Series series, String instance, long value, boolean keyed, String... attrs) {
+        this(time, series, instance, value, keyed, attrs, false);
+    }
+
+    private SeriesAnnotation(long time, Series series, String instance, long value, boolean keyed, String[] attrs,
+            boolean permanent) {
+        if (attrs.length % 2 == 1) {
+            throw new IllegalArgumentException(
+                    "Annotation attributes always must be given in pairs but got: " + Arrays.toString(attrs));
+        }
         this.time = time;
         this.series = series;
         this.instance = instance;
         this.value = value;
         this.keyed = keyed && attrs.length >= 2;
         this.attrs = attrs;
-        if (attrs.length % 2 == 1) {
-            throw new IllegalArgumentException(
-                    "Annotation attributes always must be given in pairs but got: " + Arrays.toString(attrs));
-        }
+        this.permanent = permanent;
+    }
+
+    public SeriesAnnotation permanent() {
+        return new SeriesAnnotation(time, series, instance, value, keyed, attrs, true);
     }
 
     public long getTime() {
@@ -95,6 +106,10 @@ public final class SeriesAnnotation implements Serializable, Iterable<Entry<Stri
 
     public boolean isKeyed() {
         return keyed;
+    }
+
+    public boolean isPermanent() {
+        return permanent;
     }
 
     /**

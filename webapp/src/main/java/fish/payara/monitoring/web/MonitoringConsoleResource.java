@@ -118,11 +118,15 @@ public class MonitoringConsoleResource {
         Iterator<MonitoringConsoleFactory> iter = ServiceLoader
                 .load(MonitoringConsoleFactory.class, Thread.currentThread().getContextClassLoader()).iterator();
         MonitoringConsoleFactory facory = iter.hasNext() ? iter.next() : null;
-        MonitoringConsole console = facory.getCreatedConsole();
-        dataRepository = console.getService(SeriesRepository.class);
-        alertService = console.getService(AlertService.class);
-        groupDataRepository = console.getService(GroupDataRepository.class);
-        pageConfig = console.getService(MonitoringConsolePageConfig.class);
+        if (facory != null) {
+            MonitoringConsole console = facory.getCreatedConsole();
+            dataRepository = console.getService(SeriesRepository.class);
+            alertService = console.getService(AlertService.class);
+            groupDataRepository = console.getService(GroupDataRepository.class);
+            pageConfig = console.getService(MonitoringConsolePageConfig.class);
+        } else {
+            LOGGER.log(Level.WARNING, "No MonitoringConsoleFactory defined using ServiceLoader mechanism.");
+        }
     }
 
     private static Series seriesOrNull(String series) {
@@ -193,7 +197,7 @@ public class MonitoringConsoleResource {
         Series key = seriesOrNull(series);
         return key == null
                 ? emptyList()
-                        : dataRepository.selectAnnotations(key).stream().map(AnnotationData::new).collect(toList());
+                : dataRepository.selectAnnotations(key).stream().map(AnnotationData::new).collect(toList());
     }
 
     @GET
