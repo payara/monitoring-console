@@ -819,12 +819,27 @@ MonitoringConsole.View = (function() {
         MonitoringConsole.Model.Page.Sync.pushLocal(onPageRefresh);
     }
 
-    function onPagePull() {
-        MonitoringConsole.Model.Page.Sync.pullRemote(onPageRefresh);
+    async function onPagePull() {
+        await MonitoringConsole.Model.Page.Sync.pullRemote();
+        onPageRefresh();
     }
 
+    function onPagesSync() {
+        MonitoringConsole.Model.Page.Sync.providePullRemoteModel(model => {
+            let onUpdate = model.onUpdate;
+            model.id = 'PageManager';
+            model.onUpdate = async function(pageIds) {
+                await onUpdate(pageIds);
+                $('#PageManager').hide();
+                onPageRefresh();
+            };
+            model.onCancel = () => $('#PageManager').hide();
+            $('#PageManager').replaceWith(Components.createPageManager(model));
+        });
+    }    
+
     function onPageRefresh() {
-        onPageChange(MonitoringConsole.Model.Page.arrange());
+        onPageChange(MonitoringConsole.Model.Page.changeTo(MonitoringConsole.Model.Page.id()));
     }
 
     /**
@@ -845,20 +860,6 @@ MonitoringConsole.View = (function() {
         MonitoringConsole.Model.Page.Widgets.Selection.toggle(widgetId);
         MonitoringConsole.Model.Settings.open();
         updateSettings();
-    }
-
-    function onPagesSync() {
-        MonitoringConsole.Model.Page.Sync.providePullRemoteModel(model => {
-            let onUpdate = model.onUpdate;
-            model.id = 'PageManager';
-            model.onUpdate = pageIds => {
-                onUpdate(pageIds);
-                $('#PageManager').hide();
-                onPageRefresh();
-            };
-            model.onCancel = () => $('#PageManager').hide();
-            $('#PageManager').replaceWith(Components.createPageManager(model));
-        });
     }
 
     /**

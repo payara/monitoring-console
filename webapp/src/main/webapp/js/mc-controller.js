@@ -61,6 +61,10 @@ MonitoringConsole.Controller = (function() {
       $.ajax({ type: method, url: url }).done(onSuccess).fail(onFailure);
    }
 
+   function requestJSON(url, onSuccess, onFailure) {
+      $.getJSON(url, onSuccess).fail(onFailure);
+   }
+
    /**
     * @param {array}    queries   - a JS array with query objects as expected by the server API (object corresponds to java class SeriesQuery)
     * @param {function} onSuccess - a callback function with one argument accepting the response object as send by the server (java class SeriesResponse)
@@ -72,24 +76,27 @@ MonitoringConsole.Controller = (function() {
 
    /**
     * @param {function} onSuccess - a function with one argument accepting an array of series names
+    * @param {function} onFailure - a callback function with no arguments
     */
-   function requestListOfSeriesNames(onSuccess) {
-      $.getJSON("api/series/", onSuccess);
+   function requestListOfSeriesNames(onSuccess, onFailure) {
+      requestJSON("api/series/", onSuccess, onFailure);
    }
 
    /**
     * @param {string}   series    - name of the metric series
     * @param {function} onSuccess - a function with one argument accepting an array request traces as returned by the server (each trace object corresponds to java class RequestTraceResponse)
+    * @param {function} onFailure - a callback function with no arguments
     */
-   function requestListOfRequestTraces(series, onSuccess) {
-      $.getJSON("api/trace/data/" + series, onSuccess);
+   function requestListOfRequestTraces(series, onSuccess, onFailure) {
+      requestJSON("api/trace/data/" + series, onSuccess, onFailure);
    }
 
    /**
     * @param {function} onSuccess - a callback function with no arguments
+    * @param {function} onFailure - a callback function with no arguments
     */
-   function requestListOfWatches(onSuccess) {
-      $.getJSON("api/watches/data/", (response) => onSuccess(response.watches));
+   function requestListOfWatches(onSuccess, onFailure) {
+      requestJSON("api/watches/data/", (response) => onSuccess(response.watches), onFailure);
    }
 
    /**
@@ -158,23 +165,26 @@ MonitoringConsole.Controller = (function() {
    /**
     * @param {string}   pageId    - ID of the page to get from server
     * @param {function} onSuccess - a function with one argument accepting an array request traces as returned by the server (each trace object corresponds to java class RequestTraceResponse)
+    * @param {function} onFailure - a callback function with no arguments
     */
-   function requestRemotePage(pageId, onSuccess) {
-      $.getJSON('api/pages/data/' + pageId + '/', onSuccess);
+   function requestRemotePage(pageId, onSuccess, onFailure) {
+      requestJSON('api/pages/data/' + pageId + '/', onSuccess, onFailure);
    }
 
    /**
     * @param {function} onSuccess - a callback function with no arguments
+    * @param {function} onFailure - a callback function with no arguments
     */
-   function requestListOfRemotePages(onSuccess) {
-      $.getJSON('api/pages/data/', onSuccess);
+   function requestListOfRemotePages(onSuccess, onFailure) {
+      requestJSON('api/pages/data/', onSuccess, onFailure);
    }
 
-      /**
+   /**
     * @param {function} onSuccess - a function with one argument accepting an array of page names
+    * @param {function} onFailure - a callback function with no arguments
     */
-   function requestListOfRemotePageNames(onSuccess) {
-      $.getJSON("api/pages/", onSuccess);
+   function requestListOfRemotePageNames(onSuccess, onFailure) {
+      requestJSON("api/pages/", onSuccess, onFailure);
    }
 
    /**

@@ -164,14 +164,15 @@ MonitoringConsole.Model = (function() {
 			return settings;
 		}
 		
-		function doStore(isPageUpdate) {
+		function doStore(isPageUpdate, page) {
+			if (page === undefined)
+				page = pages[settings.home];
 			if (isPageUpdate) {
-				let page = pages[settings.home];
 				page.sync.lastModifiedLocally = new Date().getTime();
 			}
 			window.localStorage.setItem(LOCAL_UI_KEY, doExport());
-			if (isPageUpdate && pages[settings.home].sync.autosync) {
-				doPushLocal();
+			if (isPageUpdate && page.sync.autosync && settings.role == 'admin') {
+				doPushLocal(undefined, page);
 			}
 		}
 
@@ -206,14 +207,15 @@ MonitoringConsole.Model = (function() {
 			});
 		}
 
-		function doPullRemote(onSuccess, pageId) {
+		function doPullRemote(pageId) {
 			if (pageId === undefined)
 				pageId = settings.home;
-			Controller.requestRemotePage(pageId, (page) => {				
-				pages[pageId] = page;
-				doStore();
-				if (onSuccess)
-					onSuccess();
+			return new Promise(function(resolve, reject) {
+				Controller.requestRemotePage(pageId, (page) => {				
+					pages[page.id] = page;
+					doStore(false, page);
+					resolve(page);
+				}, () => reject(undefined));
 			});
 		}
 
@@ -239,14 +241,14 @@ MonitoringConsole.Model = (function() {
 			Controller.requestListOfRemotePages(remotePages => {
 				consumer({ 
 					pages: Object.values(remotePages).map(remotePage => createPullRemoteModelItem(pages[remotePage.id], remotePage)), 
-					onUpdate: pageIds => {
+					onUpdate: async function (pageIds) {
 						for (let remotePageId of Object.keys(remotePages)) {
 							if (!pageIds.includes(remotePageId)) {
 								pages[remotePageId].sync.preferredOverRemoteLastModified = remotePages[remotePageId].sync.basedOnRemoteLastModified;
 							}
 						}
-						pageIds.forEach(pageId => doPullRemote(undefined, pageId));
-					} 
+						await Promise.all(pageIds.map(pageId => doPullRemote(pageId)));
+					}
 				});
 			});
 		}
@@ -1151,16 +1153,6 @@ MonitoringConsole.Model = (function() {
 		return UI.arrange();		
 	}
 
-	let SyncAPI = Object.assign({}, UI.Sync);
-	SyncAPI.pullRemote = (onSuccess) => {
-		UI.Sync.pullRemote(() => {
-			Charts.clear();
-			Interval.tick();
-			if (onSuccess)
-				onSuccess();
-		});
-	};
-
 	/**
 	 * The public API object ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	 */
@@ -1282,7 +1274,7 @@ MonitoringConsole.Model = (function() {
 				return doSwitchPage(pageId);
 			},
 
-			Sync: SyncAPI,
+			Sync: UI.Sync,
 			
 			/**
 			 * Returns a layout model for the active pages charts and the given number of columns.

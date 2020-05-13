@@ -49,9 +49,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.ServiceLoader;
-import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
