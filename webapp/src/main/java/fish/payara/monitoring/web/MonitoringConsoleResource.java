@@ -138,12 +138,18 @@ public class MonitoringConsoleResource {
         }
     }
 
+    /**
+     * @return JSON array with the IDs of the pages which have a server configuration
+     */
     @GET
     @Path("/pages/")
     public String[] getPageNames() {
         return stream(pageConfig.listPages().spliterator(), false).sorted().toArray(String[]::new);
     }
 
+    /**
+     * @return A JSON object where each page is present as a field
+     */
     @GET
     @Path("/pages/data/")
     public JsonObject getPageData() {
@@ -162,12 +168,24 @@ public class MonitoringConsoleResource {
         return obj.build();
     }
 
+    /**
+     * @param name A page ID
+     * @return JSON object for the page with the provided name
+     */
     @GET
     @Path("/pages/data/{name}/")
     public String getPageData(@PathParam("name") String name) {
         return pageConfig.getPage(name);
     }
 
+    /**
+     * Updates the configuration of the provided page.
+     * If JSON given for the page is null, empty or the empty JSON object the page is deleted.
+     *
+     * @param name A page ID
+     * @param json JSON object with the page configuration
+     * @return 204 NO_CONTENT if successful or 400 BAD_REQUEST when name was not provided
+     */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("/pages/data/{name}/")
@@ -182,6 +200,12 @@ public class MonitoringConsoleResource {
         return noContent();
     }
 
+    /**
+     * Deletes the page configuration for the provided page ID.
+     *
+     * @param name A page ID
+     * @return 204 NO_CONTENT when successful, also when no such page did exist
+     */
     @DELETE
     @Path("/pages/data/{name}/")
     public Response deletePage(@PathParam("name") String name) {

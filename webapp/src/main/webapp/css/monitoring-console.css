@@ -728,7 +728,7 @@ table.AnnotationTable {
   padding-bottom: 50px;
 }
 
-/* Role Selector Components */
+/* Role Selector Component */
 .RoleSelector li {
   list-style-type: none;
   margin-top: 1em;
@@ -742,6 +742,7 @@ table.AnnotationTable {
   margin: 1em 0 1em 1em;
 }
 
+/* Page Manager Component */
 .PageManager button {
   float: right;
   margin: 1em 0 1em 1em;
