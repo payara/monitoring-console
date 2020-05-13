@@ -41,9 +41,9 @@ package fish.payara.monitoring.adapt;
 
 /**
  * Abstraction to manipulate watch configuration.
- * 
- * The implementation should store this configuration in a persistent manner. 
- * 
+ *
+ * The implementation should store this configuration in a persistent manner.
+ *
  * @author Jan Bernitt
  * @since 1.0 (Payara 5.201)
  */
@@ -57,21 +57,21 @@ public interface MonitoringConsoleWatchConfig {
 
     /**
      * Disables the watch of the given name.
-     * 
+     *
      * @param name watch name
      */
     void disable(String name);
 
     /**
      * Enables the watch of the given name.
-     * 
+     *
      * @param name watch name
      */
     void enable(String name);
 
     /**
      * Adds a custom watch in JSON form to the configuration.
-     * 
+     *
      * @param name name of the watch
      * @param watchJson watch configuration
      */
@@ -79,7 +79,7 @@ public interface MonitoringConsoleWatchConfig {
 
     /**
      * Removes a custom watch from the configuration.
-     * 
+     *
      * @param name watch name
      */
     void remove(String name);

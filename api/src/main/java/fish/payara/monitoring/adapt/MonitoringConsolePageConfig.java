@@ -39,60 +39,60 @@
  */
 package fish.payara.monitoring.adapt;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.NoSuchElementException;
 
 /**
- * A monitored application provides its implementation of low level processing required to run the
- * {@link MonitoringConsole} when creating it using the {@link MonitoringConsoleFactory}.
+ * Abstraction to manipulate page configuration.
  *
- * The provided implementation is used by the monitoring implementation to run its low level work of collecting metrics
- * and connecting instances to a network of multiple data senders and a central data receiver.
+ * The implementation should store this configuration in a persistent manner.
  *
  * @author Jan Bernitt
- * @since 1.0 (Payara 5.201)
+ * @since 1.1 (Payara 5.202)
  */
-public interface MonitoringConsoleRuntime {
+public interface MonitoringConsolePageConfig {
 
     /**
-     * Asynchronously runs the task as done by
-     * {@link ScheduledExecutorService#scheduleAtFixedRate(Runnable, long, long, TimeUnit)}.
+     * Access the JSON definition of the named page.
      *
-     * @see ScheduledExecutorService#scheduleAtFixedRate(Runnable, long, long, TimeUnit)
+     * @param name name of the page to access
+     * @return JSON value of the named page
+     * @throws NoSuchElementException
      */
-    ScheduledFuture<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit);
+    String getPage(String name);
 
     /**
-     * Sends a "package" of monitoring data from a sender (secondary instance) to the receiver (primary instance).
+     * Check if a page exists
      *
-     * @param snapshot the package data
-     * @return true, if the message has been send, else false
+     * @param name page name to check
+     * @return true in case the page exists, false otherwise
      */
-    boolean send(byte[] snapshot);
+    default boolean existsPage(String name) {
+        try {
+            return getPage(name) != null;
+        } catch (NoSuchElementException ex) {
+            return false;
+        }
+    }
 
     /**
-     * Registers the receiver {@link Consumer} for messages when those are received.
+     * Adds a page in JSON form to the configuration.
      *
-     * @param receiver the callback to call with the received message when a message is received by the underlying
-     *                 implementation.
-     * @return true, if the callback was installed successful, else false
+     * @param name name of the page
+     * @param pageJson page configuration
      */
-    boolean receive(Consumer<byte[]> receiver);
+    void putPage(String name, String pageJson);
 
     /**
-     * @return the watch configuration abstraction of this runtime
+     * Removes a page from the configuration.
+     *
+     * @param name watch name
      */
-    MonitoringConsoleWatchConfig getWatchConfig();
+    default void removePage(String name) {
+        putPage(name, null);
+    }
 
     /**
-     * @return the page configuration of this runtime
+     * @return lists then name of all existing pages.
      */
-    MonitoringConsolePageConfig getPageConfig();
-
-    /**
-     * @return the group data repository of this runtime
-     */
-    GroupDataRepository getGroupData();
+    Iterable<String> listPages();
 }
