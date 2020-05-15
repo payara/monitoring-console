@@ -1088,7 +1088,7 @@ MonitoringConsole.View.Components = (function() {
 
 
   /**
-   * A component that creates a panel (for modal dialoge) that presents possible roles for user to select one.
+   * A component that creates a panel (for modal dialogue) that presents possible roles for user to select one.
    */
   const RoleSelector = (function(){
 
