@@ -299,31 +299,35 @@ MonitoringConsole.View.Components = (function() {
          let collapsed = false;
          for (let t = 0; t < model.groups.length; t++) {
             let group = model.groups[t];
-            let table = createTable(group);
-            collapsed = group.collapsed === true;
-            panel.append(table);
-            for (let r = 0; r < group.entries.length; r++) {
-               syntheticId++;
-               let entry = group.entries[r];
-               let type = entry.type;
-               let auto = type === undefined;
-               let input = entry.input;
-               if (entry.id === undefined)
-                 entry.id = 'setting_' + syntheticId;
-               entry.collapsed = collapsed;
-               if (type == 'header' || auto && input === undefined) {
-                  collapsed = entry.collapsed === true;
-                  table.append(createHeaderRow(entry));
-               } else if (!auto) {
-                  table.append(createRow(entry, createInput(entry)));
-               } else {
-                  if (Array.isArray(input)) {
-                    let [innerInput, innerSyntheticId] = createMultiInput(input, syntheticId, 'x-input');
-                    input = innerInput;
-                    syntheticId = innerSyntheticId;
-                  }
-                  table.append(createRow(entry, input));
-               }
+            if (group.available !== false) {
+              let table = createTable(group);
+              collapsed = group.collapsed === true;
+              panel.append(table);
+              for (let r = 0; r < group.entries.length; r++) {
+                 syntheticId++;
+                 let entry = group.entries[r];
+                 if (entry.available !== false) {
+                   let type = entry.type;
+                   let auto = type === undefined;
+                   let input = entry.input;
+                   if (entry.id === undefined)
+                     entry.id = 'setting_' + syntheticId;
+                   entry.collapsed = collapsed;
+                   if (type == 'header' || auto && input === undefined) {
+                      collapsed = entry.collapsed === true;
+                      table.append(createHeaderRow(entry));
+                   } else if (!auto) {
+                      table.append(createRow(entry, createInput(entry)));
+                   } else {
+                      if (Array.isArray(input)) {
+                        let [innerInput, innerSyntheticId] = createMultiInput(input, syntheticId, 'x-input');
+                        input = innerInput;
+                        syntheticId = innerSyntheticId;
+                      }
+                      table.append(createRow(entry, input));
+                   }
+                }
+              }
             }
          }
          return panel;
@@ -337,7 +341,7 @@ MonitoringConsole.View.Components = (function() {
             let [innerBox, innerSyntheticId] = createMultiInput(entry, syntheticId);
             box.append(innerBox);
             syntheticId = innerSyntheticId;
-          } else {
+          } else if (entry.available !== false) {
             syntheticId++;
             if (entry.id === undefined)
               entry.id = 'setting_' + syntheticId;
@@ -995,6 +999,7 @@ MonitoringConsole.View.Components = (function() {
 
   })();
 
+
   /**
    * Combines the WatchList and WatchBuilder into one component to list and create watches.
    */ 
@@ -1016,6 +1021,98 @@ MonitoringConsole.View.Components = (function() {
       manager.append(list);
       manager.append(builder);
       return manager;
+    }
+
+    return { createComponent: createComponent };
+  })();
+
+
+  /**
+   * A component that creates a tabular overview for pages and their synchronisation state.
+   * Users select which pages to synchronise (pull from remote).
+   */
+  const PageManager = (function() {
+
+    function createComponent(model) {
+      const config = { 'class': 'PageManager' };
+      if (model.id)
+        config.id = model.id;
+      const manager = $('<div/>', config);
+      const list = $('<table/>').append($('<tr/>')
+        .append($('<th/>'))
+        .append($('<th/>').text('Page'))
+        .append($('<th/>').text('Local Version'))
+        .append($('<th/>').text('Based on Remote Version'))
+        .append($('<th/>').text('Remote Version'))
+      );
+      const selection = {};
+      model.pages.forEach(page => list.append(createItem(page, selection)));
+      const updateBtn = $('<button/>', { text: 'Update', title: 'Updates checked pages locally with the remote configuration for these pages'})
+        .click(() => model.onUpdate(Object.keys(selection)));
+      const cancelBtn = $('<button/>', { text: 'Cancel'}).click(model.onCancel);
+      return manager.append($('<div/>', {'class': 'content'})
+        .append($('<h3/>').text('Page Synchronisation'))
+        .append($('<p/>').text('Please select the pages that should be updated with their server (remote) configuration (newest highlighted in green):'))
+        .append(list)
+        .append(updateBtn)
+        .append(cancelBtn)
+      );
+    }
+
+    function createItem(page, selection) {
+      if (page.checked)
+        selection[page.id] = true;
+      const onChange = (checked) => { selection[page.id] = checked; };
+      const checkbox = $('<input/>', { type: 'checkbox', checked: page.checked })
+        .on('change', function() {
+          if (this.checked) {
+            selection[page.id] = true;
+          } else {
+            delete selection[page.id];
+          }
+        });
+      const localAttrs = page.lastLocalChange >= page.lastRemoteChange ? {'class': 'recent'} : {};
+      const remoteAttrs = page.lastLocalChange == undefined || page.lastLocalChange <= page.lastRemoteChange ? {'class': 'recent'} : {};
+      const baseAttrs = page.lastRemoteUpdate != undefined && page.lastRemoteUpdate == page.lastRemoteChange ? {'class': 'recent'} : {};
+      const localText = page.lastLocalChange === undefined && page.lastRemoteUpdate !== undefined ? '(not modified)' : Units.formatDateTime(page.lastLocalChange);
+      return $('<tr/>')
+        .append($('<td/>').append(checkbox))
+        .append($('<th/>').text(page.name))
+        .append($('<td/>', localAttrs).text(localText))
+        .append($('<td/>', baseAttrs).text(Units.formatDateTime(page.lastRemoteUpdate)))
+        .append($('<td/>', remoteAttrs).text(Units.formatDateTime(page.lastRemoteChange)));
+    }
+
+    return { createComponent: createComponent };
+  })();
+
+
+  /**
+   * A component that creates a panel (for modal dialogue) that presents possible roles for user to select one.
+   */
+  const RoleSelector = (function(){
+
+    function createComponent(model) {
+      const config = { 'class': 'RoleSelector' };
+      if (model.id)
+        config.id = model.id;
+      const selector = $('<div/>', config);
+      const box = $('<div/>', {'class': 'content'}).append($('<h3/>').text('Select User Role'));
+      const list = $('<ul/>');
+      box.append(list);
+      let seletion = [undefined];
+      model.items.forEach(role => list.append(createItem(role, seletion)));
+      box.append($('<button/>', { text: 'Select' }).click(() => model.onChange(seletion[0])));
+      return selector.append(box);
+    }
+
+    function createItem(role, seletion) {
+      const id = 'role-'+role.name;
+      return $('<li/>')
+        .append($('<input/>', { type: 'radio', name: 'role', value: role.name, id: id }).change(function() {
+            seletion[0] = this.value;
+          }))
+        .append($('<label/>', { for: id }).append($('<b/>').text(role.label)).append('<br/>').append(role.description));
     }
 
     return { createComponent: createComponent };
@@ -1086,6 +1183,8 @@ MonitoringConsole.View.Components = (function() {
       createAlertTable: (model) => AlertTable.createComponent(model),
       createAnnotationTable: (model) => AnnotationTable.createComponent(model),
       createWatchManager: (model) => WatchManager.createComponent(model),
+      createPageManager: (model) => PageManager.createComponent(model),
+      createRoleSelector: (model) => RoleSelector.createComponent(model),
   };
 
 })();

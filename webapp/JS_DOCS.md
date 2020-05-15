@@ -28,13 +28,13 @@ state changes in case of reload.
 ```
 UI              = { pages, settings }
 pages           = { *: PAGE }
-PAGE            = { name, id, numberOfColumns, rotate, widgets }
+PAGE            = { name, id, numberOfColumns, rotate, widgets, sync }
 name            = string
 id              = string
 numberOfColumns = number
 rotate          = boolean
 widgets         = [WIDGET] | { *: WIDGET }
-settings        = { display, home, refresh, rotation, theme }
+settings        = { display, home, refresh, rotation, theme, role }
 display         = boolean
 home            = string
 refresh         = { paused, interval }
@@ -47,6 +47,12 @@ palette         = [COLOR]
 colors          = { *:COLOR }
 options         = { *:number }
 COLOR           = string
+role            = 'admin' | 'user' | 'guest'
+sync            = { autosync, lastModifiedLocally, basedOnRemoteLastModified, preferredOverRemoteLastModified }
+autosync        = boolean
+lastModifiedLocally             = number
+basedOnRemoteLastModified       = number
+preferredOverRemoteLastModified = number
 ```
 * `id` is derived from `name` and used as attribute name in `pages` object
 * `widgets` can be omitted for an empty page
@@ -54,6 +60,7 @@ COLOR           = string
 * `widgets` is allowed to be an array - if so it is made into an object using each widget's `series` for the attribute name
 * `home` is the `PAGE.id` of the currently shown page
 * names for `defaults` colors used so far are: `'alarming'`, `'critical'` and `'waterline'`
+* default for `role` is `'user'`
 
 ### Widget Model
 
@@ -289,11 +296,11 @@ Describes the model expected by the `Settings` component.
 ```
 SETTINGS    = { id, groups }
 groups      = [GROUP]
-GROUP       = { id, caption, entries, collapsed }
+GROUP       = { id, caption, entries, collapsed, available }
 id 		    = string
 caption     = string
 entries     = [ENTRY]
-ENTRY       = { label, type, input, value, unit, min, max, options, onChange, description, defaultValue, collapsed } 
+ENTRY       = { label, type, input, value, unit, min, max, options, onChange, description, defaultValue, collapsed, available } 
 label       = string
 type        = undefined | 'header' | 'checkbox' | 'range' | 'dropdown' | 'value' | 'text' | 'color'
 unit        = string | fn () => string
@@ -306,11 +313,13 @@ input       = fn () => string | fn () => jquery | string | jquery | [ENTRY]
 onChange    = fn (widget, newValue) => () | fn (newValue) => ()
 description = string
 collapsed   = boolean
+available   = boolean
 ```
 * When `caption` is provided this adds a _header_ entry identical to adding a _header_ entry explicitly as first element of the `entries` array.
 * The `options` object is used as map where the attribute names are the values of the options and the attribute values are the _string_ labels displayed for that option.
 * `description` is optional for any type of `ENTRY`
 * set `collapsed` to initially collapse the setting group
+* when `available` is not provided it is assumed `true`, not available groups and entries are skipped (ignored)
 
 Mandatory members of `ENTRY` depend on `type` member. Variants are:
 ```
@@ -518,3 +527,37 @@ style           = 'fill' | 'outline'
 * default for `style` is `fill`
 
 
+### PageManager API
+Describes the model expected by the component used to create a tabular overview for pages and their synchronisation state.
+
+```
+PAGE_MANAGER     = { id, pages, onUpdate, onCancel }
+pages            = [ PAGE_SYNC_ITEM ]
+onUpdate         = fn ([string]) => ()
+onCancel         = fn () => ()
+PAGE_SYNC_ITEM   = { id, name, checked, lastLocalChange, lastRemoteChange, lastRemoteUpdate }
+id               = string
+name             = string
+checked          = boolean
+lastLocalChange  = number  
+lastRemoteChange = number
+lastRemoteUpdate = number
+```
+* `id` of `PAGE_SYNC_ITEM` is a page ID, `id` of the `PAGE_MANAGER` is the id of the HTML element
+* `onUpdate` is called with the pages selected by the user if dialoge is not cancelled
+* `onCancel` is called when dialoge is cancelled
+
+
+### RoleSelector API
+Descrives the model expected by the component used to create a role selection modal dialoge. 
+
+```
+ROLE_SELECTOR    = { id, items, onChange }
+items            = [ ROLE_ITEM ]
+ROLE_ITEM        = { name, label, description }
+name             = string
+label            = string
+description      = string
+onChange         = fn (string) => ()
+```
+* `onChange` gets passed the `name` of the selected item

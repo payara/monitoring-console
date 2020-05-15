@@ -56,20 +56,21 @@ MonitoringConsole.View.Units = (function() {
       h: 60 * 60, hours: 60 * 60,
       m: 60, min: 60, mins: 60,
       s: 1, sec: 1, secs: 1,
-      _: [['h', 'm', 's'], ['m', 's'], ['h', 'm']]
+      _: [['h', 'm'], ['h', 'm', 's'], ['m', 's']]
    };
 
    /**
     * Factors used for any time unit to milliseconds
     */
    const MS_FACTORS = {
+      d: 24 * 60 * 60 * 1000, days: 24* 60 * 60 * 1000,
       h: 60 * 60 * 1000, hours: 60 * 60 * 1000,
       m: 60 * 1000, min: 60 * 1000, mins: 60 * 1000,
       s: 1000, sec: 1000, secs: 1000,
       ms: 1,
       us: 1/1000, μs: 1/1000,
       ns: 1/1000000,
-      _: [['m', 's', 'ms'], ['s', 'ms'], ['h', 'm', 's'], ['m', 's'], ['h', 'm']]
+      _: [['d', 'h', 'm'], ['d', 'h', 'm', 's'], ['h', 'm'], ['h', 'm', 's'], ['h', 'm', 's', 'ms'], ['m', 's'], ['m', 's', 'ms'], ['s', 'ms']]
    };
 
    /**
@@ -82,7 +83,7 @@ MonitoringConsole.View.Units = (function() {
       ms: 1000000,
       us: 1000, μs: 1000,
       ns: 1,
-      _: [['m', 's', 'ms'], ['s', 'ms'], ['h', 'm', 's'], ['m', 's'], ['h', 'm']]
+      _: [['h', 'm'], ['h', 'm', 's'], ['h', 'm', 's', 'ms'], ['m', 's'], ['m', 's', 'ms'], ['s', 'ms']]
    };
 
    /**
@@ -233,6 +234,19 @@ MonitoringConsole.View.Units = (function() {
       return str;
    }
 
+   function formatDateTime(dateOrTimestamp) {
+      if (dateOrTimestamp === undefined)
+         return '';
+      if (typeof dateOrTimestamp === 'string')
+         dateOrTimestamp = Number(dateOrTimestamp);
+      if (typeof dateOrTimestamp === 'number')
+         dateOrTimestamp = new Date(dateOrTimestamp);
+      // now dateOrTimestamp should be a Date object
+      let diffMs = new Date() - dateOrTimestamp;
+      diffMs = Math.round(diffMs / 1000) * 1000; // truncate ms
+      return formatNumber(diffMs, MS_FACTORS) + ' ago, ' + formatTime(Math.round(dateOrTimestamp.getTime() / 1000) * 1000);
+   }
+
    function as2digits(number) {
       return number.toString().padStart(2, '0');
    }
@@ -272,6 +286,7 @@ MonitoringConsole.View.Units = (function() {
       names: () => UNIT_NAMES,
 
       formatTime: formatTime,
+      formatDateTime: formatDateTime,
       formatNumber: formatNumber,
       formatMilliseconds: (valueAsNumber) => formatNumber(valueAsNumber, MS_FACTORS),
       formatNanoseconds: (valueAsNumber) => formatNumber(valueAsNumber, NS_FACTORS),

@@ -91,6 +91,8 @@ MonitoringConsole.Model = (function() {
 				page.id = getPageId(page.name);
 			if (!page.widgets)
 				page.widgets = {};
+			if (typeof page.sync !== 'object')
+				page.sync = { autosync: true };
 			if (!page.numberOfColumns || page.numberOfColumns < 1)
 				page.numberOfColumns = 1;
 			if (page.rotate === undefined)
@@ -162,8 +164,93 @@ MonitoringConsole.Model = (function() {
 			return settings;
 		}
 		
-		function doStore() {
+		function doStore(isPageUpdate, page) {
+			if (page === undefined)
+				page = pages[settings.home];
+			if (isPageUpdate) {
+				page.sync.lastModifiedLocally = new Date().getTime();
+			}
 			window.localStorage.setItem(LOCAL_UI_KEY, doExport());
+			if (isPageUpdate && page.sync.autosync && settings.role == 'admin') {
+				doPushLocal(undefined, page);
+			}
+		}
+
+		function doPushLocal(onSuccess, page) {
+			if (page === undefined)
+				page = pages[settings.home];
+			let basedOnRemoteLastModified = page.sync.basedOnRemoteLastModified;
+			let lastModifiedLocally = page.sync.lastModifiedLocally;
+			let preferredOverRemoteLastModified = page.sync.preferredOverRemoteLastModified;
+			page.sync.basedOnRemoteLastModified = lastModifiedLocally || new Date().getTime();
+			page.sync.lastModifiedLocally = undefined;
+			page.sync.preferredOverRemoteLastModified = undefined;
+			Controller.requestUpdateRemotePage(page, 
+				() => { // success
+					doStore();
+					if (onSuccess)
+						onSuccess();
+				},
+				() => { // failure
+					page.sync.basedOnRemoteLastModified = basedOnRemoteLastModified;
+					page.sync.lastModifiedLocally = lastModifiedLocally;
+					page.sync.preferredOverRemoteLastModified = preferredOverRemoteLastModified;
+				}
+			);			
+		}
+
+		function doPushAllLocal() {	
+			Controller.requestListOfRemotePageNames((pageIds) => {
+				pageIds.forEach(pageId => {
+					doPushLocal(undefined, pages[pageId]);
+				});
+			});
+		}
+
+		function doPullRemote(pageId) {
+			if (pageId === undefined)
+				pageId = settings.home;
+			return new Promise(function(resolve, reject) {
+				Controller.requestRemotePage(pageId, (page) => {				
+					pages[page.id] = page;
+					doStore(false, page);
+					resolve(page);
+				}, () => reject(undefined));
+			});
+		}
+
+		function providePullRemoteModel(consumer) {
+			function createPullRemoteModelItem(localPage, remotePage) {
+				let page = localPage !== undefined ? localPage : remotePage;
+				let checked = true;
+				if ((settings.role == 'admin' || settings.role == 'user') && localPage !== undefined) {
+					checked = (localPage.sync.preferredOverRemoteLastModified === undefined 
+							|| localPage.sync.preferredOverRemoteLastModified < remotePage.sync.basedOnRemoteLastModified)
+							&& !(localPage.sync.basedOnRemoteLastModified == remotePage.sync.basedOnRemoteLastModified && localPage.sync.lastModifiedLocally === undefined);
+				}
+				return {
+					id: page.id,
+					name: page.name,
+					checked: checked,
+					lastLocalChange: localPage != undefined ? localPage.sync.lastModifiedLocally : undefined,
+					lastRemoteChange: remotePage !== undefined ? remotePage.sync.basedOnRemoteLastModified : undefined,
+					lastRemoteUpdate: localPage != undefined ? localPage.sync.basedOnRemoteLastModified : undefined,
+				};
+			}
+
+			Controller.requestListOfRemotePages(remotePages => {
+				consumer({ 
+					pages: Object.values(remotePages).map(remotePage => createPullRemoteModelItem(pages[remotePage.id], remotePage)), 
+					onUpdate: async function (pageIds) {
+						for (let remotePageId of Object.keys(remotePages)) {
+							if (!pageIds.includes(remotePageId)) {
+								pages[remotePageId].sync.preferredOverRemoteLastModified = remotePages[remotePageId].sync.basedOnRemoteLastModified;
+							}
+						}
+						await Promise.all(pageIds.map(pageId => doPullRemote(pageId)));
+					}
+				});
+			});
 		}
 		
 		function doDeselect() {
@@ -426,7 +513,7 @@ MonitoringConsole.Model = (function() {
 				pages[pageId] = page;
 				delete pages[settings.home];
 				settings.home = pageId;
-				doStore();
+				doStore(true);
 				return true;
 			},
 			
@@ -438,8 +525,18 @@ MonitoringConsole.Model = (function() {
 				let pageIds = Object.keys(pages);
 				if (pageIds.length <= 1)
 					return undefined;
-				delete pages[settings.home];
-				settings.home = pageIds[0];
+				let deletion = () => {
+					delete pages[settings.home];
+					settings.home = pageIds[0];
+				};
+				if (settings.role === 'admin') {
+					let page = pages[settings.home];
+					if (page.sync.basedOnRemoteLastModified !== undefined) {
+						Controller.requestDeleteRemotePage(settings.home, deletion);
+					}
+				} else {
+					deletion();
+				}
 				return pages[settings.home];
 			},
 
@@ -449,7 +546,7 @@ MonitoringConsole.Model = (function() {
 				if (presets && presets[currentPageId]) {
 					let preset = presets[currentPageId];
 					pages[currentPageId] = sanityCheckPage(JSON.parse(JSON.stringify(preset)));
-					doStore();
+					doStore(true);
 					return true;
 				}
 				return false;
@@ -475,7 +572,7 @@ MonitoringConsole.Model = (function() {
 				if (rotate === undefined)
 					return pages[settings.home].rotate;
 				pages[settings.home].rotate = rotate;
-				doStore();
+				doStore(true);
 			},
 			
 			removeWidget: function(widgetId) {
@@ -483,6 +580,7 @@ MonitoringConsole.Model = (function() {
 				if (widgetId && widgets) {
 					delete widgets[widgetId];
 				}
+				doStore(true);
 			},
 			
 			addWidget: function(series) {
@@ -513,7 +611,7 @@ MonitoringConsole.Model = (function() {
 				widget.grid.item = Object.values(widgets)
 					.filter(widget => widget.grid.column == indexOfLeastUsedCells)
 					.reduce((acc, widget) => widget.grid.item ? Math.max(acc, widget.grid.item) : acc, 0) + 1;
-				doStore();
+				doStore(true);
 			},
 			
 			configureWidget: function(widgetUpdate, widgetId) {
@@ -521,7 +619,7 @@ MonitoringConsole.Model = (function() {
 					? [pages[settings.home].widgets[widgetId]]
 					: Object.values(pages[settings.home].widgets).filter(widget => widget.selected);
 				selected.forEach(widget => widgetUpdate(widget));
-				doStore();
+				doStore(selected.length);
 			},
 			
 			select: function(widgetId, exclusive) {
@@ -552,7 +650,7 @@ MonitoringConsole.Model = (function() {
 			
 			arrange: function(columns) {
 				let layout = doLayout(columns);
-				doStore();
+				doStore(columns !== undefined);
 				return layout;
 			},
 			
@@ -573,6 +671,51 @@ MonitoringConsole.Model = (function() {
 				settings.display = false;
 				doDeselect();
 				doStore();
+			},
+
+			Role: {
+				get: () => settings.role || 'user',
+				set: (role) => {
+					settings.role = role;
+					doStore();					
+				},
+				isAdmin: () => settings.role == 'admin',
+				isGuest: () => settings.role == 'guest',
+				isUser:  () => settings.role === undefined || settings.role == 'user',
+				isDefined: () => settings.role !== undefined,
+			}, 
+
+			Sync: {
+
+				providePullRemoteModel: providePullRemoteModel,
+
+				/*
+				 * Updates the local current page with the remote page
+				 */
+				pullRemote: doPullRemote,
+
+				/*
+				 * Updates the remote page with the current local page
+				 */
+				pushLocal: doPushLocal,
+
+				/*
+				 * Updates all remote pages with the respective local page
+				 */
+				pushAllLocal: doPushAllLocal,
+
+				/*
+				 * Should a page automatically be pushed to remote when changed by an admin?
+				 */ 
+				auto: (autosync) => {
+					if (autosync === undefined)
+						return pages[settings.home].sync.autosync !== false;
+					pages[settings.home].sync.autosync = autosync;
+				},
+
+				isLocallyChanged: () => pages[settings.home].sync.lastModifiedLocally,
+				isLocal: () => pages[settings.home].sync.basedOnRemoteLastModified === undefined,
+				isRemote: () => pages[settings.home].sync.basedOnRemoteLastModified !== undefined,
 			},
 
 			Rotation: {
@@ -1069,12 +1212,14 @@ MonitoringConsole.Model = (function() {
 			configure: UI.themeConfigure,
 		},
 		
+		Role: UI.Role,
+
 		Settings: {
 			isDispayed: UI.showSettings,
 			open: UI.openSettings,
 			close: UI.closeSettings,
 			toggle: () => UI.showSettings() ? UI.closeSettings() : UI.openSettings(),
-			
+
 			Rotation: {
 				isEnabled: UI.Rotation.isEnabled,
 				enabled: function(enabled) {
@@ -1128,6 +1273,8 @@ MonitoringConsole.Model = (function() {
 			changeTo: function(pageId) {
 				return doSwitchPage(pageId);
 			},
+
+			Sync: UI.Sync,
 			
 			/**
 			 * Returns a layout model for the active pages charts and the given number of columns.

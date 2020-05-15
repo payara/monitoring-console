@@ -44,6 +44,7 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -54,6 +55,10 @@ import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.RequestScoped;
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.stream.JsonParser;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -72,6 +77,7 @@ import fish.payara.monitoring.adapt.GroupData;
 import fish.payara.monitoring.adapt.GroupDataRepository;
 import fish.payara.monitoring.adapt.MonitoringConsole;
 import fish.payara.monitoring.adapt.MonitoringConsoleFactory;
+import fish.payara.monitoring.adapt.MonitoringConsolePageConfig;
 import fish.payara.monitoring.alert.Alert;
 import fish.payara.monitoring.alert.AlertService;
 import fish.payara.monitoring.alert.Circumstance;
@@ -105,6 +111,7 @@ public class MonitoringConsoleResource {
     private SeriesRepository dataRepository;
     private AlertService alertService;
     private GroupDataRepository groupDataRepository;
+    private MonitoringConsolePageConfig pageConfig;
 
     @PostConstruct
     private void init() {
@@ -116,6 +123,7 @@ public class MonitoringConsoleResource {
             dataRepository = console.getService(SeriesRepository.class);
             alertService = console.getService(AlertService.class);
             groupDataRepository = console.getService(GroupDataRepository.class);
+            pageConfig = console.getService(MonitoringConsolePageConfig.class);
         } else {
             LOGGER.log(Level.WARNING, "No MonitoringConsoleFactory defined using ServiceLoader mechanism.");
         }
@@ -128,6 +136,83 @@ public class MonitoringConsoleResource {
             LOGGER.log(Level.FINE, "Failed to parse series", e);
             return null;
         }
+    }
+
+    /**
+     * @return JSON array with the IDs of the pages which have a server configuration
+     */
+    @GET
+    @Path("/pages/")
+    public String[] getPageNames() {
+        return stream(pageConfig.listPages().spliterator(), false).sorted().toArray(String[]::new);
+    }
+
+    /**
+     * @return A JSON object where each page is present as a field
+     */
+    @GET
+    @Path("/pages/data/")
+    public JsonObject getPageData() {
+        JsonObjectBuilder obj = Json.createObjectBuilder();
+        for (String name : pageConfig.listPages()) {
+            String page = pageConfig.getPage(name);
+            if (page != null && !page.isEmpty()) {
+                try (JsonParser parser = Json.createParser(new StringReader(page))) {
+                    if (parser.hasNext()) {
+                        parser.next();
+                        obj.add(name, parser.getObject());
+                    }
+                }
+            }
+        }
+        return obj.build();
+    }
+
+    /**
+     * @param name A page ID
+     * @return JSON object for the page with the provided name
+     */
+    @GET
+    @Path("/pages/data/{name}/")
+    public String getPageData(@PathParam("name") String name) {
+        return pageConfig.getPage(name);
+    }
+
+    /**
+     * Updates the configuration of the provided page.
+     * If JSON given for the page is null, empty, or an empty JSON object, the page is deleted.
+     *
+     * @param name A page ID
+     * @param json JSON object with the page configuration
+     * @return 204 NO_CONTENT if successful or 400 BAD_REQUEST when name was not provided
+     */
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Path("/pages/data/{name}/")
+    public Response updatePage(@PathParam("name") String name, String json) {
+        if (name == null || name.isEmpty()) {
+            return badRequest("Name missing");
+        }
+        if (json == null || json.isEmpty() || "{}".equals(json)) {
+            return deletePage(name);
+        }
+        pageConfig.putPage(name, json);
+        return noContent();
+    }
+
+    /**
+     * Deletes the page configuration for the provided page ID.
+     *
+     * @param name A page ID
+     * @return 204 NO_CONTENT when successful, also when no such page did exist
+     */
+    @DELETE
+    @Path("/pages/data/{name}/")
+    public Response deletePage(@PathParam("name") String name) {
+        if (pageConfig.existsPage(name)) {
+            pageConfig.removePage(name);
+        }
+        return noContent();
     }
 
     @GET
