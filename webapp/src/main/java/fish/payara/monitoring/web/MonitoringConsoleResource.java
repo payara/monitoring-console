@@ -180,7 +180,7 @@ public class MonitoringConsoleResource {
 
     /**
      * Updates the configuration of the provided page.
-     * If JSON given for the page is null, empty or the empty JSON object the page is deleted.
+     * If JSON given for the page is null, empty, or an empty JSON object, the page is deleted.
      *
      * @param name A page ID
      * @param json JSON object with the page configuration
