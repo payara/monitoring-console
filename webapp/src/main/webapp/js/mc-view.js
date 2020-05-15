@@ -714,7 +714,7 @@ MonitoringConsole.View = (function() {
                 if (onExit !== undefined)
                     onExit();
             }, items: [
-            { name: 'guest', label: 'Guest' , description: 'Automatically uses latest server page configuration. Existing local changes are overridden. Local changes during the sesstion do not affect the remote configuration.'},
+            { name: 'guest', label: 'Guest' , description: 'Automatically uses latest server page configuration. Existing local changes are overridden. Local changes during the session do not affect the remote configuration.'},
             { name: 'user', label: 'User' , description: 'Can select for each individual page if server configuration replaces local page. Can manually update local page with server page configuration during the session.' },
             { name: 'admin', label: 'Administrator' , description: 'Can select for each individual page if server configuration replaces local page. Can manually update local pages with server page configuration or update server configuration with local changes. For pages with automatic synchronisation local changes do affect server page configurations.' },
         ]};
