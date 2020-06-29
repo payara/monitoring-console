@@ -45,9 +45,9 @@ import fish.payara.monitoring.web.ApiResponses.SeriesData;
 
 /**
  * Types used in the web API to map requests.
- * 
+ *
  * @see ApiResponses
- * 
+ *
  * @author Jan Bernitt
  */
 @SuppressWarnings("squid:S1104")
@@ -81,7 +81,13 @@ public final class ApiRequests {
      * and the {@link #instances} to include in the result data.
      */
     public static final class SeriesQuery {
-
+        /**
+         * The ID of the widget the series is requested for.
+         *
+         * Conceptually can be any ID used by the caller to reassociate matches with the client object they belong to.
+         * The ID provided here is simply forwarded to {@link ApiResponses.SeriesMatch#widgetId}.
+         */
+        public String widgetId;
         /**
          * The name or pattern of the series (* can be used as wild-card for tag values)
          */

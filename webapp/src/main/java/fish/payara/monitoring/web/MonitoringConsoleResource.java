@@ -97,6 +97,7 @@ import fish.payara.monitoring.web.ApiResponses.AnnotationData;
 import fish.payara.monitoring.web.ApiResponses.CircumstanceData;
 import fish.payara.monitoring.web.ApiResponses.ConditionData;
 import fish.payara.monitoring.web.ApiResponses.RequestTraceResponse;
+import fish.payara.monitoring.web.ApiResponses.SeriesMatch;
 import fish.payara.monitoring.web.ApiResponses.SeriesResponse;
 import fish.payara.monitoring.web.ApiResponses.WatchData;
 import fish.payara.monitoring.web.ApiResponses.WatchesResponse;
@@ -234,11 +235,7 @@ public class MonitoringConsoleResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("/series/data/")
     public SeriesResponse getSeriesData(SeriesRequest request) {
-        int length = request.queries.length;
-        List<List<SeriesDataset>> data = new ArrayList<>(length);
-        List<List<SeriesAnnotation>> annotations = new ArrayList<>(length);
-        List<Collection<Watch>> watches = new ArrayList<>(length);
-        List<Collection<Alert>> alerts = new ArrayList<>(length);
+        List<SeriesMatch> matches = new ArrayList<>(request.queries.length);
         for (SeriesQuery query : request.queries) {
             Series key = seriesOrNull(query.series);
             List<SeriesDataset> queryData = key == null || query.excludes(DataType.POINTS) //
@@ -254,13 +251,9 @@ public class MonitoringConsoleResource {
             Collection<Alert> queryAlerts = key == null || query.excludes(DataType.ALERTS)
                     ? emptyList()
                     : alertService.alertsFor(key);
-            data.add(queryData);
-            watches.add(queryWatches);
-            annotations.add(queryAnnotations);
-            alerts.add(queryAlerts);
+            matches.add(new SeriesMatch(query, query.series, queryData, queryAnnotations, queryWatches, queryAlerts));
         }
-        return new SeriesResponse(request.queries, data, annotations, watches, alerts,
-                alertService.getAlertStatistics());
+        return new SeriesResponse(matches, alertService.getAlertStatistics());
     }
 
     @GET
