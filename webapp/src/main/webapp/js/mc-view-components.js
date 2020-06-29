@@ -105,8 +105,8 @@ MonitoringConsole.View.Components = (function() {
 
       function enhancedOnChange(onChange, updatePage) {
         if (onChange.length == 2) {
-          return (checked) => {
-            let layout = Selection.configure((widget) => onChange(widget, checked));
+          return (value) => {
+            let layout = Selection.configure((widget) => onChange(widget, value));
             if (updatePage) {
               MonitoringConsole.View.onPageUpdate(layout);
             }
@@ -181,6 +181,9 @@ MonitoringConsole.View.Components = (function() {
             return Units.converter(model.unit());
           return Units.converter(model.unit);
         }
+        let value = model.value;
+        if (Array.isArray(value))
+          return createMultiTextInput(model);
         let converter = getConverter();
         let config = { 
           id: model.id,
@@ -208,6 +211,46 @@ MonitoringConsole.View.Components = (function() {
           input.prop('readonly', true);
         }
         return input;
+      }
+
+      function createMultiTextInput(model) {
+        let value = model.value;
+        if (value === undefined && model.defaultValue !== undefined)
+          value = model.defaultValue;
+        if (!Array.isArray(value))
+          value = [value];
+        const list = $('<span/>');
+        let texts = [...value];
+        let i = 0;
+        for (i = 0; i < value.length; i++) {
+          list.append(createMultiTextInputItem(list, model, value, texts, i));
+        }
+        const add = $('<button/>', { text: '+'});
+        add.click(() => {
+          texts.push('');
+          createMultiTextInputItem(list, model, '', texts, i++).insertBefore(add);
+        });
+        list.append(add);
+        return list;
+      }
+
+      function createMultiTextInputItem(list, model, values, texts, index) {
+        const id = model.id + '-' + (index + 1);
+        return createTextInput({
+            id: id,
+            unit: model.unit,
+            type: model.type,
+            value: values[index],
+            onChange: (widget, text) => {
+              const isNotEmpty = text => text !== undefined && text != '';
+              if (isNotEmpty(text)) {
+                texts[index] = text;
+              } else {
+                list.children('#' + id).remove();
+              }
+              model.onChange(widget, texts.filter(isNotEmpty));
+            }
+          });
       }
 
       function createColorInput(model) {

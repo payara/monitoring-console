@@ -171,6 +171,8 @@ MonitoringConsole.View = (function() {
     }
 
     function formatSeriesName(series) {
+        if (Array.isArray(series))
+            return series.map(formatSeriesName).join(' / ');
         let endOfTags = series.lastIndexOf(' ');
         let metric = endOfTags <= 0 ? series : series.substring(endOfTags + 1);
         if (endOfTags <= 0 )
@@ -294,7 +296,7 @@ MonitoringConsole.View = (function() {
             ]},
         ]});
         settings.push({ id: 'settings-data', caption: 'Data', entries: [
-            { label: 'Series', input: widget.series },
+            { label: 'Series', type: 'text', value: Array.isArray(widget.series) ? widget.series : [widget.series], onChange: (widget, value) => widget.series = value },
             { label: 'Unit', input: [
                 { type: 'dropdown', options: Units.names(), value: widget.unit, onChange: function(widget, selected) { widget.unit = selected; updateSettings(); }},
                 { label: '1/sec', type: 'checkbox', value: options.perSec, onChange: (widget, checked) => widget.options.perSec = checked},
