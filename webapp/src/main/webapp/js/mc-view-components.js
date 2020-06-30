@@ -203,7 +203,7 @@ MonitoringConsole.View.Components = (function() {
         let input = $('<input/>', config);
         if (!readonly) {
           let onChange = enhancedOnChange(model.onChange, true);
-          input.on('input change paste', function() {
+          input.on('input change', function() {
             let val = getConverter().parse(this.value);
             onChange(val);
           });          
@@ -243,12 +243,13 @@ MonitoringConsole.View.Components = (function() {
             value: values[index],
             onChange: (widget, text) => {
               const isNotEmpty = text => text !== undefined && text != '';
-              if (isNotEmpty(text)) {
-                texts[index] = text;
-              } else {
-                list.children('#' + id).remove();
+              texts[index] = text;
+              let nonEmptyTexts = texts.filter(isNotEmpty);
+              if (!isNotEmpty(text)) {
+                if (nonEmptyTexts.length > 0)
+                  list.children('#' + id).remove();
               }
-              model.onChange(widget, texts.filter(isNotEmpty));
+              model.onChange(widget, nonEmptyTexts.length == 1 ? nonEmptyTexts[0] : nonEmptyTexts);
             }
           });
       }
@@ -430,6 +431,8 @@ MonitoringConsole.View.Components = (function() {
       if (label0 === 'server') { // special rule for DAS
         label0 = 'DAS'; 
         attrs.title = "Data for the Domain Administration Server (DAS); plain instance name is 'server'";
+      } else if (label0.startsWith('server:')) {
+        label0 = 'DAS:' + label0.substring(7);
       }
       let textAttrs = {};
       if (item.highlight)

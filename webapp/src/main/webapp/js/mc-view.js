@@ -172,7 +172,7 @@ MonitoringConsole.View = (function() {
 
     function formatSeriesName(series) {
         if (Array.isArray(series))
-            return series.map(formatSeriesName).join(' / ');
+            return 'Multi-Series without Display Name';
         let endOfTags = series.lastIndexOf(' ');
         let metric = endOfTags <= 0 ? series : series.substring(endOfTags + 1);
         if (endOfTags <= 0 )
@@ -499,10 +499,14 @@ MonitoringConsole.View = (function() {
         let palette = Theme.palette();
         let alpha = Theme.option('opacity') / 100;
         for (let j = 0; j < data.length; j++) {
-            let seriesData = data[j];
+            const seriesData = data[j];
+            const series = widget.series;
+            const isMultiSeries = Array.isArray(series) && series.length > 1;
             let label = seriesData.instance;
-            if (widget.series.includes('*') && !widget.series.includes('?')) {
-                let tag = seriesData.series.replace(new RegExp(widget.series.replace('*', '(.*)')), '$1').replace('_', ' ');                
+            if (isMultiSeries)
+                label += ': ' + seriesData.series.split(" ").pop();
+            if (!isMultiSeries && series.includes('*') && !series.includes('?')) {
+                let tag = seriesData.series.replace(new RegExp(series.replace('*', '(.*)')), '$1').replace('_', ' ');                
                 label = widget.coloring == 'series' ? tag : [label, tag];
             }
             let points = seriesData.points;
@@ -515,8 +519,6 @@ MonitoringConsole.View = (function() {
             if (widget.options.perSec)
                 value += ' /s';
             let coloring = widget.coloring;
-            if (coloring == 'series')
-                coloring += ': ' + widget.series;
             let color = Colors.lookup(coloring, getColorKey(widget, seriesData.series, seriesData.instance, j), palette);
             let background = Colors.hex2rgba(color, alpha);
             if (Array.isArray(alerts) && alerts.length > 0) {
