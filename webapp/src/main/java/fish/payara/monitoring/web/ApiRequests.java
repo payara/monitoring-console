@@ -61,6 +61,7 @@ public final class ApiRequests {
     public static final class SeriesRequest {
 
         public SeriesQuery[] queries;
+        public boolean groupBySeries = false;
 
         public SeriesRequest() {
             // from JSON
@@ -124,6 +125,9 @@ public final class ApiRequests {
         }
 
         private static boolean contains(DataType[] set, DataType type) {
+            if (set == null) {
+                return false;
+            }
             for (DataType t : set) {
                 if (t == type) {
                     return true;

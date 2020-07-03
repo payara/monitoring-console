@@ -133,6 +133,16 @@ public final class ApiResponses {
             this.data = data.stream().map(set -> new SeriesData(set, query.truncates(POINTS))).collect(toList());
             this.annotations = annotations.stream().map(AnnotationData::new).collect(toList());
         }
+
+        public SeriesMatch(String series, List<SeriesData> data, List<AnnotationData> annotations,
+                List<WatchData> watches, List<AlertData> alerts) {
+            this.widgetId = "grouped";
+            this.series = series;
+            this.data = data;
+            this.annotations = annotations;
+            this.watches = watches;
+            this.alerts = alerts;
+        }
     }
 
     public static final class AnnotationData {

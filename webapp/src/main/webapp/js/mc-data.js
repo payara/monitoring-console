@@ -297,6 +297,11 @@ MonitoringConsole.Data = (function() {
 				{ series: 'ns:jvm DaemonThreadCount', displayName: 'Daemon Threads', 
 					grid: {column: 3, item: 2}},							
 			],
+		},
+		developer_metrics: {
+			name: 'Developer Metrics',
+			numberOfColumns: 4,
+			content: { series: 'ns:metric ?:* *', maxSize: 30 },
 		}
 	};
 

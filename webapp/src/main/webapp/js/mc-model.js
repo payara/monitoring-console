@@ -432,6 +432,36 @@ MonitoringConsole.Model = (function() {
 			return row < 0 ? column.length : row;
       	}
 		
+      	async function doArrangePage(page) {
+      		if (page.content === undefined)
+      			return;
+      		const content = new Promise(function(resolve, reject) {
+				Controller.requestListOfSeriesData({ groupBySeries: true, queries: [{
+	      			widgetId: 'auto', 
+	      			series: page.content.series,
+	      			truncate: ['ALERTS'],
+	      			exclude: []
+      			}]}, 
+      			(response) => resolve(response.matches),
+      			() => reject(undefined));
+
+			});
+			const matches = await content;
+			const widgets = [];
+			const numberOfColumns = page.numberOfColumns;
+			let column = 0;
+			for (let i = 0; i < matches.length; i++) {
+				let match = matches[i];
+				widgets.push({
+					series: match.series,
+					grid: { column: column % numberOfColumns },
+				});
+				column++;
+			}
+			page.widgets = widgets;
+			sanityCheckPage(page);
+      	}
+
 		return {
 			themeConfigure(fn) {
 				fn(settings.theme);
@@ -565,7 +595,13 @@ MonitoringConsole.Model = (function() {
 				if (!pages[pageId])
 					return undefined;
 				settings.home = pageId;
-				return pages[settings.home];
+				const page = pages[settings.home];
+				if (page.content !== undefined) {
+					const now = new Date().getTime();
+					if (page.expires === undefined || now >= page.expires)
+						doArrangePage(page);
+				}
+				return page;
 			},
 
 			rotatePage: function(rotate) {
