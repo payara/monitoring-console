@@ -72,11 +72,12 @@ expires         = number
 ### Widget Model
 
 ```
-WIDGET     = { id, series, type, unit, scaleFactor, target, grid, axis, options, decorations, status, displayName, coloring, fields, mode, sort }
+WIDGET     = { id, series, type, unit, scaleFactor, target, grid, axis, options, decorations, status, displayName, description, coloring, fields, mode, sort }
 id         = string
 series     = string | [string]
 target     = string
 displayName= string
+description= string
 type       = 'line' | 'bar' | 'alert' | 'annotation'
 unit       = UNIT
 UNIT       = 'count' | 'ms' | 'ns' | 'bytes' | 'percent'

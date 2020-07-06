@@ -74,6 +74,19 @@ MonitoringConsole.View.Units = (function() {
    };
 
    /**
+    * Factors used for any time unit to microseconds
+    */
+   const US_FACTORS = {
+      h: 60 * 60 * 1000 * 1000, hours: 60 * 60 * 1000 * 1000,
+      m: 60 * 1000 * 1000, min: 60 * 1000 * 1000, mins: 60 * 1000 * 1000,
+      s: 1000 * 1000, sec: 1000 * 1000, secs: 1000 * 1000,
+      ms: 1000,
+      us: 1, μs: 1,
+      ns: 1/1000,
+      _: [['h', 'm'], ['h', 'm', 's'], ['h', 'm', 's', 'ms'], ['m', 's'], ['m', 's', 'ms'], ['s', 'ms'], ['ms', 'us']]
+   };
+
+   /**
     * Factors used for any time unit to nanoseconds
     */
    const NS_FACTORS = {
@@ -83,7 +96,7 @@ MonitoringConsole.View.Units = (function() {
       ms: 1000000,
       us: 1000, μs: 1000,
       ns: 1,
-      _: [['h', 'm'], ['h', 'm', 's'], ['h', 'm', 's', 'ms'], ['m', 's'], ['m', 's', 'ms'], ['s', 'ms']]
+      _: [['h', 'm'], ['h', 'm', 's'], ['h', 'm', 's', 'ms'], ['m', 's'], ['m', 's', 'ms'], ['s', 'ms'], ['ms', 'us', 'ns'], ['ms', 'us']]
    };
 
    /**
@@ -111,14 +124,17 @@ MonitoringConsole.View.Units = (function() {
       count: COUNT_FACTORS,
       sec: SEC_FACTORS,
       ms: MS_FACTORS,
+      us: US_FACTORS,
       ns: NS_FACTORS,
       bytes: BYTES_FACTORS,
       percent: PERCENT_FACTORS,
    };
 
    const UNIT_NAMES = {
-      count: 'Count', 
-      ms: 'Milliseconds', 
+      count: 'Count',
+      sec: 'Seconds', 
+      ms: 'Milliseconds',
+      us: 'Microseconds',
       ns: 'Nanoseconds', 
       bytes: 'Bytes', 
       percent: 'Percentage'
@@ -284,7 +300,6 @@ MonitoringConsole.View.Units = (function() {
       },
       
       names: () => UNIT_NAMES,
-
       formatTime: formatTime,
       formatDateTime: formatDateTime,
       formatNumber: formatNumber,

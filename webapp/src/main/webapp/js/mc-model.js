@@ -432,7 +432,30 @@ MonitoringConsole.Model = (function() {
 			return row < 0 ? column.length : row;
       	}
 		
+	   /**
+	    * Mapping from a possible unit alias to the unit key to use
+	    */
+	   	const Y_AXIS_UNIT = {
+	      days: 'sec',
+	      hours: 'sec',
+	      minutes: 'sec',	      
+	      seconds: 'sec',
+	      per_second: 'sec',
+	      milliseconds: 'ms',
+	      microseconds: 'us',
+	      nanoseconds: 'ns',
+	      percent: 'percent',
+	      bytes: 'bytes',
+   		};
+
       	async function doArrangePage(page) {
+      		function yAxisUnit(metadata) {
+      			if (Y_AXIS_UNIT[metadata.Unit] !== undefined)
+      				return Y_AXIS_UNIT[metadata.Unit];
+      			if (Y_AXIS_UNIT[metadata.BaseUnit] !== undefined)
+      				return Y_AXIS_UNIT[metadata.BaseUnit];
+      			return 'count';
+      		}
       		if (page.content === undefined)
       			return;
       		const content = new Promise(function(resolve, reject) {
@@ -447,14 +470,35 @@ MonitoringConsole.Model = (function() {
 
 			});
 			const matches = await content;
+			matches.sort((a, b) => a.data[0].stableCount - b.data[0].stableCount);
 			const widgets = [];
 			const numberOfColumns = page.numberOfColumns;
 			let column = 0;
 			for (let i = 0; i < matches.length; i++) {
 				let match = matches[i];
+				let metadata = match.annotations.filter(a => a.permanent)[0];
+				let data = match.data[0];
+				let scaleFactor;
+				if (metadata.attrs.ScaleToBaseUnit > 1) {
+					scaleFactor = Number(metadata.attrs.ScaleToBaseUnit);
+				}
+				let decimalMetric = metadata.attrs.Type == 'gauge';
+				let unit = yAxisUnit(metadata.attrs);
+				let max = decimalMetric ? 10000 : 1;
+				if (metadata.attrs.Unit == 'none' && data.observedMax <= max && data.observedMin >= 0) {
+					unit = 'percent';
+					scaleFactor = 100;
+				}
 				widgets.push({
 					series: match.series,
-					grid: { column: column % numberOfColumns },
+					displayName: metadata.attrs.DisplayName,
+					description: metadata.attrs.Description,
+					grid: { column: column % numberOfColumns, item: column },
+					unit: unit,
+					options: { 
+						decimalMetric: decimalMetric,
+					},
+					scaleFactor: scaleFactor,
 				});
 				column++;
 			}

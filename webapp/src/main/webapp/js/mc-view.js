@@ -217,7 +217,7 @@ MonitoringConsole.View = (function() {
         let title = widget.displayName ? widget.displayName : formatSeriesName(widget.series);
         return $('<div/>', {"class": "widget-title-bar"})
             .append(Components.createMenu(menu))
-            .append($('<h3/>', {title: widget.series})
+            .append($('<h3/>', {title: widget.description != '' ? widget.description : widget.series})
                 .html(title)
                 .click(() => onWidgetToolbarClick(widget)))            
             ;
