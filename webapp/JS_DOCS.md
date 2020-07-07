@@ -28,7 +28,7 @@ state changes in case of reload.
 ```
 UI              = { pages, settings }
 pages           = { *: PAGE }
-PAGE            = { name, id, numberOfColumns, rotate, widgets, sync, virtual }
+PAGE            = { name, id, numberOfColumns, rotate, widgets, sync, content }
 name            = string
 id              = string
 numberOfColumns = number
