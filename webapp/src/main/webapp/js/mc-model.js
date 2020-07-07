@@ -1034,19 +1034,30 @@ MonitoringConsole.Model = (function() {
 		function createOnSuccess(widgets, onDataUpdate) {
 			return function(response) {
 				Object.values(widgets).forEach(function(widget, index) {
-					let widgetResponse = response.matches[index];
-					let data = retainCommonTimeFrame(widgetResponse.data);
+					let allMatches = response.matches;
+					let widgetMatches = allMatches.filter(match => match.widgetId == widget.id);
+					let data = [];
+					let alerts = [];
+					let watches = [];
+					let annotations = [];
+					for (let i = 0; i  < widgetMatches.length; i++)  {
+						data = data.concat(widgetMatches[i].data);
+						alerts = alerts.concat(widgetMatches[i].alerts);
+						watches = watches.concat(widgetMatches[i].watches);
+						annotations = annotations.concat(widgetMatches[i].annotations);
+					}
+					data = retainCommonTimeFrame(data);
 					if (widget.options.decimalMetric || widget.scaleFactor !== undefined && widget.scaleFactor !== 1)
 						adjustDecimals(data, widget.scaleFactor ? widget.scaleFactor : 1,  widget.options.decimalMetric ? 10000 : 1);
 					if (widget.options.perSec)
 						perSecond(data);
-					addAssessment(widget, data, widgetResponse.alerts, widgetResponse.watches);
+					addAssessment(widget, data, alerts, watches);
 					onDataUpdate({
 						widget: widget,
 						data: data,
-						alerts: widgetResponse.alerts,
-						watches: widgetResponse.watches,
-						annotations: widgetResponse.annotations,
+						alerts: alerts,
+						watches: watches,
+						annotations: annotations,
 						chart: () => Charts.getOrCreate(widget),
 					});
 				});
@@ -1064,18 +1075,11 @@ MonitoringConsole.Model = (function() {
 			};
 		}
 
-		return {
-			createOnSuccess: createOnSuccess,
-			createOnError: createOnError,
-		};
-	})();
-
-
-	function doInit(onDataUpdate, onPageUpdate) {
-		UI.load();
-		Interval.init(function() {
-			let widgets = UI.currentPage().widgets;
-			const queries = Object.values(widgets).map(function(widget) { 
+		function createQuery(widgets) {
+			let queries = [];
+			const widgetsArray = Object.values(widgets);
+			for (let i = 0; i < widgetsArray.length; i++) {
+				const widget = widgetsArray[i];
 				let truncate = [];
 				let exclude = [];
 				let alerts = widget.decorations.alerts;
@@ -1098,15 +1102,37 @@ MonitoringConsole.Model = (function() {
 						break;
 					default:
 						truncate.push('ALERTS');
-				}				
-				return {
-					series: widget.series,
-					truncate: truncate,
-					exclude: exclude,
-					instances: undefined, // all
-				}; 
-			});
-			Controller.requestListOfSeriesData(queries, 
+				}
+				pushQueryItems(widget, queries, truncate, exclude);
+			}
+			return queries;
+		}
+
+		function pushQueryItems(widget, queries, truncate, exclude) {
+			const series = widget.series;
+			const id = widget.id;
+			if (Array.isArray(series)) {
+				series.forEach(s => queries.push({ widgetId: id, series: s, truncate: truncate, exclude: exclude, instances: undefined}));
+			} else {
+				queries.push({ widgetId: id, series: series, truncate: truncate, exclude: exclude, instances: undefined}); 
+			}
+		}
+
+		return {
+			createQuery: createQuery,
+			createOnSuccess: createOnSuccess,
+			createOnError: createOnError,
+		};
+	})();
+
+
+
+
+	function doInit(onDataUpdate, onPageUpdate) {
+		UI.load();
+		Interval.init(function() {
+			let widgets = UI.currentPage().widgets;
+			Controller.requestListOfSeriesData(Update.createQuery(widgets), 
 				Update.createOnSuccess(widgets, onDataUpdate),
 				Update.createOnError(widgets, onDataUpdate));
 		});

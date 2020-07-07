@@ -105,8 +105,8 @@ MonitoringConsole.View.Components = (function() {
 
       function enhancedOnChange(onChange, updatePage) {
         if (onChange.length == 2) {
-          return (checked) => {
-            let layout = Selection.configure((widget) => onChange(widget, checked));
+          return (value) => {
+            let layout = Selection.configure((widget) => onChange(widget, value));
             if (updatePage) {
               MonitoringConsole.View.onPageUpdate(layout);
             }
@@ -181,6 +181,9 @@ MonitoringConsole.View.Components = (function() {
             return Units.converter(model.unit());
           return Units.converter(model.unit);
         }
+        let value = model.value;
+        if (Array.isArray(value))
+          return createMultiTextInput(model);
         let converter = getConverter();
         let config = { 
           id: model.id,
@@ -200,7 +203,7 @@ MonitoringConsole.View.Components = (function() {
         let input = $('<input/>', config);
         if (!readonly) {
           let onChange = enhancedOnChange(model.onChange, true);
-          input.on('input change paste', function() {
+          input.on('input change', function() {
             let val = getConverter().parse(this.value);
             onChange(val);
           });          
@@ -208,6 +211,47 @@ MonitoringConsole.View.Components = (function() {
           input.prop('readonly', true);
         }
         return input;
+      }
+
+      function createMultiTextInput(model) {
+        let value = model.value;
+        if (value === undefined && model.defaultValue !== undefined)
+          value = model.defaultValue;
+        if (!Array.isArray(value))
+          value = [value];
+        const list = $('<span/>');
+        let texts = [...value];
+        let i = 0;
+        for (i = 0; i < value.length; i++) {
+          list.append(createMultiTextInputItem(list, model, value, texts, i));
+        }
+        const add = $('<button/>', { text: '+'});
+        add.click(() => {
+          texts.push('');
+          createMultiTextInputItem(list, model, '', texts, i++).insertBefore(add);
+        });
+        list.append(add);
+        return list;
+      }
+
+      function createMultiTextInputItem(list, model, values, texts, index) {
+        const id = model.id + '-' + (index + 1);
+        return createTextInput({
+            id: id,
+            unit: model.unit,
+            type: model.type,
+            value: values[index],
+            onChange: (widget, text) => {
+              const isNotEmpty = text => text !== undefined && text != '';
+              texts[index] = text;
+              let nonEmptyTexts = texts.filter(isNotEmpty);
+              if (!isNotEmpty(text)) {
+                if (nonEmptyTexts.length > 0)
+                  list.children('#' + id).remove();
+              }
+              model.onChange(widget, nonEmptyTexts.length == 1 ? nonEmptyTexts[0] : nonEmptyTexts);
+            }
+          });
       }
 
       function createColorInput(model) {
@@ -387,6 +431,8 @@ MonitoringConsole.View.Components = (function() {
       if (label0 === 'server') { // special rule for DAS
         label0 = 'DAS'; 
         attrs.title = "Data for the Domain Administration Server (DAS); plain instance name is 'server'";
+      } else if (label0.startsWith('server:')) {
+        label0 = 'DAS:' + label0.substring(7);
       }
       let textAttrs = {};
       if (item.highlight)

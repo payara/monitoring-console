@@ -89,14 +89,9 @@ public final class ApiResponses {
         public final Alerts alerts;
         public final List<SeriesMatch> matches;
 
-        public SeriesResponse(SeriesQuery[] queries, //
-                List<List<SeriesDataset>> data, List<List<SeriesAnnotation>> annotations, //
-                List<Collection<Watch>> watches, List<Collection<Alert>> alerts, AlertStatistics alertStatistics) {
+        public SeriesResponse(List<SeriesMatch> matches, AlertStatistics alertStatistics) {
             this.alerts = new Alerts(alertStatistics);
-            this.matches = new ArrayList<>();
-            for (int i = 0; i < data.size(); i++) {
-                matches.add(new SeriesMatch(queries[i], data.get(i), annotations.get(i), watches.get(i), alerts.get(i)));
-            }
+            this.matches = matches;
         }
     }
 
@@ -122,13 +117,17 @@ public final class ApiResponses {
      */
     public static final class SeriesMatch {
 
+        public final String widgetId;
+        public final String series;
         public final List<SeriesData> data;
         public final List<AnnotationData> annotations;
         public final List<WatchData> watches;
         public final List<AlertData> alerts;
 
-        public SeriesMatch(SeriesQuery query, List<SeriesDataset> data, List<SeriesAnnotation> annotations, //
+        public SeriesMatch(SeriesQuery query, String series, List<SeriesDataset> data, List<SeriesAnnotation> annotations, //
                 Collection<Watch> watches, Collection<Alert> alerts) {
+            this.widgetId = query.widgetId;
+            this.series = series;
             this.alerts = alerts.stream().map(alert -> new AlertData(alert, query.truncates(ALERTS))).collect(toList());
             this.watches = watches.stream().map(WatchData::new).collect(toList());
             this.data = data.stream().map(set -> new SeriesData(set, query.truncates(POINTS))).collect(toList());

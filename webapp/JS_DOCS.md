@@ -67,7 +67,7 @@ preferredOverRemoteLastModified = number
 ```
 WIDGET     = { id, series, type, unit, scaleFactor, target, grid, axis, options, decorations, status, displayName, coloring, fields, mode, sort }
 id         = string
-series     = string
+series     = string | [string]
 target     = string
 displayName= string
 type       = 'line' | 'bar' | 'alert' | 'annotation'
@@ -304,7 +304,7 @@ ENTRY       = { label, type, input, value, unit, min, max, options, onChange, de
 label       = string
 type        = undefined | 'header' | 'checkbox' | 'range' | 'dropdown' | 'value' | 'text' | 'color'
 unit        = string | fn () => string
-value       = number | string
+value       = number | string | [number] | [string]
 defaultValue= number | string
 min         = number
 max         = number

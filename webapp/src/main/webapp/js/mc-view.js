@@ -171,6 +171,8 @@ MonitoringConsole.View = (function() {
     }
 
     function formatSeriesName(series) {
+        if (Array.isArray(series))
+            return 'Multi-Series without Display Name';
         let endOfTags = series.lastIndexOf(' ');
         let metric = endOfTags <= 0 ? series : series.substring(endOfTags + 1);
         if (endOfTags <= 0 )
@@ -294,7 +296,7 @@ MonitoringConsole.View = (function() {
             ]},
         ]});
         settings.push({ id: 'settings-data', caption: 'Data', entries: [
-            { label: 'Series', input: widget.series },
+            { label: 'Series', type: 'text', value: Array.isArray(widget.series) ? widget.series : [widget.series], onChange: (widget, value) => widget.series = value },
             { label: 'Unit', input: [
                 { type: 'dropdown', options: Units.names(), value: widget.unit, onChange: function(widget, selected) { widget.unit = selected; updateSettings(); }},
                 { label: '1/sec', type: 'checkbox', value: options.perSec, onChange: (widget, checked) => widget.options.perSec = checked},
@@ -497,10 +499,14 @@ MonitoringConsole.View = (function() {
         let palette = Theme.palette();
         let alpha = Theme.option('opacity') / 100;
         for (let j = 0; j < data.length; j++) {
-            let seriesData = data[j];
+            const seriesData = data[j];
+            const series = widget.series;
+            const isMultiSeries = Array.isArray(series) && series.length > 1;
             let label = seriesData.instance;
-            if (widget.series.includes('*') && !widget.series.includes('?')) {
-                let tag = seriesData.series.replace(new RegExp(widget.series.replace('*', '(.*)')), '$1').replace('_', ' ');                
+            if (isMultiSeries)
+                label += ': ' + seriesData.series.split(" ").pop();
+            if (!isMultiSeries && series.includes('*') && !series.includes('?')) {
+                let tag = seriesData.series.replace(new RegExp(series.replace('*', '(.*)')), '$1').replace('_', ' ');                
                 label = widget.coloring == 'series' ? tag : [label, tag];
             }
             let points = seriesData.points;
@@ -513,8 +519,6 @@ MonitoringConsole.View = (function() {
             if (widget.options.perSec)
                 value += ' /s';
             let coloring = widget.coloring;
-            if (coloring == 'series')
-                coloring += ': ' + widget.series;
             let color = Colors.lookup(coloring, getColorKey(widget, seriesData.series, seriesData.instance, j), palette);
             let background = Colors.hex2rgba(color, alpha);
             if (Array.isArray(alerts) && alerts.length > 0) {
