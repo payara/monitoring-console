@@ -414,8 +414,8 @@ MonitoringConsole.Chart.Line = (function() {
       datasets = datasets.concat(createSeriesDatasets(widget, data[j], update.watches));
     }
     chart.data.datasets = datasets;
-    chart.data.areas = createBackgroundAreas(widget, update.watches);    
-    chart.update(0);
+    chart.data.areas = createBackgroundAreas(widget, update.watches);
+    chart.update(0);  
   }
   
   /**

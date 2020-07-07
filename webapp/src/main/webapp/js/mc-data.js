@@ -300,8 +300,9 @@ MonitoringConsole.Data = (function() {
 		},
 		developer_metrics: {
 			name: 'Developer Metrics',
+			type: 'query',
 			numberOfColumns: 4,
-			content: { series: 'ns:metric ?:* *', maxSize: 30 },
+			content: { series: 'ns:metric ?:* *', maxSize: 30, ttl: 60 },
 		}
 	};
 
