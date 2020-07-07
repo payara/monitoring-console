@@ -298,11 +298,11 @@ MonitoringConsole.Data = (function() {
 					grid: {column: 3, item: 2}},							
 			],
 		},
-		developer_metrics: {
-			name: 'Developer Metrics',
+		application_metrics: {
+			name: 'Application Metrics',
 			type: 'query',
 			numberOfColumns: 4,
-			content: { series: 'ns:metric ?:* *', maxSize: 30, ttl: 60 },
+			content: { series: 'ns:metric ?:* *', maxSize: 32, ttl: 60 },
 		}
 	};
 
