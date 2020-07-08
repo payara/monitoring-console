@@ -47,8 +47,13 @@ import static java.util.stream.StreamSupport.stream;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -92,11 +97,13 @@ import fish.payara.monitoring.model.SeriesDataset;
 import fish.payara.monitoring.web.ApiRequests.DataType;
 import fish.payara.monitoring.web.ApiRequests.SeriesQuery;
 import fish.payara.monitoring.web.ApiRequests.SeriesRequest;
+import fish.payara.monitoring.web.ApiResponses.AlertData;
 import fish.payara.monitoring.web.ApiResponses.AlertsResponse;
 import fish.payara.monitoring.web.ApiResponses.AnnotationData;
 import fish.payara.monitoring.web.ApiResponses.CircumstanceData;
 import fish.payara.monitoring.web.ApiResponses.ConditionData;
 import fish.payara.monitoring.web.ApiResponses.RequestTraceResponse;
+import fish.payara.monitoring.web.ApiResponses.SeriesData;
 import fish.payara.monitoring.web.ApiResponses.SeriesMatch;
 import fish.payara.monitoring.web.ApiResponses.SeriesResponse;
 import fish.payara.monitoring.web.ApiResponses.WatchData;
@@ -253,7 +260,40 @@ public class MonitoringConsoleResource {
                     : alertService.alertsFor(key);
             matches.add(new SeriesMatch(query, query.series, queryData, queryAnnotations, queryWatches, queryAlerts));
         }
+        if (request.groupBySeries) {
+            return getGroupedSeriesData(matches);
+        }
         return new SeriesResponse(matches, alertService.getAlertStatistics());
+    }
+
+    private SeriesResponse getGroupedSeriesData(List<SeriesMatch> matches) {
+        Map<String, List<SeriesData>> dataBySeries = new HashMap<>();
+        Map<String, List<AnnotationData>> annotationsBySeries = new HashMap<>();
+        Map<String, List<WatchData>> watchesBySeries = new HashMap<>();
+        Map<String, List<AlertData>> alertsBySeries = new HashMap<>();
+        for (SeriesMatch match : matches) {
+            for (SeriesData data : match.data) {
+                dataBySeries.computeIfAbsent(data.series, key -> new ArrayList<>()).add(data);
+            }
+            for (AnnotationData annotation : match.annotations) {
+                annotationsBySeries.computeIfAbsent(annotation.series, key -> new ArrayList<>()).add(annotation);
+            }
+            for (WatchData watch : match.watches) {
+                watchesBySeries.computeIfAbsent(watch.series, key -> new ArrayList<>()).add(watch);
+            }
+            for (AlertData alert : match.alerts) {
+                alertsBySeries.computeIfAbsent(alert.series, key -> new ArrayList<>()).add(alert);
+            }
+        }
+        List<SeriesMatch> matchesBySeries = new ArrayList<>();
+        for (Entry<String, List<SeriesData>> e : dataBySeries.entrySet()) {
+            String series = e.getKey();
+            matchesBySeries.add(new SeriesMatch(series, e.getValue(),
+                    annotationsBySeries.getOrDefault(series, emptyList()),
+                    watchesBySeries.getOrDefault(series, emptyList()),
+                    alertsBySeries.getOrDefault(series, emptyList())));
+        }
+        return new SeriesResponse(matchesBySeries, alertService.getAlertStatistics());
     }
 
     @GET

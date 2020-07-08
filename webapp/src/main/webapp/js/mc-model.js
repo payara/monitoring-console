@@ -91,20 +91,28 @@ MonitoringConsole.Model = (function() {
 				page.id = getPageId(page.name);
 			if (!page.widgets)
 				page.widgets = {};
+			if (page.type === undefined)
+				page.type = 'manual';
 			if (typeof page.sync !== 'object')
 				page.sync = { autosync: true };
+			if (typeof page.content !== 'object')
+				page.content = {};
 			if (!page.numberOfColumns || page.numberOfColumns < 1)
 				page.numberOfColumns = 1;
 			if (page.rotate === undefined)
 				page.rotate = true;
-			// make widgets from array to object if needed
-			let widgetsArray = Array.isArray(page.widgets) ? page.widgets : Object.values(page.widgets);
-			widgetsArray.forEach(sanityCheckWidget);
-			let widgets = {};
-			for (let widget of widgetsArray)
-				widgets[widget.id] = widget;
-			page.widgets = widgets;
+			page.widgets = sanityCheckWidgets(page.widgets);
 			return page;
+		}
+
+		function sanityCheckWidgets(widgets) {
+			// make widgets from array to object if needed
+			let widgetsArray = Array.isArray(widgets) ? widgets : Object.values(widgets);
+			widgetsArray.forEach(sanityCheckWidget);
+			let widgetsObj = {};
+			for (let widget of widgetsArray)
+				widgetsObj[widget.id] = widget;
+			return widgetsObj;
 		}
 		
 		/**
@@ -432,6 +440,87 @@ MonitoringConsole.Model = (function() {
 			return row < 0 ? column.length : row;
       	}
 		
+	   /**
+	    * Mapping from a possible unit alias to the unit key to use
+	    */
+	   	const Y_AXIS_UNIT = {
+	      days: 'sec',
+	      hours: 'sec',
+	      minutes: 'sec',	      
+	      seconds: 'sec',
+	      per_second: 'sec',
+	      milliseconds: 'ms',
+	      microseconds: 'us',
+	      nanoseconds: 'ns',
+	      percent: 'percent',
+	      bytes: 'bytes',
+   		};
+
+      	async function doQueryPage() {
+      		const page = pages[settings.home];
+      		function yAxisUnit(metadata) {
+      			if (Y_AXIS_UNIT[metadata.Unit] !== undefined)
+      				return Y_AXIS_UNIT[metadata.Unit];
+      			if (Y_AXIS_UNIT[metadata.BaseUnit] !== undefined)
+      				return Y_AXIS_UNIT[metadata.BaseUnit];
+      			return 'count';
+      		}
+      		if (page.content === undefined)
+      			return;
+      		const content = new Promise(function(resolve, reject) {
+				Controller.requestListOfSeriesData({ groupBySeries: true, queries: [{
+	      			widgetId: 'auto', 
+	      			series: page.content.series,
+	      			truncate: ['ALERTS'],
+	      			exclude: []
+      			}]}, 
+      			(response) => resolve(response.matches),
+      			() => reject(undefined));
+
+			});
+			let matches = await content;
+			matches.sort((a, b) => a.data[0].stableCount - b.data[0].stableCount);
+			if (matches.length > page.content.maxSize)
+				matches = matches.slice(0, page.content.maxSize);
+			const widgets = [];
+			const numberOfColumns = page.numberOfColumns;
+			let column = 0;
+			for (let i = 0; i < matches.length; i++) {
+				let match = matches[i];
+				let metadata = match.annotations.filter(a => a.permanent)[0];
+				let attrs = metadata === undefined ? {} : metadata.attrs || {};
+				let data = match.data[0];
+				let scaleFactor;
+				if (attrs.ScaleToBaseUnit > 1) {
+					scaleFactor = Number(attrs.ScaleToBaseUnit);
+				}
+				let decimalMetric = attrs.Type == 'gauge';
+				let unit = yAxisUnit(attrs);
+				let max = decimalMetric ? 10000 : 1;
+				if (attrs.Unit == 'none' && data.observedMax <= max && data.observedMin >= 0) {
+					unit = 'percent';
+					scaleFactor = 100;
+				}
+				widgets.push({
+					id: match.series,
+					series: match.series,
+					displayName: attrs.DisplayName,
+					description: attrs.Description,
+					grid: { column: column % numberOfColumns, item: column },
+					unit: unit,
+					options: { 
+						decimalMetric: decimalMetric,
+					},
+					scaleFactor: scaleFactor,
+				});
+				column++;
+			}
+			page.widgets = sanityCheckWidgets(widgets);
+			page.content.expires = new Date().getTime() + ((page.content.ttl || (60 * 60 * 24 * 365)) * 1000);
+			doStore(true, page);
+			return page;
+      	}
+
 		return {
 			themeConfigure(fn) {
 				fn(settings.theme);
@@ -453,7 +542,7 @@ MonitoringConsole.Model = (function() {
 
 			currentPage: function() {
 				return pages[settings.home];
-			},
+			},			
 			
 			listPages: function() {
 				return Object.values(pages).map(function(page) { 
@@ -482,6 +571,8 @@ MonitoringConsole.Model = (function() {
 				if (onImportComplete)
 					onImportComplete();
 			},
+
+			queryPage: () => doQueryPage(),
 			
 			/**
 			 * Loads and returns the userInterface from the local storage
@@ -515,6 +606,12 @@ MonitoringConsole.Model = (function() {
 				settings.home = pageId;
 				doStore(true);
 				return true;
+			},
+
+			configurePage: function(change) {
+				const page = pages[settings.home];
+				change(page);
+				doStore(true, page);
 			},
 			
 			/**
@@ -1130,8 +1227,16 @@ MonitoringConsole.Model = (function() {
 
 	function doInit(onDataUpdate, onPageUpdate) {
 		UI.load();
-		Interval.init(function() {
-			let widgets = UI.currentPage().widgets;
+		Interval.init(async function() {
+			let page = UI.currentPage();
+			if (page.type == 'query') {
+				const now = new Date().getTime();
+				if (page.widgets === undefined || page.content.expires === undefined || now >= page.content.expires) {
+					page = await UI.queryPage();
+					onPageUpdate(doSwitchPage(page.id));
+				}
+			}
+			let widgets = page.widgets;
 			Controller.requestListOfSeriesData(Update.createQuery(widgets), 
 				Update.createOnSuccess(widgets, onDataUpdate),
 				Update.createOnError(widgets, onDataUpdate));
@@ -1266,6 +1371,11 @@ MonitoringConsole.Model = (function() {
 		 */
 		Page: {
 			
+			current: () => UI.currentPage(),
+			configure: function(change) {
+				UI.configurePage(change);
+				return UI.arrange();
+			},
 			id: () => UI.currentPage().id,
 			name: () => UI.currentPage().name,
 			rename: UI.renamePage,

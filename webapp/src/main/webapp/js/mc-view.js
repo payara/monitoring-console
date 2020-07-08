@@ -217,7 +217,7 @@ MonitoringConsole.View = (function() {
         let title = widget.displayName ? widget.displayName : formatSeriesName(widget.series);
         return $('<div/>', {"class": "widget-title-bar"})
             .append(Components.createMenu(menu))
-            .append($('<h3/>', {title: widget.series})
+            .append($('<h3/>', {title: widget.description != '' ? widget.description : widget.series})
                 .html(title)
                 .click(() => onWidgetToolbarClick(widget)))            
             ;
@@ -425,12 +425,22 @@ MonitoringConsole.View = (function() {
         let pushAvailable = !MonitoringConsole.Model.Role.isGuest() && MonitoringConsole.Model.Page.Sync.isLocallyChanged() && MonitoringConsole.Model.Role.isAdmin();
         let pullAvailable = !MonitoringConsole.Model.Role.isGuest();
         let autoAvailable = MonitoringConsole.Model.Role.isAdmin();
+        let page = MonitoringConsole.Model.Page.current();
+        let queryAvailable = page.type === 'query';
+        const configure =  MonitoringConsole.Model.Page.configure;
         return { id: 'settings-page', caption: 'Page', collapsed: collapsed, entries: [
             { label: 'Name', type: 'text', value: MonitoringConsole.Model.Page.name(), onChange: pageNameOnChange },
             { label: 'Page Rotation', input: [
                 { label: 'Include in Rotation', type: 'checkbox', value: MonitoringConsole.Model.Page.rotate(), onChange: (checked) => MonitoringConsole.Model.Page.rotate(checked) },
             ]},
-            { label: 'Add Widgets', input: () => 
+            { label: 'Type', type: 'dropdown', options: {manual: 'Manual', query: 'Query'}, value: page.type, onChange: (type) => { onPageUpdate(configure(page => page.type = type)); updateSettings(); } },            
+            { label: 'Max Size', available: queryAvailable, type: 'value', min: 1, unit: 'count', value: page.content.maxSize,  onChange: (value) => configure(page => page.content.maxSize = value) },
+            { label: 'Query Series', available: queryAvailable, type: 'text', value: page.content.series, onChange: (value) => configure(page => page.content.series = value) },
+            { label: 'Query Interval', available: queryAvailable, input: [
+                { type: 'value', min: 1, unit: 'sec', value: page.content.ttl, onChange: (value) => configure(page => page.content.ttl = value) },
+                { input: $('<button/>', {text: 'Update'}).click(() => configure(page => page.content.expires = undefined)) },
+            ]},
+            { label: 'Add Widgets', available: !queryAvailable, input: () => 
                 $('<span/>')
                 .append(nsSelection)
                 .append(widgetsSelection)

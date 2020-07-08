@@ -66,12 +66,14 @@ MonitoringConsole.Controller = (function() {
    }
 
    /**
-    * @param {array}    queries   - a JS array with query objects as expected by the server API (object corresponds to java class SeriesQuery)
-    * @param {function} onSuccess - a callback function with one argument accepting the response object as send by the server (java class SeriesResponse)
-    * @param {function} onFailure - a callback function with no arguments
+    * @param {array|object} queries   - a JS array with query objects as expected by the server API (object corresponds to java class SeriesQuery)
+    *                                   or a JS object corresponding to java class SeriesRequest
+    * @param {function}     onSuccess - a callback function with one argument accepting the response object as send by the server (java class SeriesResponse)
+    * @param {function}     onFailure - a callback function with no arguments
     */
    function requestListOfSeriesData(queries, onSuccess, onFailure) {
-      requestWithJsonBody('POST', 'api/series/data/', { queries: queries }, onSuccess, onFailure);
+      const request = !Array.isArray(queries) ? queries : { queries: queries }; 
+      requestWithJsonBody('POST', 'api/series/data/', request, onSuccess, onFailure);
    }
 
    /**

@@ -28,7 +28,7 @@ state changes in case of reload.
 ```
 UI              = { pages, settings }
 pages           = { *: PAGE }
-PAGE            = { name, id, numberOfColumns, rotate, widgets, sync }
+PAGE            = { name, id, numberOfColumns, rotate, widgets, sync, content }
 name            = string
 id              = string
 numberOfColumns = number
@@ -53,6 +53,11 @@ autosync        = boolean
 lastModifiedLocally             = number
 basedOnRemoteLastModified       = number
 preferredOverRemoteLastModified = number
+content         = { series, maxSize, expires, ttl }
+series          = string
+maxSize         = number
+expires         = number
+ttl             = number
 ```
 * `id` is derived from `name` and used as attribute name in `pages` object
 * `widgets` can be omitted for an empty page
@@ -61,15 +66,20 @@ preferredOverRemoteLastModified = number
 * `home` is the `PAGE.id` of the currently shown page
 * names for `defaults` colors used so far are: `'alarming'`, `'critical'` and `'waterline'`
 * default for `role` is `'user'`
+* when a page has a `content` object it is considered a _arranged_ page (not strictly `widgets` based content)
+* `expires` is a timestamp when the content is expired and should be updated
+* `ttl` number of seconds the page is valid
+
 
 ### Widget Model
 
 ```
-WIDGET     = { id, series, type, unit, scaleFactor, target, grid, axis, options, decorations, status, displayName, coloring, fields, mode, sort }
+WIDGET     = { id, series, type, unit, scaleFactor, target, grid, axis, options, decorations, status, displayName, description, coloring, fields, mode, sort }
 id         = string
 series     = string | [string]
 target     = string
 displayName= string
+description= string
 type       = 'line' | 'bar' | 'alert' | 'annotation'
 unit       = UNIT
 UNIT       = 'count' | 'ms' | 'ns' | 'bytes' | 'percent'
