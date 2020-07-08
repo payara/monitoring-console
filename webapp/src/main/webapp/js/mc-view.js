@@ -438,7 +438,7 @@ MonitoringConsole.View = (function() {
             { label: 'Query Series', available: queryAvailable, type: 'text', value: page.content.series, onChange: (value) => configure(page => page.content.series = value) },
             { label: 'Query Interval', available: queryAvailable, input: [
                 { type: 'value', min: 1, unit: 'sec', value: page.content.ttl, onChange: (value) => configure(page => page.content.ttl = value) },
-                { input: $('<button/>', {text: 'Reset'}).click(() => configure(page => page.content.expires = undefined)) },
+                { input: $('<button/>', {text: 'Update'}).click(() => configure(page => page.content.expires = undefined)) },
             ]},
             { label: 'Add Widgets', available: !queryAvailable, input: () => 
                 $('<span/>')
