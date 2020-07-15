@@ -448,6 +448,8 @@ MonitoringConsole.View = (function() {
                 .append($('<button/>', {title: 'Add selected metric', text: 'Add'})
                     .click(() => onPageChange(MonitoringConsole.Model.Page.Widgets.add(widgetSeries.val()))))
             },
+            { label: 'Wiz', available: !queryAvailable, input: $('<button/>', { text: 'Open Wizard' }).click(
+                () => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel()))) },
             { label: 'Sync', available: pushAvailable || pullAvailable, input: [
                 { available: autoAvailable, label: 'auto', type: 'checkbox', value: MonitoringConsole.Model.Page.Sync.auto(), onChange: (checked) => MonitoringConsole.Model.Page.Sync.auto(checked),
                     description: 'When checked changed to the page are automatically pushed to the remote server (shared with others)' },
@@ -732,6 +734,83 @@ MonitoringConsole.View = (function() {
             { name: 'user', label: 'User' , description: 'Can select for each individual page if server configuration replaces local page. Can manually update local page with server page configuration during the session.' },
             { name: 'admin', label: 'Administrator' , description: 'Can select for each individual page if server configuration replaces local page. Can manually update local pages with server page configuration or update server configuration with local changes. For pages with automatic synchronisation local changes do affect server page configurations.' },
         ]};
+    }
+
+    function createWizardModalDialogModel() {
+        function objectToOptions(obj) {
+            const options = [];
+            for (const [key, value] of Object.entries(obj))
+                options.push({ label: value, filter: key });
+            return options;
+        }
+        function loadSeries(ns) {
+            return new Promise(function(resolve, reject) {
+                Controller.requestListOfSeriesData({ groupBySeries: true, queries: [{
+                    widgetId: 'auto', 
+                    series: ns === undefined ? '*' : 'ns:' + ns + ' ?:* *',
+                    truncate: ['ALERTS', 'POINTS'],
+                    exclude: ['ALERTS', 'WATCHES']
+                }]}, 
+                (response) => resolve(response.matches),
+                () => reject(undefined));
+            });
+        }
+
+        function metadata(match, attr) {
+            const metadata = match.annotations.filter(a => a.permanent)[0];
+            return metadata === undefined ? undefined : metadata.attrs[attr];
+        }
+
+        const wizard = { key: 'series',
+            // the function that produces match entries
+            onSearch: async function(properties) {
+                const matches = await loadSeries(properties.ns);
+                return matches;
+            },
+            // these are the how to get a filter property from a match entry
+            properties: {
+                ns: match => match.series.startsWith('ns:') ? match.series.substring(3, match.series.indexOf(' ')) : undefined,
+                series: match => match.series,
+                app: match => metadata(match, 'App'),
+                name: match => metadata(match, 'Name'),
+                displayName: match => metadata(match, 'DisplayName'),
+                description: match => metadata(match, 'Description'),
+                type: match => metadata(match, 'Type'),
+                property: match => metadata(match, 'Property'),
+            },            
+            // filters link to the above properties to extract match data
+            filters: [
+                { label: 'Server/App', property: 'ns', options: [
+                    { label: 'Server Metrics', filter: ns => ns != 'metric' },
+                    { label: 'Application Metrics', filter: 'metric' }
+                ]},
+                { label: 'Application', property: 'app', requires: { ns: 'metric' }},
+                { label: 'Metric Type', property: 'type', requires: { ns: 'metric' }, options: [ // values are as used by MP metrics type
+                    { label: 'Counter', filter: 'counter' },
+                    { label: 'Timer', filter: 'timer' },
+                    { label: 'Gauge', filter: 'gauge' },
+                    { label: 'Concurrent Gauge', filter: 'concurrent gauage' },
+                    { label: 'Meter', filter: 'meter' },
+                    { label: 'Histogram', filter: 'histogram' },
+                    { label: 'Simple Timer', filter: 'simple timer' }
+                ]},
+                { label: 'Type', property: 'type', requires: { ns: ns => ns != 'metric' }, 
+                    options: () => objectToOptions(MonitoringConsole.Data.NAMESPACES) },
+                { label: 'Metric Name', property: 'name', requires: { ns: 'metric' }, filter: (name, input) => name.includes(input) },
+                { label: 'Metric Property', property: 'property', requires: { ns: 'metric'} },
+                { label: 'Series', property: 'series', filter: (series, input) => series.includes(input) },
+            ],
+            // what should happen if the selection made by the user changes
+            onChange: (selectedSeries) => {
+                alert(selectedSeries);
+            },
+        };
+
+        return { id: 'ModalDialog', title: 'Search for Metrics',
+            content: () => Components.createSelectionWizard(wizard),
+            onConfirm: () => $('#ModalDialog').hide(), 
+            onCancel: () => $('#ModalDialog').hide() 
+        };
     }
 
     /**

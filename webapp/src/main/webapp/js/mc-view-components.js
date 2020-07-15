@@ -1165,6 +1165,241 @@ MonitoringConsole.View.Components = (function() {
   })();
 
 
+
+  /**
+    * A component that creates a wizard for series selection
+    */
+  const SelectionWizard = (function() {
+
+    function createComponent(model) {
+      const config = { 'class': 'SelectionWizard'};
+      if (model.id)
+        config.id = model.id;
+      const wizard = $('<div/>', config);
+      
+      const state = {
+        selection: {},  // key propertys of selected matches
+        properties: {}, // those bound to a specific value by chosing a filter option
+        filters: new Array(model.filters.length) // state for each filter: input (text), selected (index), filter (fn)
+      };
+
+      // fixed UI state
+      const searchBox = $('<div/>', { 'class': 'Search' });
+      const filterBox = $('<div/>', { 'class': 'Filters' });
+      const matchList = $('<div/>', { 'class': 'Matches'});
+      const updateBtn = $('<button/>', { text: 'Search'});
+      // applying the state to the UI
+      const update = async() => {
+        filterBox.empty();
+        const matches = await model.onSearch(state.properties);
+        for (let filterId = 0; filterId < model.filters.length; filterId++) {
+          const filter = model.filters[filterId];
+          filter.id = filterId;
+          filterBox.append(createFilter(model, filter, matches, state));
+        }
+        matchList.empty();
+        for (let match of matches) {
+          if (!match.filtered)
+            matchList.append($('<div/>', { text: match.series }));
+        }
+      };
+      state.changed = update;
+      update();
+      updateBtn.click(update);
+      searchBox.append(filterBox).append(updateBtn);
+      return wizard.append(searchBox).append(matchList);
+    }
+
+    function createFilter(model, filter, matches, state) {
+      if (!isSatisfied(filter.requires, state))
+        return $('<span/>');
+      filter.type = computeFilterType(filter);
+      const filterState = state.filters[filter.id];
+      const active = filterState !== undefined;
+      
+      const label = $('<label/>', { for: 'filter-' + filter.id, text: filter.label });
+      const detailsBox = $('<span/>', { style: active ? '' : 'display: none' });
+      const activeCheckbox = createFilterToggle(filter, state, checked => checked ? detailsBox.show() : detailsBox.hide());
+
+      detailsBox.append(createFilterInput(model, filter, state, matches));
+
+      if (active && filterState.filter !== undefined) {
+        applyFilter(model, filter, state, matches);
+      }
+      return $('<div/>', { 'class': 'Filter' })
+        .append(activeCheckbox)
+        .append(label)
+        .append(detailsBox);
+    }
+
+    function applyFilter(model, filter, state, matches) {
+      const filterState = state.filters[filter.id];
+      const active = filterState !== undefined;
+      const match2property = model.properties[filter.property];
+      for (let match of matches) {
+        if (!match.filtered) {
+          const propertyValue = match2property(match);          
+          if (filter.type == 'text') { // filter uses input and predicate function
+            if (!filter.filter(propertyValue, filterState.input))
+              match.filtered = true;
+          // type 'list' and 'auto' below
+          } else if (typeof filterState.filter === 'string') { // option uses a constant value
+            if (propertyValue != filterState.filter)
+              match.filtered = true;
+          } else { // option uses a predicate function              
+            if (!filterState.filter(propertyValue))
+              match.filtered = true;
+          }
+        }
+      }      
+    }
+
+    function createFilterToggle(filter, state, onChange) {
+      const filterState = state.filters[filter.id];
+      const active = filterState !== undefined;
+      return $('<input/>', { type: 'checkbox', checked: active, id: 'filter-' + filter.id })
+        .change(function() {
+          let checked = this.checked;
+          onChange(checked);
+          if (checked) {
+            state.filters[filter.id] = {};
+          } else {
+            if (state.filters[filter.id] !== undefined) {
+              const val = state.filters[filter.id].filter;
+              if (state.properties[filter.property] == val)
+                 delete state.properties[filter.property];
+            }
+            state.filters[filter.id] = undefined;            
+          }
+        });
+    }
+
+    function computeFilterType(filter) {
+      if (typeof filter.filter === "function")
+        return 'text';
+      if (filter.options !== undefined)
+        return 'list';
+      return 'auto';
+    }
+
+    function createFilterInput(model, filter, state, matches) {
+      switch (filter.type) {
+      case 'text': return createFilterWithTextInput(filter, state);
+      case 'list': return createFilterWithListInput(filter, state);
+      default:
+      case 'auto': return createFilterWithAutoInput(model, filter, state, matches);
+      }
+    }
+
+    function createFilterWithTextInput(filter, state) {
+      const filterState = state.filters[filter.id];
+      const active = filterState !== undefined;
+      return $('<input/>', { type: 'text', value: active ? filterState.input || '' : '' })
+        .on('input change', () => state.filters[filter.id].input = this.value);
+    }
+
+    function createFilterWithListInput(filter, state) {
+      const filterState = state.filters[filter.id];
+      const active = filterState !== undefined;
+      const options = typeof filter.options === 'function' ? filter.options() : filter.options;
+      const selectField = $('<select/>');
+      selectField.change(() => {
+        let index = selectField.val();
+        if (index >= 0) {
+          let f = options[index].filter;
+          state.filters[filter.id].filter = f;
+          state.filters[filter.id].selected = index;
+          state.properties[filter.property] = typeof f === 'string' ? f : undefined;          
+        } else {
+          state.filters[filter.id] = {};
+          state.properties[filter.property] = undefined;
+        }
+        state.changed();
+      });
+      selectField.append($('<option/>', { value: -1, text: '(please select)' }));
+      for (let i = 0; i < options.length; i++) {
+        selectField.append($('<option/>', { value: i, text: options[i].label, selected: active && filterState.selected == i }));
+      }
+      return selectField;      
+    }
+
+    function createFilterWithAutoInput(model, filter, state, matches) {
+      const filterState = state.filters[filter.id];
+      const active = filterState !== undefined;
+      const match2property = model.properties[filter.property];
+      // options are derived from the matches as the set of actual values
+      const set = {};
+      for (let match of matches)
+        if (!match.filtered)
+          set[match2property(match)] = true;
+      const options = Object.keys(set);
+      const selectField = $('<select/>');
+      selectField.change(() => {
+        let f = selectField.val();
+        if (f != '') {
+          state.filters[filter.id].filter = f;
+          state.properties[filter.property] = f;
+        } else {
+          state.filters[filter.id] = {};
+          state.properties[filter.property] = undefined;
+        }
+        state.changed();
+      });
+      selectField.append($('<option/>', { value: '', text: '(please select)' }));
+      for (let option of options)
+        selectField.append($('<option/>', { value: option, text: option, selected: active && filterState.filter == option }));      
+    }
+
+    function isSatisfied(requires, state) {
+      if (requires === undefined)
+        return true;
+      for (let [property, required] of Object.entries(requires)) {
+        let bound = state.properties[property];
+        if (typeof required === 'string') {
+          if (bound != required)
+            return false;          
+        } else if (typeof required === 'function') {
+          if (!required(bound))
+            return false;
+        }
+
+      }
+      return true;
+    }
+
+    return { createComponent: createComponent };
+  })();
+
+
+  /**
+    * A component that creates a model window.
+    */
+  const ModalDialog = (function() {
+
+    function createComponent(model) {
+      const config = { 'class' : 'ModalDialog' };
+      if (model.id)
+        config.id = model.id;
+      const dialog = $('<div/>', config);
+      const box = $('<div/>', {'class': 'content'});
+      if (model.title !== undefined && model.title != '') {
+        box.append($('<h3/>', { text: model.title }));
+      }
+      box.append(model.content());
+      if (model.onConfirm !== undefined || model.onCancel !== undefined) {
+        const bar = $('<div/>', { 'class': 'Buttons' });
+        if (model.onCancel !== undefined)
+          bar.append($('<button/>', { text: 'Cancel'}).click(model.onCancel));
+        if (model.onConfirm !== undefined)
+          bar.append($('<button/>', { text: 'OK'}).click(model.onConfirm));
+        box.append(bar);
+      }
+      return dialog.append(box);
+    }
+
+    return { createComponent: createComponent };
+  })();
+
   /*
    * Shared functions
    */
@@ -1231,6 +1466,8 @@ MonitoringConsole.View.Components = (function() {
       createWatchManager: (model) => WatchManager.createComponent(model),
       createPageManager: (model) => PageManager.createComponent(model),
       createRoleSelector: (model) => RoleSelector.createComponent(model),
+      createModalDialog: (model) => ModalDialog.createComponent(model),
+      createSelectionWizard: (model) => SelectionWizard.createComponent(model),
   };
 
 })();

@@ -245,8 +245,7 @@ public class MonitoringConsoleResource {
         List<SeriesMatch> matches = new ArrayList<>(request.queries.length);
         for (SeriesQuery query : request.queries) {
             Series key = seriesOrNull(query.series);
-            List<SeriesDataset> queryData = key == null || query.excludes(DataType.POINTS) //
-                    || Series.ANY.equalTo(key) && query.truncates(POINTS) // if all alerts are requested don't send any particular data
+            List<SeriesDataset> queryData = key == null || query.excludes(DataType.POINTS)
                     ? emptyList()
                     : dataRepository.selectSeries(key, query.instances);
             List<SeriesAnnotation> queryAnnotations = key == null || query.excludes(DataType.ANNOTATIONS)

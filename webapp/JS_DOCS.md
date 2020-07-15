@@ -571,3 +571,50 @@ description      = string
 onChange         = fn (string) => ()
 ```
 * `onChange` gets passed the `name` of the selected item
+
+
+### SelectionWizard API
+
+```
+SELECTION_WIZARD = { id, filters, properties, onSearch, onChange }
+filters          = [ SELECTION_FILTER ]
+properties       = { *: PROPERTY_READER }
+PROPERTY_READER  = fn (match) => value
+value            = string | number | boolean | ...
+onSearch         = fn (pinned-properties) => [ MATCH ]
+onChange         = fn ([string]) => ()
+pinned-properties= { *:string }
+MATCH            = { *:* }
+```
+* `match` is a series query match entry as provided by the server API
+* `value` is the simply value as extracted from a `match` entry
+* a `PROPERTY_READER` is a function to extract the property `value` from a `match` entry
+* `onChange` is called with the current selection of match series whenever it changes
+* `onSearch` is called to populate options and compute all matches matching all filters. The `MATCH` object returned can have any number and set of properties. These are those properties the filters operate on
+
+```
+SELECTION_FILTER = { property, label, requires, options, filter }
+property         = string
+label            = string
+size             = number
+requires         = { *:string }
+options          = [ SELECTION_OPTION ] | fn () => [ SELECTION_OPTION ]
+SELECTION_OPTION = { label, filter }
+filter           = string | fn (string) => boolean | fn (string, string) => boolean
+```
+* `requires` is a map where keys are properties of other filters and the values are those the property should be bound to by current selection of filter options
+* if `options` is ommitted by a filter it means the options are extracted from all matches using the filters property.
+* if `filter` is a `string` this is qual to comparing actual property value to the given value
+* if `filter` is a predicate function; the actual property value for a match is passed to it, to see if it matches the filter
+* if `filter` is used instead of `options` it is a predicate function accepting actual value of property for a match and a user text input for that filter to find all matches satisfying the filter. This implicitly means a text input is created for this filter.
+
+
+### ModalDialoge API
+
+```
+MODAL_DIALOG     = { id, title, content, onConfirm, onCancel }
+title            = string
+content          = fn () => jQuery
+onConfirm        = fn () => ()
+onCancel         = fn () => ()
+```
