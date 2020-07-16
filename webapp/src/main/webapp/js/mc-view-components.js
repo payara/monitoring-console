@@ -1221,17 +1221,17 @@ MonitoringConsole.View.Components = (function() {
         const selection = $('<div/>', { 'class': 'Selection' });
         selection.append($('<b/>').text('Selected'));
         for (let match of Object.values(state.selection))
-          selection.append(createMatchEntry(model, state, match));
+          selection.append(createMatchEntry(model, state, match, true));
         list.append(selection);
       }
 
       list.append($('<b/>').text(c + ' matches')).append($('<span/>').text(' for total of ' + matches.length + ' metrics'));
       for (let match of matches)
         if (!match.filtered)
-          list.append(createMatchEntry(model, state, match));
+          list.append(createMatchEntry(model, state, match, false));
     }
 
-    function createMatchEntry(model, state, match) {
+    function createMatchEntry(model, state, match, describe) {
       const keyAccessor = model.properties[model.key];
       const key = keyAccessor(match);
       const id = 'match-' + key.replace(/[^-a-zA-Z0-9_]/g, '_');
@@ -1244,7 +1244,12 @@ MonitoringConsole.View.Components = (function() {
         }
         state.changed();
       });
-      return $('<div/>').append(input).append($('<label/>', { for: id, text: key }));
+      const entry = {};
+      for (let property of model.entry)
+        entry[property] = model.properties[property].call(this, match);
+      entry.selected = state.selection[key] !== undefined;
+      entry.describe = describe;
+      return $('<div/>').append(input).append($('<label/>', { for: id }).append(model.render(entry)));
     }
 
     function createFilter(model, filter, matches, state) {

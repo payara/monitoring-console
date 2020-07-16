@@ -761,7 +761,20 @@ MonitoringConsole.View = (function() {
             return metadata === undefined ? undefined : metadata.attrs[attr];
         }
 
-        const wizard = { key: 'series', entry: ['series', 'displayName', 'description', 'unit']
+        const wizard = { 
+            key: 'series', 
+            entry: ['series', 'displayName', 'description', 'unit'],
+            render: entry => {
+                const span = $('<span/>', { title: entry.description || '' });
+                if (entry.displayName)
+                    span.append($('<b/>').text(entry.displayName)).append(' ');
+                span.append($('<code/>').text(entry.series));
+                if (entry.unit)
+                    span.append(' ').append($('<em/>').text('[' + entry.unit + ']'));
+                if (entry.describe && entry.description)
+                    span.append($('<p/>').text(entry.description));
+                return span;
+            },
             // the function that produces match entries
             onSearch: loadSeries,
             // these are the how to get a filter property from a match entry

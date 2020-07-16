@@ -747,7 +747,7 @@ table.AnnotationTable {
   position: relative;  
   margin: 50px auto;
   min-width: 640px;
-  width: 60%;
+  width: 80%;
 }
 
 .ModalDialog .Buttons {
@@ -777,10 +777,14 @@ table.AnnotationTable {
   position: relative;
   min-height: 10em;
 }
-
 .SelectionWizard .Matches .Selection {
   position: absolute;
   left: 50%;
+}
+.SelectionWizard .Matches p {
+  font-style: italic;
+  padding: 0;
+  margin: 2px 2em 0.5em 2em;  
 }
 
 /* Role Selector Component */
