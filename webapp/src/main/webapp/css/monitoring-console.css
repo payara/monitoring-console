@@ -758,12 +758,12 @@ table.AnnotationTable {
 
 /* SelectionWizard Component */
 
-.SelectionWizard label {
+.SelectionWizard .Filter label {
   width: 160px;
   display: inline-block;
 }
-.SelectionWizard select,
-.SelectionWizard input[type=text] {
+.SelectionWizard .Filter select,
+.SelectionWizard .Filter input[type=text] {
   max-width: 240px;
 }
 .SelectionWizard .Search {
@@ -774,6 +774,13 @@ table.AnnotationTable {
   padding: 20px;
   background-color: white;
   color: #434445;
+  position: relative;
+  min-height: 10em;
+}
+
+.SelectionWizard .Matches .Selection {
+  position: absolute;
+  left: 50%;
 }
 
 /* Role Selector Component */

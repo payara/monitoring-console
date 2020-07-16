@@ -576,16 +576,21 @@ onChange         = fn (string) => ()
 ### SelectionWizard API
 
 ```
-SELECTION_WIZARD = { id, filters, properties, onSearch, onChange }
+SELECTION_WIZARD = { id, key, entry, filters, properties, render, onSearch, onChange }
+key              = string
+entry            = [ string ]
 filters          = [ SELECTION_FILTER ]
 properties       = { *: PROPERTY_READER }
 PROPERTY_READER  = fn (match) => value
 value            = string | number | boolean | ...
+render           = fn ({*:*}) => jQuery
 onSearch         = fn (pinned-properties) => [ MATCH ]
 onChange         = fn ([string]) => ()
 pinned-properties= { *:string }
 MATCH            = { *:* }
 ```
+* `key` is name of the property used as key (selected values passed to `onChange`)
+* `entry` list of properties to set in the object passed to `render` method to create an entry in the match list
 * `match` is a series query match entry as provided by the server API
 * `value` is the simply value as extracted from a `match` entry
 * a `PROPERTY_READER` is a function to extract the property `value` from a `match` entry
@@ -615,6 +620,6 @@ filter           = string | fn (string) => boolean | fn (string, string) => bool
 MODAL_DIALOG     = { id, title, content, onConfirm, onCancel }
 title            = string
 content          = fn () => jQuery
-onConfirm        = fn () => ()
-onCancel         = fn () => ()
+onConfirm        = fn () => () | boolean
+onCancel         = fn () => () | boolean
 ```

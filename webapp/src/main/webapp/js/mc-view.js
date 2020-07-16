@@ -761,7 +761,7 @@ MonitoringConsole.View = (function() {
             return metadata === undefined ? undefined : metadata.attrs[attr];
         }
 
-        const wizard = { key: 'series',
+        const wizard = { key: 'series', entry: ['series', 'displayName', 'description', 'unit']
             // the function that produces match entries
             onSearch: loadSeries,
             // these are the how to get a filter property from a match entry
@@ -774,6 +774,7 @@ MonitoringConsole.View = (function() {
                 description: match => metadata(match, 'Description'),
                 type: match => metadata(match, 'Type'),
                 property: match => metadata(match, 'Property'),
+                unit: match => metadata(match, 'Unit'),
             },            
             // filters link to the above properties to extract match data
             filters: [
@@ -791,12 +792,13 @@ MonitoringConsole.View = (function() {
                     { label: 'Histogram', filter: 'histogram' },
                     { label: 'Simple Timer', filter: 'simple timer' }
                 ]},
+                { label: 'MicroProfile Unit', property: 'unit', requires: { ns: 'metric' }},
                 { label: 'Namespace', property: 'ns', requires: { ns: ns => ns != 'metric' }, 
                     options: () => objectToOptions(MonitoringConsole.Data.NAMESPACES)
                         .filter(option => option.filter != 'metric' && option.filter != 'other') },
-                { label: 'MicroProfile Name', property: 'name', requires: { ns: 'metric' }, 
-                    filter: (name, input) => name.toLowerCase().includes(input.toLowerCase()) },
                 { label: 'MicroProfile Property', property: 'property', requires: { ns: 'metric'} },
+                { label: 'MicroProfile Name', property: 'name', requires: { ns: 'metric' }, 
+                    filter: (name, input) => name.toLowerCase().includes(input.toLowerCase()) },                
                 { label: 'Series', property: 'series', 
                     filter: (series, input) => series.toLowerCase().includes(input.toLowerCase()) },
             ],
@@ -808,8 +810,7 @@ MonitoringConsole.View = (function() {
 
         return { id: 'ModalDialog', title: 'Select Metric Series...',
             content: () => Components.createSelectionWizard(wizard),
-            onConfirm: () => $('#ModalDialog').hide(), 
-            onCancel: () => $('#ModalDialog').hide() 
+            onCancel: true, onConfirm: true         
         };
     }
 
