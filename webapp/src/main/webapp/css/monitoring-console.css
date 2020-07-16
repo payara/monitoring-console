@@ -759,8 +759,12 @@ table.AnnotationTable {
 /* SelectionWizard Component */
 
 .SelectionWizard label {
-  width: 100px;
+  width: 160px;
   display: inline-block;
+}
+.SelectionWizard select,
+.SelectionWizard input[type=text] {
+  max-width: 240px;
 }
 .SelectionWizard .Search {
   background-color: var(--caption-bg-color);

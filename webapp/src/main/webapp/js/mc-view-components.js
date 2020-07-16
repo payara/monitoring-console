@@ -1182,96 +1182,101 @@ MonitoringConsole.View.Components = (function() {
         properties: {}, // those bound to a specific value by chosing a filter option
         filters: new Array(model.filters.length) // state for each filter: input (text), selected (index), filter (fn)
       };
+      for (let i = 0; i < state.filters.length; i++)
+        state.filters[i] = {};
+
+      for (let i = 0; i < model.filters.length; i++)
+        model.filters[i].id = i;
 
       // fixed UI state
       const searchBox = $('<div/>', { 'class': 'Search' });
       const filterBox = $('<div/>', { 'class': 'Filters' });
       const matchList = $('<div/>', { 'class': 'Matches'});
-      const updateBtn = $('<button/>', { text: 'Search'});
+      
       // applying the state to the UI
-      const update = async() => {
+      let matches;
+
+      const update = async function() {
+        if (matches === undefined)
+          matches = await model.onSearch(state.properties);
+        matches.forEach(match => match.filtered = false);
+        console.log('\n');
+        console.log(JSON.stringify(state));
         filterBox.empty();
-        const matches = await model.onSearch(state.properties);
-        for (let filterId = 0; filterId < model.filters.length; filterId++) {
-          const filter = model.filters[filterId];
-          filter.id = filterId;
+        for (let filter of model.filters)
           filterBox.append(createFilter(model, filter, matches, state));
-        }
-        matchList.empty();
-        for (let match of matches) {
-          if (!match.filtered)
-            matchList.append($('<div/>', { text: match.series }));
-        }
+        recreateMatchList(matchList, matches);
       };
       state.changed = update;
       update();
-      updateBtn.click(update);
-      searchBox.append(filterBox).append(updateBtn);
+      searchBox.append(filterBox);
       return wizard.append(searchBox).append(matchList);
     }
 
+    function recreateMatchList(list, matches) {
+      list.empty();
+      let c = 0;
+      for (let match of matches)
+        if (!match.filtered)
+          c++;
+      list.append($('<b/>').text(c + ' matches')).append($('<span/>').text(' for total of ' + matches.length + ' metrics'));
+      for (let match of matches) {
+        if (!match.filtered)
+          list.append($('<div/>', { text: match.series }));
+      }
+    }
+
     function createFilter(model, filter, matches, state) {
-      if (!isSatisfied(filter.requires, state))
+      if (!isSatisfied(filter.requires, state)) {     
         return $('<span/>');
+      }
       filter.type = computeFilterType(filter);
-      const filterState = state.filters[filter.id];
-      const active = filterState !== undefined;
       
       const label = $('<label/>', { for: 'filter-' + filter.id, text: filter.label });
-      const detailsBox = $('<span/>', { style: active ? '' : 'display: none' });
-      const activeCheckbox = createFilterToggle(filter, state, checked => checked ? detailsBox.show() : detailsBox.hide());
+      const filterInput = createFilterInput(model, filter, state, matches);
 
-      detailsBox.append(createFilterInput(model, filter, state, matches));
-
-      if (active && filterState.filter !== undefined) {
+      const filterState = state.filters[filter.id];
+      const active = filterState !== filterState.filter !== undefined || filterState.input !== undefined;
+      if (active) {
         applyFilter(model, filter, state, matches);
       }
       return $('<div/>', { 'class': 'Filter' })
-        .append(activeCheckbox)
         .append(label)
-        .append(detailsBox);
+        .append(filterInput);
     }
 
     function applyFilter(model, filter, state, matches) {
-      const filterState = state.filters[filter.id];
-      const active = filterState !== undefined;
-      const match2property = model.properties[filter.property];
+      console.log('apply '+filter.label + ' '+ state.filters[filter.id].selected);
       for (let match of matches) {
-        if (!match.filtered) {
-          const propertyValue = match2property(match);          
-          if (filter.type == 'text') { // filter uses input and predicate function
-            if (!filter.filter(propertyValue, filterState.input))
-              match.filtered = true;
-          // type 'list' and 'auto' below
-          } else if (typeof filterState.filter === 'string') { // option uses a constant value
-            if (propertyValue != filterState.filter)
-              match.filtered = true;
-          } else { // option uses a predicate function              
-            if (!filterState.filter(propertyValue))
-              match.filtered = true;
-          }
+        if (!match.filtered && !matchesFilter(match, model, filter, state)) {
+          match.filtered = true;
         }
-      }      
+      }
     }
 
-    function createFilterToggle(filter, state, onChange) {
+    function matchesFilter(match, model, filter, state, option) {
       const filterState = state.filters[filter.id];
-      const active = filterState !== undefined;
-      return $('<input/>', { type: 'checkbox', checked: active, id: 'filter-' + filter.id })
-        .change(function() {
-          let checked = this.checked;
-          onChange(checked);
-          if (checked) {
-            state.filters[filter.id] = {};
-          } else {
-            if (state.filters[filter.id] !== undefined) {
-              const val = state.filters[filter.id].filter;
-              if (state.properties[filter.property] == val)
-                 delete state.properties[filter.property];
-            }
-            state.filters[filter.id] = undefined;            
-          }
-        });
+      const match2property = model.properties[filter.property];          
+      const propertyValue = match2property(match);  
+      if (filter.type == 'text') { // filter uses input and predicate function
+        let input = filterState.input;
+        return input == undefined || input == '' || filter.filter(propertyValue, input);
+      }
+      const optionFilter = option === undefined ? filterState.filter : option.filter;                 
+      // type 'list' and 'auto' below
+      if (typeof optionFilter === 'string') // option uses a constant value
+        return propertyValue == optionFilter;
+      if (typeof optionFilter === 'function') // option uses a predicate function              
+        return optionFilter(propertyValue);
+      return true;
+    }
+
+    function countMatches(model, filter, state, matches, option) {
+      let c = 0;
+      for (let match of matches)
+        if (matchesFilter(match, model, filter, state, option))
+          c++;
+      return c;
     }
 
     function computeFilterType(filter) {
@@ -1284,23 +1289,31 @@ MonitoringConsole.View.Components = (function() {
 
     function createFilterInput(model, filter, state, matches) {
       switch (filter.type) {
-      case 'text': return createFilterWithTextInput(filter, state);
-      case 'list': return createFilterWithListInput(filter, state);
+      case 'text': return createFilterWithTextInput(model, filter, state, matches);
+      case 'list': return createFilterWithListInput(model, filter, state, matches);
       default:
       case 'auto': return createFilterWithAutoInput(model, filter, state, matches);
       }
     }
 
-    function createFilterWithTextInput(filter, state) {
+    function createFilterWithTextInput(model, filter, state, matches) {
       const filterState = state.filters[filter.id];
       const active = filterState !== undefined;
-      return $('<input/>', { type: 'text', value: active ? filterState.input || '' : '' })
-        .on('input change', () => state.filters[filter.id].input = this.value);
+      const id = 'filter-text-' + filter.id;
+      const field = $('<input/>', { id: id, type: 'text', value: active ? filterState.input || '' : '' });
+      field.on('input change', function() {
+        state.filters[filter.id].input = field.val();
+        state.changed().then(() => {
+          const input = $('#' + id);
+          const val = input.val();
+          input.focus().val('').val(val); // gains focus and moves caret to end
+        });
+      });
+      return field;
     }
 
-    function createFilterWithListInput(filter, state) {
+    function createFilterWithListInput(model, filter, state, matches) {
       const filterState = state.filters[filter.id];
-      const active = filterState !== undefined;
       const options = typeof filter.options === 'function' ? filter.options() : filter.options;
       const selectField = $('<select/>');
       selectField.change(() => {
@@ -1316,22 +1329,24 @@ MonitoringConsole.View.Components = (function() {
         }
         state.changed();
       });
-      selectField.append($('<option/>', { value: -1, text: '(please select)' }));
-      for (let i = 0; i < options.length; i++) {
-        selectField.append($('<option/>', { value: i, text: options[i].label, selected: active && filterState.selected == i }));
+      selectField.append($('<option/>', { value: -1, text: '(any)' }));
+      for (let i = 0; i < options.length; i++) {       
+        let label = options[i].label + ' (' + countMatches(model, filter, state, matches, options[i]) +  ')';
+        selectField.append($('<option/>', { value: i, text: label, selected: filterState.selected == i }));
       }
       return selectField;      
     }
 
     function createFilterWithAutoInput(model, filter, state, matches) {
       const filterState = state.filters[filter.id];
-      const active = filterState !== undefined;
       const match2property = model.properties[filter.property];
       // options are derived from the matches as the set of actual values
       const set = {};
-      for (let match of matches)
-        if (!match.filtered)
-          set[match2property(match)] = true;
+      for (let match of matches) {        
+        let propertyValue = match2property(match);
+        if (propertyValue !== undefined)
+          set[propertyValue] = set[propertyValue] === undefined ? 1 : set[propertyValue] + 1;
+      }
       const options = Object.keys(set);
       const selectField = $('<select/>');
       selectField.change(() => {
@@ -1345,9 +1360,12 @@ MonitoringConsole.View.Components = (function() {
         }
         state.changed();
       });
-      selectField.append($('<option/>', { value: '', text: '(please select)' }));
-      for (let option of options)
-        selectField.append($('<option/>', { value: option, text: option, selected: active && filterState.filter == option }));      
+      selectField.append($('<option/>', { value: '', text: '(any)' }));
+      for (let option of options) {
+        let text = option + ' ('+ set[option] +')';
+        selectField.append($('<option/>', { value: option, text: text, selected: filterState.filter == option }));      
+      }
+      return selectField;
     }
 
     function isSatisfied(requires, state) {
@@ -1385,7 +1403,8 @@ MonitoringConsole.View.Components = (function() {
       if (model.title !== undefined && model.title != '') {
         box.append($('<h3/>', { text: model.title }));
       }
-      box.append(model.content());
+      const content = model.content();
+      box.append(content);
       if (model.onConfirm !== undefined || model.onCancel !== undefined) {
         const bar = $('<div/>', { 'class': 'Buttons' });
         if (model.onCancel !== undefined)

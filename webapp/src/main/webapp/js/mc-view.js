@@ -743,11 +743,11 @@ MonitoringConsole.View = (function() {
                 options.push({ label: value, filter: key });
             return options;
         }
-        function loadSeries(ns) {
+        function loadSeries() {
             return new Promise(function(resolve, reject) {
                 Controller.requestListOfSeriesData({ groupBySeries: true, queries: [{
                     widgetId: 'auto', 
-                    series: ns === undefined ? '*' : 'ns:' + ns + ' ?:* *',
+                    series: '?:* *',
                     truncate: ['ALERTS', 'POINTS'],
                     exclude: ['ALERTS', 'WATCHES']
                 }]}, 
@@ -763,10 +763,7 @@ MonitoringConsole.View = (function() {
 
         const wizard = { key: 'series',
             // the function that produces match entries
-            onSearch: async function(properties) {
-                const matches = await loadSeries(properties.ns);
-                return matches;
-            },
+            onSearch: loadSeries,
             // these are the how to get a filter property from a match entry
             properties: {
                 ns: match => match.series.startsWith('ns:') ? match.series.substring(3, match.series.indexOf(' ')) : undefined,
@@ -780,12 +777,12 @@ MonitoringConsole.View = (function() {
             },            
             // filters link to the above properties to extract match data
             filters: [
-                { label: 'Server/App', property: 'ns', options: [
+                { label: 'Source', property: 'ns', options: [
                     { label: 'Server Metrics', filter: ns => ns != 'metric' },
-                    { label: 'Application Metrics', filter: 'metric' }
+                    { label: 'MicroProfile Metrics', filter: 'metric' }
                 ]},
-                { label: 'Application', property: 'app', requires: { ns: 'metric' }},
-                { label: 'Metric Type', property: 'type', requires: { ns: 'metric' }, options: [ // values are as used by MP metrics type
+                { label: 'MicroProfile Application', property: 'app', requires: { ns: 'metric' }},
+                { label: 'MicroProfile Type', property: 'type', requires: { ns: 'metric' }, options: [ // values are as used by MP metrics type
                     { label: 'Counter', filter: 'counter' },
                     { label: 'Timer', filter: 'timer' },
                     { label: 'Gauge', filter: 'gauge' },
@@ -794,11 +791,14 @@ MonitoringConsole.View = (function() {
                     { label: 'Histogram', filter: 'histogram' },
                     { label: 'Simple Timer', filter: 'simple timer' }
                 ]},
-                { label: 'Type', property: 'type', requires: { ns: ns => ns != 'metric' }, 
-                    options: () => objectToOptions(MonitoringConsole.Data.NAMESPACES) },
-                { label: 'Metric Name', property: 'name', requires: { ns: 'metric' }, filter: (name, input) => name.includes(input) },
-                { label: 'Metric Property', property: 'property', requires: { ns: 'metric'} },
-                { label: 'Series', property: 'series', filter: (series, input) => series.includes(input) },
+                { label: 'Namespace', property: 'ns', requires: { ns: ns => ns != 'metric' }, 
+                    options: () => objectToOptions(MonitoringConsole.Data.NAMESPACES)
+                        .filter(option => option.filter != 'metric' && option.filter != 'other') },
+                { label: 'MicroProfile Name', property: 'name', requires: { ns: 'metric' }, 
+                    filter: (name, input) => name.toLowerCase().includes(input.toLowerCase()) },
+                { label: 'MicroProfile Property', property: 'property', requires: { ns: 'metric'} },
+                { label: 'Series', property: 'series', 
+                    filter: (series, input) => series.toLowerCase().includes(input.toLowerCase()) },
             ],
             // what should happen if the selection made by the user changes
             onChange: (selectedSeries) => {
@@ -806,7 +806,7 @@ MonitoringConsole.View = (function() {
             },
         };
 
-        return { id: 'ModalDialog', title: 'Search for Metrics',
+        return { id: 'ModalDialog', title: 'Select Metric Series...',
             content: () => Components.createSelectionWizard(wizard),
             onConfirm: () => $('#ModalDialog').hide(), 
             onCancel: () => $('#ModalDialog').hide() 
