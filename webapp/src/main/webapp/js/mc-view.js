@@ -275,6 +275,10 @@ MonitoringConsole.View = (function() {
     }
 
     function createWidgetSettings(widget) {
+        function changeSeries(selectedSeries) {
+            if (selectedSeries !== undefined && selectedSeries.length > 0)
+                onPageChange(MonitoringConsole.Model.Page.Widgets.configure(widget.id, widget => widget.series = selectedSeries));
+        }
         let options = widget.options;
         let unit = widget.unit;
         let thresholds = widget.decorations.thresholds;
@@ -295,8 +299,16 @@ MonitoringConsole.View = (function() {
                 { type: 'range', min: 1, max: 4, value: widget.grid.rowspan || 1, onChange: (widget, value) => widget.grid.rowspan = value},
             ]},
         ]});
+        let seriesInput = $('<span/>');
+        if (Array.isArray(widget.series)) {
+            seriesInput.append(widget.series.join(', ')).append(' ');                    
+        } else {
+            seriesInput.append(widget.series).append(' ');
+        }
+        seriesInput.append($('<br/>')).append($('<button/>', { text: 'Change metric(s)...' })
+                .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel(widget.series, changeSeries)))));
         settings.push({ id: 'settings-data', caption: 'Data', entries: [
-            { label: 'Series', type: 'text', value: Array.isArray(widget.series) ? widget.series : [widget.series], onChange: (widget, value) => widget.series = value },
+            { label: 'Series', input: seriesInput },
             { label: 'Unit', input: [
                 { type: 'dropdown', options: Units.names(), value: widget.unit, onChange: function(widget, selected) { widget.unit = selected; updateSettings(); }},
                 { label: '1/sec', type: 'checkbox', value: options.perSec, onChange: (widget, checked) => widget.options.perSec = checked},
@@ -375,6 +387,10 @@ MonitoringConsole.View = (function() {
     }
 
     function createPageSettings() {
+        function addWidgets(selectedSeries) {
+            if (selectedSeries !== undefined && selectedSeries.length > 0)
+                onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries));
+        }
         let pageNameOnChange = MonitoringConsole.Model.Page.hasPreset() ? undefined : function(text) {
             if (MonitoringConsole.Model.Page.rename(text)) {
                 updatePageNavigation();                        
@@ -400,8 +416,7 @@ MonitoringConsole.View = (function() {
                 { input: $('<button/>', {text: 'Update'}).click(() => configure(page => page.content.expires = undefined)) },
             ]},
             { label: 'Add Widgets', available: !queryAvailable, input: $('<button/>', { text: 'Select metric(s)...' }).click(
-                () => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel([], 
-                    selectedSeries => onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries)))))) },
+                () => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel([], addWidgets)))) },
             { label: 'Sync', available: pushAvailable || pullAvailable, input: [
                 { available: autoAvailable, label: 'auto', type: 'checkbox', value: MonitoringConsole.Model.Page.Sync.auto(), onChange: (checked) => MonitoringConsole.Model.Page.Sync.auto(checked),
                     description: 'When checked changed to the page are automatically pushed to the remote server (shared with others)' },
@@ -689,6 +704,8 @@ MonitoringConsole.View = (function() {
     }
 
     function createWizardModalDialogModel(initiallySelectedSeries, onExit) {
+        if (initiallySelectedSeries !== undefined && !Array.isArray(initiallySelectedSeries))
+            initiallySelectedSeries = [ initiallySelectedSeries ];
         function objectToOptions(obj) {
             const options = [];
             for (const [key, value] of Object.entries(obj))
