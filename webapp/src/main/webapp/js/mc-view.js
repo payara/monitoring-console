@@ -792,6 +792,8 @@ MonitoringConsole.View = (function() {
                 { label: 'MicroProfile Property', property: 'property', requires: { ns: 'metric'} },
                 { label: 'MicroProfile Name', property: 'name', requires: { ns: 'metric' }, 
                     filter: (name, input) => name.toLowerCase().includes(input.toLowerCase()) },                
+                { label: 'MicroProfile Description', property: 'description', requires: { ns: 'metric' }, 
+                    filter: (desc, input) => desc.toLowerCase().includes(input.toLowerCase()) },                
                 { label: 'Group', property: 'group' },
                 { label: 'Metric', property: 'metric' },
                 { label: 'Series', property: 'series', 
