@@ -112,6 +112,12 @@ button.color-list {
   padding: 0;
   vertical-align: middle;  
 }
+button.big-plus {
+  background: none;
+  font-size: 48px;
+  color: white;
+  box-shadow: none;
+}
 input[type=button] {
   border-radius: 2px;
   border: 2px outset #ccc;
@@ -259,6 +265,10 @@ h3 strong {
 }
 #chart-grid > tr > td.chart-selected {
     border: 2px solid #0096D6;
+}
+#chart-grid .widget.empty {
+  text-align: center;
+  vertical-align: middle;
 }
 
 #panel-grid {

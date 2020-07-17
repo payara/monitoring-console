@@ -277,8 +277,17 @@ MonitoringConsole.View = (function() {
     function createWidgetSettings(widget) {
         function changeSeries(selectedSeries) {
             if (selectedSeries !== undefined && selectedSeries.length > 0)
-                onPageChange(MonitoringConsole.Model.Page.Widgets.configure(widget.id, widget => widget.series = selectedSeries));
+                onPageChange(MonitoringConsole.Model.Page.Widgets.configure(widget.id, 
+                    widget => widget.series = selectedSeries.length == 1 ? selectedSeries[0] : selectedSeries));
         }
+        let seriesInput = $('<span/>');
+        if (Array.isArray(widget.series)) {
+            seriesInput.append(widget.series.join(', ')).append(' ');                    
+        } else {
+            seriesInput.append(widget.series).append(' ');
+        }
+        seriesInput.append($('<br/>')).append($('<button/>', { text: 'Change metric(s)...' })
+                .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel(widget.series, changeSeries)))));
         let options = widget.options;
         let unit = widget.unit;
         let thresholds = widget.decorations.thresholds;
@@ -299,14 +308,6 @@ MonitoringConsole.View = (function() {
                 { type: 'range', min: 1, max: 4, value: widget.grid.rowspan || 1, onChange: (widget, value) => widget.grid.rowspan = value},
             ]},
         ]});
-        let seriesInput = $('<span/>');
-        if (Array.isArray(widget.series)) {
-            seriesInput.append(widget.series.join(', ')).append(' ');                    
-        } else {
-            seriesInput.append(widget.series).append(' ');
-        }
-        seriesInput.append($('<br/>')).append($('<button/>', { text: 'Change metric(s)...' })
-                .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel(widget.series, changeSeries)))));
         settings.push({ id: 'settings-data', caption: 'Data', entries: [
             { label: 'Series', input: seriesInput },
             { label: 'Unit', input: [
@@ -391,6 +392,8 @@ MonitoringConsole.View = (function() {
             if (selectedSeries !== undefined && selectedSeries.length > 0)
                 onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries));
         }
+        const addWidgetsInput = $('<button/>', { text: 'Select metric(s)...' })
+            .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel([], addWidgets))));
         let pageNameOnChange = MonitoringConsole.Model.Page.hasPreset() ? undefined : function(text) {
             if (MonitoringConsole.Model.Page.rename(text)) {
                 updatePageNavigation();                        
@@ -415,8 +418,7 @@ MonitoringConsole.View = (function() {
                 { type: 'value', min: 1, unit: 'sec', value: page.content.ttl, onChange: (value) => configure(page => page.content.ttl = value) },
                 { input: $('<button/>', {text: 'Update'}).click(() => configure(page => page.content.expires = undefined)) },
             ]},
-            { label: 'Add Widgets', available: !queryAvailable, input: $('<button/>', { text: 'Select metric(s)...' }).click(
-                () => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel([], addWidgets)))) },
+            { label: 'Add Widgets', available: !queryAvailable, input: addWidgetsInput },
             { label: 'Sync', available: pushAvailable || pullAvailable, input: [
                 { available: autoAvailable, label: 'auto', type: 'checkbox', value: MonitoringConsole.Model.Page.Sync.auto(), onChange: (checked) => MonitoringConsole.Model.Page.Sync.auto(checked),
                     description: 'When checked changed to the page are automatically pushed to the remote server (shared with others)' },
@@ -527,8 +529,6 @@ MonitoringConsole.View = (function() {
         }
         return legend;
     }
-
-    
 
     function createLegendModelFromAlerts(widget, alerts) {
         if (!Array.isArray(alerts))
@@ -865,6 +865,17 @@ MonitoringConsole.View = (function() {
      * This function refleshes the page with the given layout.
      */
     function onPageUpdate(layout) {
+        function addWidgets(selectedSeries, row, col) {
+            if (selectedSeries !== undefined && selectedSeries.length > 0) {
+                const grid = { column: col, item: row };
+                onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries, grid));
+            }
+        }
+        function createPlusButton(row, col) {
+            return $('<button/>', { text: '+', 'class': 'big-plus' })
+                .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(
+                    createWizardModalDialogModel([], selectedSeries => addWidgets(selectedSeries, row, col))))); 
+        }              
         let numberOfColumns = layout.length;
         let maxRows = layout[0].length;
         let table = $("<table/>", { id: 'chart-grid', 'class': 'columns-'+numberOfColumns + ' rows-'+maxRows });
@@ -892,7 +903,7 @@ MonitoringConsole.View = (function() {
                     updateDomOfWidget(td, cell.widget);
                     tr.append(td);
                 } else if (cell === null) {
-                    tr.append($("<td/>", { 'class': 'widget', style: 'height: '+rowHeight+'px;'}));                  
+                    tr.append($("<td/>", { 'class': 'widget empty', style: 'height: '+rowHeight+'px;'}).append(createPlusButton(row, col)));                  
                 }
             }
             table.append(tr);

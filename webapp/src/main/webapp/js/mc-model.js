@@ -680,7 +680,7 @@ MonitoringConsole.Model = (function() {
 				doStore(true);
 			},
 			
-			addWidget: function(series) {
+			addWidget: function(series, grid) {
 				if (!(typeof series === 'string' || Array.isArray(series) && series.length > 0 && typeof series[0] === 'string'))
 					throw 'configuration object requires string property `series`';
 				doDeselect();
@@ -693,21 +693,25 @@ MonitoringConsole.Model = (function() {
 				let widget = sanityCheckWidget({ id: id, series: series });
 				widgets[widget.id] = widget;
 				widget.selected = true;
-				// automatically fill most empty column
-				let usedCells = new Array(layout.length);
-				for (let i = 0; i < usedCells.length; i++) {
-					usedCells[i] = 0;
-					for (let j = 0; j < layout[i].length; j++) {
-						let cell = layout[i][j];
-						if (cell === undefined || cell !== null && typeof cell === 'object')
-							usedCells[i]++;
+				if (grid !== undefined) {
+					widget.grid = grid;
+				} else {
+					// automatically fill most empty column
+					let usedCells = new Array(layout.length);
+					for (let i = 0; i < usedCells.length; i++) {
+						usedCells[i] = 0;
+						for (let j = 0; j < layout[i].length; j++) {
+							let cell = layout[i][j];
+							if (cell === undefined || cell !== null && typeof cell === 'object')
+								usedCells[i]++;
+						}
 					}
+					let indexOfLeastUsedCells = usedCells.reduce((iMin, x, i, arr) => x < arr[iMin] ? i : iMin, 0);
+					widget.grid.column = indexOfLeastUsedCells;
+					widget.grid.item = Object.values(widgets)
+						.filter(widget => widget.grid.column == indexOfLeastUsedCells)
+						.reduce((acc, widget) => widget.grid.item ? Math.max(acc, widget.grid.item) : acc, 0) + 1;
 				}
-				let indexOfLeastUsedCells = usedCells.reduce((iMin, x, i, arr) => x < arr[iMin] ? i : iMin, 0);
-				widget.grid.column = indexOfLeastUsedCells;
-				widget.grid.item = Object.values(widgets)
-					.filter(widget => widget.grid.column == indexOfLeastUsedCells)
-					.reduce((acc, widget) => widget.grid.item ? Math.max(acc, widget.grid.item) : acc, 0) + 1;
 				doStore(true);
 			},
 			
@@ -1422,11 +1426,11 @@ MonitoringConsole.Model = (function() {
 			
 			Widgets: {
 				
-				add: function(series) {
+				add: function(series, grid) {
 					if (Array.isArray(series) && series.length == 1)
 						series = series[0];
 					if (Array.isArray(series) || series.trim()) {
-						UI.addWidget(series);
+						UI.addWidget(series, grid);
 						Interval.tick();
 					}
 					return UI.arrange();
