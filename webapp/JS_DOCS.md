@@ -576,9 +576,10 @@ onChange         = fn (string) => ()
 ### SelectionWizard API
 
 ```
-SELECTION_WIZARD = { id, key, entry, filters, properties, render, onSearch, onChange }
+SELECTION_WIZARD = { id, key, entry, selection, filters, properties, render, onSearch, onChange }
 key              = string
 entry            = [ string ]
+selection        = [ string ]
 filters          = [ SELECTION_FILTER ]
 properties       = { *: PROPERTY_READER }
 PROPERTY_READER  = fn (match) => value
@@ -617,9 +618,14 @@ filter           = string | fn (string) => boolean | fn (string, string) => bool
 ### ModalDialoge API
 
 ```
-MODAL_DIALOG     = { id, title, content, onConfirm, onCancel }
+MODAL_DIALOG     = { id, title, content, buttons, results, onExit }
 title            = string
 content          = fn () => jQuery
-onConfirm        = fn () => () | boolean
-onCancel         = fn () => () | boolean
+buttons          = [ DIALOG_BUTTON ]
+DIALOG_BUTTON    = { property, label }
+property         = string
+label            = string
+results          = { *:* }
+onExit           = fn(*) => ()
 ```
+* when a particular button is clicked the named `property` of that button is extracted from `results` and passed to `onExit` function. This value can be of any type and change while the dialog is open.

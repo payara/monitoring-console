@@ -1197,8 +1197,16 @@ MonitoringConsole.View.Components = (function() {
       let matches;
 
       const update = async function() {
-        if (matches === undefined)
-          matches = await model.onSearch(state.properties);
+        if (matches === undefined) {
+          matches = (await model.onSearch(state.properties))
+            .sort((a, b) => a[model.key].localeCompare(b[model.key]));
+          if (model.selection)
+            for (let key of model.selection)
+              state.selection[key] = matchForKey(key, model.key, matches);
+
+        } else {
+          model.onChange(Object.keys(state.selection));
+        }
         matches.forEach(match => match.filtered = false);
         filterBox.empty();
         for (let filter of model.filters)
@@ -1211,24 +1219,37 @@ MonitoringConsole.View.Components = (function() {
       return wizard.append(searchBox).append(matchList);
     }
 
+    function matchForKey(key, keyProperty, matches) {
+      return matches.find(match => match[keyProperty] == key);
+    }
+
     function recreateMatchList(model, state, list, matches) {
       list.empty();
+
+      const selectionCount = Object.keys(state.selection).length;
+      if (selectionCount > 0) {
+        const selection = $('<div/>', { 'class': 'Selection' });
+        selection.append($('<b/>').text(selectionCount + ' Selected'));
+        for (let match of Object.values(state.selection))
+          selection.append(createMatchEntry(model, state, match, true));
+        list.append(selection);
+      }
+
       let c = 0;
       for (let match of matches)
         if (!match.filtered)
           c++;
-      if (Object.keys(state.selection).length > 0) {
-        const selection = $('<div/>', { 'class': 'Selection' });
-        selection.append($('<b/>').text('Selected'));
-        for (let match of Object.values(state.selection))
-          selection.append(createMatchEntry(model, state, match, true));
-        list.append(selection);
+
+      if (c == matches.length) {
+        list.append($('<b/>').text('Please select a filter...'));
+        return;
       }
 
       list.append($('<b/>').text(c + ' matches')).append($('<span/>').text(' for total of ' + matches.length + ' metrics'));
       for (let match of matches)
         if (!match.filtered)
           list.append(createMatchEntry(model, state, match, false));
+      list.append($('<div/>', { style: 'clear:both;' }));
     }
 
     function createMatchEntry(model, state, match, describe) {
@@ -1430,23 +1451,21 @@ MonitoringConsole.View.Components = (function() {
       }
       const content = model.content();
       box.append(content);
-      if (model.onConfirm || model.onCancel) {
+      if (model.buttons) {
         const bar = $('<div/>', { 'class': 'Buttons' });
-        if (model.onCancel)
-          bar.append($('<button/>', { text: 'Cancel'}).click(() => {
-            $('#' + model.id).hide();
-            if (typeof model.onCancel === 'function')
-              model.onCancel();
-          }));
-        if (model.onConfirm)
-          bar.append($('<button/>', { text: 'OK'}).click(() => {
-            $('#' + model.id).hide();
-            if (typeof model.onConfirm === 'function')
-              model.onConfirm();
-          }));
+        for (let button of model.buttons)
+          bar.append(createButton(model, button));        
         box.append(bar);
       }
       return dialog.append(box);
+    }
+
+    function createButton(model, button) {
+      return $('<button/>', { text: button.label }).click(() => {
+        $('#' + model.id).hide();
+        if (typeof model.onExit === 'function')
+          model.onExit(model.results[button.property]);
+      });
     }
 
     return { createComponent: createComponent };

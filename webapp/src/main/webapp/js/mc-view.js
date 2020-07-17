@@ -736,7 +736,7 @@ MonitoringConsole.View = (function() {
         ]};
     }
 
-    function createWizardModalDialogModel() {
+    function createWizardModalDialogModel(initiallySelectedSeries) {
         function objectToOptions(obj) {
             const options = [];
             for (const [key, value] of Object.entries(obj))
@@ -761,9 +761,15 @@ MonitoringConsole.View = (function() {
             return metadata === undefined ? undefined : metadata.attrs[attr];
         }
 
+        const results = {
+            ok: initiallySelectedSeries,
+            cancel: initiallySelectedSeries,
+        };
+
         const wizard = { 
             key: 'series', 
             entry: ['series', 'displayName', 'description', 'unit'],
+            selection: initiallySelectedSeries,
             render: entry => {
                 const span = $('<span/>', { title: entry.description || '' });
                 if (entry.displayName)
@@ -816,14 +822,18 @@ MonitoringConsole.View = (function() {
                     filter: (series, input) => series.toLowerCase().includes(input.toLowerCase()) },
             ],
             // what should happen if the selection made by the user changes
-            onChange: (selectedSeries) => {
-                alert(selectedSeries);
-            },
+            onChange: selectedSeries => results.ok = selectedSeries,
         };
 
-        return { id: 'ModalDialog', title: 'Select Metric Series...',
+        return { id: 'ModalDialog', 
+            title: 'Select Metric Series...',
             content: () => Components.createSelectionWizard(wizard),
-            onCancel: true, onConfirm: true         
+            buttons: [
+                { property: 'ok', label: 'OK' },
+                { property: 'cancel', label: 'Cancel' },
+            ],
+            results: results,
+            onExit: selectedSeries => alert(selectedSeries),
         };
     }
 

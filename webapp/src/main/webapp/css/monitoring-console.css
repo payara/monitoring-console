@@ -754,6 +754,7 @@ table.AnnotationTable {
   background-color: var(--caption-bg-color);
   padding: 10px;
   text-align: right;
+  clear: both;
 }
 
 /* SelectionWizard Component */
@@ -774,12 +775,11 @@ table.AnnotationTable {
   padding: 20px;
   background-color: white;
   color: #434445;
-  position: relative;
   min-height: 10em;
 }
 .SelectionWizard .Matches .Selection {
-  position: absolute;
-  left: 50%;
+  float: right;
+  width: 50%;
 }
 .SelectionWizard .Matches p {
   font-style: italic;
