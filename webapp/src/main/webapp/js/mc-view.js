@@ -375,47 +375,6 @@ MonitoringConsole.View = (function() {
     }
 
     function createPageSettings() {
-        const NAMESPACES = MonitoringConsole.Data.NAMESPACES;
-        let nsSelection = $('<select/>');
-        nsSelection.append($('<option/>').val('-').text('(Please Select)'));
-        nsSelection.on('mouseenter focus', function() {
-            if (nsSelection.children().length == 1) {
-                 let nsAdded = [];
-                 MonitoringConsole.Model.listSeries(function(names) {
-                    $.each(names, function() {
-                        let key = this;
-                        let ns =  this.substring(3, this.indexOf(' '));
-                        if (NAMESPACES[ns] === undefined) {
-                            ns = 'other';
-                        }
-                        if (nsAdded.indexOf(ns) < 0) {
-                            nsAdded.push(ns);
-                            nsSelection.append($('<option/>').val(ns).text(NAMESPACES[ns]));
-                        }
-                    });
-                });
-            }
-        });
-        let widgetsSelection = $('<select/>').attr('disabled', true);
-        nsSelection.change(function() {
-            widgetsSelection.empty();
-            widgetsSelection.append($('<option/>').val('').text('(Please Select)'));
-            MonitoringConsole.Model.listSeries(function(names) {
-                $.each(names, function() {
-                    let key = this;
-                    let ns =  this.substring(3, this.indexOf(' '));
-                    if (NAMESPACES[ns] === undefined) {
-                        ns = 'other';
-                    }
-                    if (ns === nsSelection.val()) {
-                        widgetsSelection.append($("<option />").val(key).text(this.substring(this.indexOf(' '))));                        
-                    }
-                });
-                widgetsSelection.attr('disabled', false);
-            });
-        });
-        let widgetSeries = $('<input />', {type: 'text'});
-        widgetsSelection.change(() => widgetSeries.val(widgetsSelection.val()));
         let pageNameOnChange = MonitoringConsole.Model.Page.hasPreset() ? undefined : function(text) {
             if (MonitoringConsole.Model.Page.rename(text)) {
                 updatePageNavigation();                        
@@ -440,16 +399,9 @@ MonitoringConsole.View = (function() {
                 { type: 'value', min: 1, unit: 'sec', value: page.content.ttl, onChange: (value) => configure(page => page.content.ttl = value) },
                 { input: $('<button/>', {text: 'Update'}).click(() => configure(page => page.content.expires = undefined)) },
             ]},
-            { label: 'Add Widgets', available: !queryAvailable, input: () => 
-                $('<span/>')
-                .append(nsSelection)
-                .append(widgetsSelection)
-                .append(widgetSeries)
-                .append($('<button/>', {title: 'Add selected metric', text: 'Add'})
-                    .click(() => onPageChange(MonitoringConsole.Model.Page.Widgets.add(widgetSeries.val()))))
-            },
-            { label: 'Wiz', available: !queryAvailable, input: $('<button/>', { text: 'Open Wizard' }).click(
-                () => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel()))) },
+            { label: 'Add Widgets', available: !queryAvailable, input: $('<button/>', { text: 'Select metric(s)...' }).click(
+                () => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel([], 
+                    selectedSeries => onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries)))))) },
             { label: 'Sync', available: pushAvailable || pullAvailable, input: [
                 { available: autoAvailable, label: 'auto', type: 'checkbox', value: MonitoringConsole.Model.Page.Sync.auto(), onChange: (checked) => MonitoringConsole.Model.Page.Sync.auto(checked),
                     description: 'When checked changed to the page are automatically pushed to the remote server (shared with others)' },
@@ -736,7 +688,7 @@ MonitoringConsole.View = (function() {
         ]};
     }
 
-    function createWizardModalDialogModel(initiallySelectedSeries) {
+    function createWizardModalDialogModel(initiallySelectedSeries, onExit) {
         function objectToOptions(obj) {
             const options = [];
             for (const [key, value] of Object.entries(obj))
@@ -833,7 +785,7 @@ MonitoringConsole.View = (function() {
                 { property: 'cancel', label: 'Cancel' },
             ],
             results: results,
-            onExit: selectedSeries => alert(selectedSeries),
+            onExit: onExit,
         };
     }
 

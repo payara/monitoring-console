@@ -681,7 +681,7 @@ MonitoringConsole.Model = (function() {
 			},
 			
 			addWidget: function(series) {
-				if (typeof series !== 'string')
+				if (!(typeof series === 'string' || Array.isArray(series) && series.length > 0 && typeof series[0] === 'string'))
 					throw 'configuration object requires string property `series`';
 				doDeselect();
 				let layout = doLayout();
@@ -689,9 +689,9 @@ MonitoringConsole.Model = (function() {
 				let widgets = page.widgets;
 				let id = (Object.values(widgets)
 					.filter(widget => widget.series == series)
-					.reduce((acc, widget) => Math.max(acc, widget.id.substr(0, widget.id.indexOf(' '))), 0) + 1) + ' ' + series;
-				let widget = { id: id, series: series };
-				widgets[id] = sanityCheckWidget(widget);
+					.reduce((acc, widget) => Math.max(acc, widget.id.substr(0, widget.id.indexOf(' '))), 0) + 1) + ' ' + series;				
+				let widget = sanityCheckWidget({ id: id, series: series });
+				widgets[widget.id] = widget;
 				widget.selected = true;
 				// automatically fill most empty column
 				let usedCells = new Array(layout.length);
@@ -1423,7 +1423,9 @@ MonitoringConsole.Model = (function() {
 			Widgets: {
 				
 				add: function(series) {
-					if (series.trim()) {
+					if (Array.isArray(series) && series.length == 1)
+						series = series[0];
+					if (Array.isArray(series) || series.trim()) {
 						UI.addWidget(series);
 						Interval.tick();
 					}
