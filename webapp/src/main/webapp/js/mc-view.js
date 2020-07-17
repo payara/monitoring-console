@@ -763,6 +763,11 @@ MonitoringConsole.View = (function() {
                 type: match => metadata(match, 'Type'),
                 property: match => metadata(match, 'Property'),
                 unit: match => metadata(match, 'Unit'),
+                group: match =>  {
+                    let groupIndex = match.series.indexOf(' @:');
+                    return groupIndex < 0 ? undefined : match.series.substring(groupIndex + 3, match.series.indexOf(' ', groupIndex + 3));
+                },
+                metric: match => match.series.substring(match.series.lastIndexOf(' ') + 1),
             },            
             // filters link to the above properties to extract match data
             filters: [
@@ -787,6 +792,8 @@ MonitoringConsole.View = (function() {
                 { label: 'MicroProfile Property', property: 'property', requires: { ns: 'metric'} },
                 { label: 'MicroProfile Name', property: 'name', requires: { ns: 'metric' }, 
                     filter: (name, input) => name.toLowerCase().includes(input.toLowerCase()) },                
+                { label: 'Group', property: 'group' },
+                { label: 'Metric', property: 'metric' },
                 { label: 'Series', property: 'series', 
                     filter: (series, input) => series.toLowerCase().includes(input.toLowerCase()) },
             ],
