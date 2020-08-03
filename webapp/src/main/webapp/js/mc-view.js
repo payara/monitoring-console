@@ -275,6 +275,19 @@ MonitoringConsole.View = (function() {
     }
 
     function createWidgetSettings(widget) {
+        function changeSeries(selectedSeries) {
+            if (selectedSeries !== undefined && selectedSeries.length > 0)
+                onPageChange(MonitoringConsole.Model.Page.Widgets.configure(widget.id, 
+                    widget => widget.series = selectedSeries.length == 1 ? selectedSeries[0] : selectedSeries));
+        }
+        let seriesInput = $('<span/>');
+        if (Array.isArray(widget.series)) {
+            seriesInput.append(widget.series.join(', ')).append(' ');                    
+        } else {
+            seriesInput.append(widget.series).append(' ');
+        }
+        seriesInput.append($('<br/>')).append($('<button/>', { text: 'Change metric(s)...' })
+                .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel(widget.series, changeSeries)))));
         let options = widget.options;
         let unit = widget.unit;
         let thresholds = widget.decorations.thresholds;
@@ -296,7 +309,7 @@ MonitoringConsole.View = (function() {
             ]},
         ]});
         settings.push({ id: 'settings-data', caption: 'Data', entries: [
-            { label: 'Series', type: 'text', value: Array.isArray(widget.series) ? widget.series : [widget.series], onChange: (widget, value) => widget.series = value },
+            { label: 'Series', input: seriesInput },
             { label: 'Unit', input: [
                 { type: 'dropdown', options: Units.names(), value: widget.unit, onChange: function(widget, selected) { widget.unit = selected; updateSettings(); }},
                 { label: '1/sec', type: 'checkbox', value: options.perSec, onChange: (widget, checked) => widget.options.perSec = checked},
@@ -375,47 +388,12 @@ MonitoringConsole.View = (function() {
     }
 
     function createPageSettings() {
-        const NAMESPACES = MonitoringConsole.Data.NAMESPACES;
-        let nsSelection = $('<select/>');
-        nsSelection.append($('<option/>').val('-').text('(Please Select)'));
-        nsSelection.on('mouseenter focus', function() {
-            if (nsSelection.children().length == 1) {
-                 let nsAdded = [];
-                 MonitoringConsole.Model.listSeries(function(names) {
-                    $.each(names, function() {
-                        let key = this;
-                        let ns =  this.substring(3, this.indexOf(' '));
-                        if (NAMESPACES[ns] === undefined) {
-                            ns = 'other';
-                        }
-                        if (nsAdded.indexOf(ns) < 0) {
-                            nsAdded.push(ns);
-                            nsSelection.append($('<option/>').val(ns).text(NAMESPACES[ns]));
-                        }
-                    });
-                });
-            }
-        });
-        let widgetsSelection = $('<select/>').attr('disabled', true);
-        nsSelection.change(function() {
-            widgetsSelection.empty();
-            widgetsSelection.append($('<option/>').val('').text('(Please Select)'));
-            MonitoringConsole.Model.listSeries(function(names) {
-                $.each(names, function() {
-                    let key = this;
-                    let ns =  this.substring(3, this.indexOf(' '));
-                    if (NAMESPACES[ns] === undefined) {
-                        ns = 'other';
-                    }
-                    if (ns === nsSelection.val()) {
-                        widgetsSelection.append($("<option />").val(key).text(this.substring(this.indexOf(' '))));                        
-                    }
-                });
-                widgetsSelection.attr('disabled', false);
-            });
-        });
-        let widgetSeries = $('<input />', {type: 'text'});
-        widgetsSelection.change(() => widgetSeries.val(widgetsSelection.val()));
+        function addWidgets(selectedSeries) {
+            if (selectedSeries !== undefined && selectedSeries.length > 0)
+                onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries));
+        }
+        const addWidgetsInput = $('<button/>', { text: 'Select metric(s)...' })
+            .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel([], addWidgets))));
         let pageNameOnChange = MonitoringConsole.Model.Page.hasPreset() ? undefined : function(text) {
             if (MonitoringConsole.Model.Page.rename(text)) {
                 updatePageNavigation();                        
@@ -440,14 +418,7 @@ MonitoringConsole.View = (function() {
                 { type: 'value', min: 1, unit: 'sec', value: page.content.ttl, onChange: (value) => configure(page => page.content.ttl = value) },
                 { input: $('<button/>', {text: 'Update'}).click(() => configure(page => page.content.expires = undefined)) },
             ]},
-            { label: 'Add Widgets', available: !queryAvailable, input: () => 
-                $('<span/>')
-                .append(nsSelection)
-                .append(widgetsSelection)
-                .append(widgetSeries)
-                .append($('<button/>', {title: 'Add selected metric', text: 'Add'})
-                    .click(() => onPageChange(MonitoringConsole.Model.Page.Widgets.add(widgetSeries.val()))))
-            },
+            { label: 'Add Widgets', available: !queryAvailable, input: addWidgetsInput },
             { label: 'Sync', available: pushAvailable || pullAvailable, input: [
                 { available: autoAvailable, label: 'auto', type: 'checkbox', value: MonitoringConsole.Model.Page.Sync.auto(), onChange: (checked) => MonitoringConsole.Model.Page.Sync.auto(checked),
                     description: 'When checked changed to the page are automatically pushed to the remote server (shared with others)' },
@@ -558,8 +529,6 @@ MonitoringConsole.View = (function() {
         }
         return legend;
     }
-
-    
 
     function createLegendModelFromAlerts(widget, alerts) {
         if (!Array.isArray(alerts))
@@ -734,6 +703,124 @@ MonitoringConsole.View = (function() {
         ]};
     }
 
+    function createWizardModalDialogModel(initiallySelectedSeries, onExit) {
+        if (initiallySelectedSeries !== undefined && !Array.isArray(initiallySelectedSeries))
+            initiallySelectedSeries = [ initiallySelectedSeries ];
+        function objectToOptions(obj) {
+            const options = [];
+            for (const [key, value] of Object.entries(obj))
+                options.push({ label: value, filter: key });
+            return options;
+        }
+
+        function loadSeries() {
+            return new Promise(function(resolve, reject) {
+                Controller.requestListOfSeriesData({ groupBySeries: true, queries: [{
+                    widgetId: 'auto', 
+                    series: '?:* *',
+                    truncate: ['ALERTS', 'POINTS'],
+                    exclude: ['ALERTS', 'WATCHES']
+                }]}, 
+                (response) => resolve(response.matches),
+                () => reject(undefined));
+            });
+        }
+
+        function metadata(match, attr) {
+            const metadata = match.annotations.filter(a => a.permanent)[0];
+            return metadata === undefined ? undefined : metadata.attrs[attr];
+        }
+
+        function matchesText(value, input) {
+            return value.toLowerCase().includes(input.toLowerCase());
+        }
+
+        const results = {
+            ok: initiallySelectedSeries,
+            cancel: initiallySelectedSeries,
+        };
+
+        const wizard = { 
+            key: 'series', 
+            entry: ['series', 'displayName', 'description', 'unit'],
+            selection: initiallySelectedSeries,
+            render: entry => {
+                const span = $('<span/>', { title: entry.description || '' });
+                if (entry.displayName)
+                    span.append($('<b/>').text(entry.displayName)).append(' ');
+                span.append($('<code/>').text(entry.series));
+                if (entry.unit)
+                    span.append(' ').append($('<em/>').text('[' + entry.unit + ']'));
+                if (entry.describe && entry.description)
+                    span.append($('<p/>').text(entry.description));
+                return span;
+            },
+            // the function that produces match entries
+            onSearch: loadSeries,
+            // these are the how to get a filter property from a match entry
+            properties: {
+                ns: match => match.series.startsWith('ns:') ? match.series.substring(3, match.series.indexOf(' ')) : undefined,
+                series: match => match.series,
+                app: match => metadata(match, 'App'),
+                name: match => metadata(match, 'Name'),
+                displayName: match => metadata(match, 'DisplayName'),
+                description: match => metadata(match, 'Description'),
+                type: match => metadata(match, 'Type'),
+                property: match => metadata(match, 'Property'),
+                unit: match => metadata(match, 'Unit'),
+                group: match =>  {
+                    let groupIndex = match.series.indexOf(' @:');
+                    return groupIndex < 0 ? undefined : match.series.substring(groupIndex + 3, match.series.indexOf(' ', groupIndex + 3));
+                },
+                metric: match => match.series.substring(match.series.lastIndexOf(' ') + 1),
+            },            
+            // filters link to the above properties to extract match data
+            filters: [
+                { label: 'Source', property: 'ns', options: [
+                    { label: 'Server Metrics', filter: ns => ns != 'metric' },
+                    { label: 'MicroProfile Metrics', filter: 'metric' }
+                ]},
+                { label: 'MicroProfile Application', property: 'app', requires: { ns: 'metric' }},
+                { label: 'MicroProfile Type', property: 'type', requires: { ns: 'metric' }, options: [ // values are as used by MP metrics type
+                    { label: 'Counter', filter: 'counter' },
+                    { label: 'Timer', filter: 'timer' },
+                    { label: 'Gauge', filter: 'gauge' },
+                    { label: 'Concurrent Gauge', filter: 'concurrent gauage' },
+                    { label: 'Meter', filter: 'meter' },
+                    { label: 'Histogram', filter: 'histogram' },
+                    { label: 'Simple Timer', filter: 'simple timer' }
+                ]},
+                { label: 'MicroProfile Unit', property: 'unit', requires: { ns: 'metric' }},
+                { label: 'Namespace', property: 'ns', requires: { ns: ns => ns != 'metric' }, 
+                    options: () => objectToOptions(MonitoringConsole.Data.NAMESPACES)
+                        .filter(option => option.filter != 'metric' && option.filter != 'other') },
+                { label: 'MicroProfile Property', property: 'property', requires: { ns: 'metric'} },
+                { label: 'MicroProfile Name', property: 'name', requires: { ns: 'metric' }, 
+                    filter: matchesText },                
+                { label: 'MicroProfile Display Name', property: 'displayName', requires: { ns: 'metric' }, 
+                    filter: matchesText },                
+                { label: 'MicroProfile Description', property: 'description', requires: { ns: 'metric' }, 
+                    filter: matchesText },                
+                { label: 'Group', property: 'group' },
+                { label: 'Metric', property: 'metric' },
+                { label: 'Series', property: 'series', filter: matchesText },
+            ],
+            // what should happen if the selection made by the user changes
+            onChange: selectedSeries => results.ok = selectedSeries,
+        };
+
+        return { id: 'ModalDialog', 
+            title: 'Select Metric Series...',
+            content: () => Components.createSelectionWizard(wizard),
+            buttons: [
+                { property: 'ok', label: 'OK' },
+                { property: 'cancel', label: 'Cancel' },
+            ],
+            results: results,
+            onExit: onExit,
+        };
+    }
+
     /**
      * This function is called when the watch details settings should be opened
      */
@@ -793,6 +880,17 @@ MonitoringConsole.View = (function() {
      * This function refleshes the page with the given layout.
      */
     function onPageUpdate(layout) {
+        function addWidgets(selectedSeries, row, col) {
+            if (selectedSeries !== undefined && selectedSeries.length > 0) {
+                const grid = { column: col, item: row };
+                onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries, grid));
+            }
+        }
+        function createPlusButton(row, col) {
+            return $('<button/>', { text: '+', 'class': 'big-plus' })
+                .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(
+                    createWizardModalDialogModel([], selectedSeries => addWidgets(selectedSeries, row, col))))); 
+        }              
         let numberOfColumns = layout.length;
         let maxRows = layout[0].length;
         let table = $("<table/>", { id: 'chart-grid', 'class': 'columns-'+numberOfColumns + ' rows-'+maxRows });
@@ -820,7 +918,7 @@ MonitoringConsole.View = (function() {
                     updateDomOfWidget(td, cell.widget);
                     tr.append(td);
                 } else if (cell === null) {
-                    tr.append($("<td/>", { 'class': 'widget', style: 'height: '+rowHeight+'px;'}));                  
+                    tr.append($("<td/>", { 'class': 'widget empty', style: 'height: '+rowHeight+'px;'}).append(createPlusButton(row, col)));                  
                 }
             }
             table.append(tr);
