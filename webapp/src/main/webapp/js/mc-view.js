@@ -712,6 +712,7 @@ MonitoringConsole.View = (function() {
                 options.push({ label: value, filter: key });
             return options;
         }
+
         function loadSeries() {
             return new Promise(function(resolve, reject) {
                 Controller.requestListOfSeriesData({ groupBySeries: true, queries: [{
@@ -728,6 +729,10 @@ MonitoringConsole.View = (function() {
         function metadata(match, attr) {
             const metadata = match.annotations.filter(a => a.permanent)[0];
             return metadata === undefined ? undefined : metadata.attrs[attr];
+        }
+
+        function matchesText(value, input) {
+            return value.toLowerCase().includes(input.toLowerCase());
         }
 
         const results = {
@@ -791,13 +796,14 @@ MonitoringConsole.View = (function() {
                         .filter(option => option.filter != 'metric' && option.filter != 'other') },
                 { label: 'MicroProfile Property', property: 'property', requires: { ns: 'metric'} },
                 { label: 'MicroProfile Name', property: 'name', requires: { ns: 'metric' }, 
-                    filter: (name, input) => name.toLowerCase().includes(input.toLowerCase()) },                
+                    filter: matchesText },                
+                { label: 'MicroProfile Display Name', property: 'displayName', requires: { ns: 'metric' }, 
+                    filter: matchesText },                
                 { label: 'MicroProfile Description', property: 'description', requires: { ns: 'metric' }, 
-                    filter: (desc, input) => desc.toLowerCase().includes(input.toLowerCase()) },                
+                    filter: matchesText },                
                 { label: 'Group', property: 'group' },
                 { label: 'Metric', property: 'metric' },
-                { label: 'Series', property: 'series', 
-                    filter: (series, input) => series.toLowerCase().includes(input.toLowerCase()) },
+                { label: 'Series', property: 'series', filter: matchesText },
             ],
             // what should happen if the selection made by the user changes
             onChange: selectedSeries => results.ok = selectedSeries,
