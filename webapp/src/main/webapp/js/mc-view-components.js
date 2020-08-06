@@ -901,7 +901,7 @@ MonitoringConsole.View.Components = (function() {
       let text = '<b>' + levelText + ':</b> <em>If</em> ' + series + ' <em>in</em> ' + Units.names()[unit] + ' <em>is</em> ';
       text += plainText(formatCondition(model.start, unit));
       if (model.suppress)
-        text += ' <em>unless</em> ' + model.surpressingSeries + ' ' + plainText(formatCondition(model.suppress, modelsurpressingUnit));
+        text += ' <em>unless</em> ' + model.surpressingSeries + ' ' + plainText(formatCondition(model.suppress, model.surpressingUnit));
       if (model.stop)
         text += ' <em>until</em> ' + plainText(formatCondition(model.stop, unit));
       return circumstance.html(text);

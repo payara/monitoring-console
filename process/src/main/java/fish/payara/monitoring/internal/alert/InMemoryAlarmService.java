@@ -44,6 +44,10 @@ import static java.util.Collections.unmodifiableCollection;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.logging.Level.FINE;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
@@ -61,6 +65,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import fish.payara.monitoring.adapt.MonitoringConsoleRuntime;
 import fish.payara.monitoring.adapt.MonitoringConsoleWatchConfig;
@@ -83,7 +88,8 @@ public class InMemoryAlarmService implements AlertService {
     private static final int MAX_ALERTS_PER_SERIES = 10;
 
     private final SeriesRepository monitoringData;
-    private final boolean receiver;
+    private final String instance;
+    private final boolean isDAS;
     private final JobHandle checker = new JobHandle("watch checker");
     private final Map<String, Watch> watchesByName = new ConcurrentHashMap<>();
     private final Map<Series, Map<String, Watch>> simpleWatches = new ConcurrentHashMap<>();
@@ -92,32 +98,35 @@ public class InMemoryAlarmService implements AlertService {
     private final AtomicReference<AlertStatistics> statistics = new AtomicReference<>(new AlertStatistics());
     private final AtomicLong evalLoopTime = new AtomicLong();
     /**
-     * Watches that are added during collection
+     * Watches that are added during collection for each instance
      */
-    private final Map<String, Watch> collectedWatches = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, Watch>> collectedWatchesByInstance = new ConcurrentHashMap<>();
 
     private final Supplier<? extends List<MonitoringWatchSource>> sources;
     private final MonitoringConsoleRuntime runtime;
     private final MonitoringConsoleWatchConfig watchConfig;
 
-    public InMemoryAlarmService(boolean receiver, MonitoringConsoleRuntime runtime, 
+    public InMemoryAlarmService(String instance, boolean isDAS, MonitoringConsoleRuntime runtime,
             Supplier<? extends List<MonitoringWatchSource>> sources, SeriesRepository monitoringData) {
-        this.receiver = receiver;
+        this.instance = instance;
+        this.isDAS = isDAS;
         this.runtime = runtime;
         this.sources = sources;
         this.watchConfig = runtime.getWatchConfig();
         this.monitoringData = monitoringData;
-        addWatch(new Watch("Metric Collection Duration", new Metric(new Series("ns:monitoring CollectionDuration"), Unit.MILLIS))
-                .programmatic()
-                .red(800L, 2, true, 800L, 3, false)
-                .amber(600L, 2, true, 600L, 3, false)
-                .green(-400L, 1, false, null, null, false));
-        addWatch(new Watch("Watch Loop Duration", new Metric(new Series("ns:monitoring WatchLoopDuration"), Unit.MILLIS))
-                .programmatic()
-                .red(800L, 2, true, 800L, 3, false)
-                .amber(600L, 3, true, 600L, 3, false)
-                .green(-400L, 1, false, null, null, false));
-        addWatchesFromConfiguration();
+        if (isDAS) {
+            addWatch(new Watch("Metric Collection Duration", new Metric(new Series("ns:monitoring CollectionDuration"), Unit.MILLIS))
+                    .programmatic()
+                    .red(800L, 2, true, 800L, 3, false)
+                    .amber(600L, 2, true, 600L, 3, false)
+                    .green(-400L, 1, false, null, null, false));
+            addWatch(new Watch("Watch Loop Duration", new Metric(new Series("ns:monitoring WatchLoopDuration"), Unit.MILLIS))
+                    .programmatic()
+                    .red(800L, 2, true, 800L, 3, false)
+                    .amber(600L, 3, true, 600L, 3, false)
+                    .green(-400L, 1, false, null, null, false));
+            addWatchesFromConfiguration();
+        }
     }
 
     private void addWatchesFromConfiguration() {
@@ -126,6 +135,39 @@ public class InMemoryAlarmService implements AlertService {
                 addWatch(Watch.fromJSON(watch));
             }
         }
+    }
+
+    public void addRemoteWatches(WatchesSnapshot msg) {
+        if (!isDAS) {
+            return; // should not have gotten the message but we prevent any further errors by ignoring it
+        }
+        Map<String, Watch> collectedBefore = collectedWatchesByInstance.computeIfAbsent(msg.instance,
+                key -> new ConcurrentHashMap<>());
+        Set<String> notYetCollectedWatches = new HashSet<>(collectedBefore.keySet());
+        for (Watch w : msg.watches) {
+            Watch watch = Watch.fromRemote(w);
+            Watch existing = collectedBefore.get(watch.name);
+            if (existing == null || !watch.equalsFunctionally(existing)) {
+                addWatch(watch);
+                collectedBefore.put(watch.name, watch);
+            }
+            notYetCollectedWatches.remove(watch.name);
+        }
+        for (String name : notYetCollectedWatches) {
+            Watch removed = collectedBefore.remove(name);
+            if (removed != null && !isCollectedByAnyInstance(name)) {
+                removeWatch(removed);
+            }
+        }
+    }
+
+    private boolean isCollectedByAnyInstance(String name) {
+        for (Map<String, Watch> collectedByInstance : collectedWatchesByInstance.values()) {
+            if (collectedByInstance.containsKey(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -145,12 +187,10 @@ public class InMemoryAlarmService implements AlertService {
     }
 
     public void setEnabled(boolean enabled) {
-        if (!receiver) {
-            return; // only check alerts on DAS
-        }
         if (!enabled) {
             checker.stop();
         } else {
+            LOGGER.info("Starting monitoring watch collection for " + instance);
             checker.start(runtime, 1, SECONDS, this::checkWatches);
         }
     }
@@ -240,7 +280,10 @@ public class InMemoryAlarmService implements AlertService {
         String name = watch.name;
         if (watchesByName.get(name) == watch) {
             watchesByName.remove(name);
-            collectedWatches.remove(name);
+            Map<String, Watch> collectedByInstance = collectedWatchesByInstance.get(instance);
+            if (collectedByInstance != null) {
+                collectedByInstance.remove(name);
+            }
             removeWatch(watch, simpleWatches);
             removeWatch(watch, patternWatches);
             if (!watch.isProgrammatic()) {
@@ -307,21 +350,38 @@ public class InMemoryAlarmService implements AlertService {
         try {
             collectWatches();
         } catch (Exception ex) {
-            LOGGER.log(FINE, "Fialed to collect watches", ex);
+            LOGGER.log(FINE, "Failed to collect watches", ex);
         }
-        try {
-            checkWatches(simpleWatches.values());
-            checkWatches(patternWatches.values());
-            statistics.set(computeStatistics());
-        } catch (Exception ex) {
-            LOGGER.log(FINE, "Failed to check watches", ex);
+        if (isDAS) { // only evaluate watches on DAS
+            try {
+                checkWatches(simpleWatches.values());
+                checkWatches(patternWatches.values());
+                statistics.set(computeStatistics());
+            } catch (Exception ex) {
+                LOGGER.log(FINE, "Failed to check watches", ex);
+            }
+        } else {
+            Map<String, Watch> instanceWachtes = collectedWatchesByInstance.get(instance);
+            sendMessage(new WatchesSnapshot(instance, instanceWachtes.values().stream().toArray(Watch[]::new)));
         }
         evalLoopTime.set(System.currentTimeMillis() - start);
     }
 
+    private void sendMessage(WatchesSnapshot msg) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+            oos.writeObject(msg);
+            oos.flush();
+            runtime.send(bos.toByteArray());
+        } catch (IOException ex) {
+            LOGGER.log(FINE, "Failed to send collected watches message", ex);
+        }
+    }
+
     private void collectWatches() {
         List<MonitoringWatchSource> sources = this.sources.get();
-        Map<String, Watch> collectedBefore = collectedWatches;
+        Map<String, Watch> collectedBefore = collectedWatchesByInstance.computeIfAbsent(instance,
+                key -> new ConcurrentHashMap<>());
         if (sources.isEmpty() && collectedBefore.isEmpty()) {
             return; // nothing to do
         }
@@ -354,8 +414,7 @@ public class InMemoryAlarmService implements AlertService {
             try {
                 source.collect(collector);
             } catch (Exception ex) {
-                LOGGER.log(java.util.logging.Level.FINE,
-                        "Failed to collect watch source " + source.getClass().getSimpleName(), ex);
+                LOGGER.log(FINE, "Failed to collect watch source " + source.getClass().getSimpleName(), ex);
             }
         }
         if (!notYetCollectedWatches.isEmpty()) {
@@ -445,4 +504,14 @@ public class InMemoryAlarmService implements AlertService {
         return false;
     }
 
+    public static final class WatchesSnapshot implements Serializable {
+
+        final String instance;
+        final Watch[] watches;
+
+        WatchesSnapshot(String instance, Watch[] watches) {
+            this.instance = instance;
+            this.watches = watches;
+        }
+    }
 }

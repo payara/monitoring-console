@@ -39,7 +39,6 @@
  */
 package fish.payara.monitoring.web;
 
-import static fish.payara.monitoring.web.ApiRequests.DataType.POINTS;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
@@ -47,9 +46,7 @@ import static java.util.stream.StreamSupport.stream;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;

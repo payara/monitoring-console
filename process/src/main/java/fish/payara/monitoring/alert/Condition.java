@@ -42,6 +42,7 @@ package fish.payara.monitoring.alert;
 import static java.lang.Math.abs;
 import static java.lang.Math.min;
 
+import java.io.Serializable;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
@@ -54,16 +55,16 @@ import fish.payara.monitoring.model.SeriesDataset;
 
 /**
  * Describes when a {@link SeriesDataset} {@link #isSatisfied(SeriesDataset)}.
- * 
+ *
  * In the simplest form this is a plain comparison with a constant {@link #threshold} value.
- * 
+ *
  * More advanced {@link Condition}s check if the condition is satisfied for last number of values in the dataset or for
  * a past number of milliseconds. Such checks either check each included value of the dataset against the threshold
  * (ALL) or compare their average against the threshold in a single check for any number of included values.
- * 
+ *
  * @author Jan Berntitt
  */
-public final class Condition {
+public final class Condition implements Serializable {
 
     private static final String FOR_TIMES = "forTimes";
     private static final String FOR_MILLIS = "forMillis";
@@ -123,7 +124,7 @@ public final class Condition {
     }
 
     public boolean isNone() {
-        return this == NONE;
+        return this == NONE || equalTo(NONE);
     }
 
     public boolean isForLastPresent() {
@@ -317,7 +318,7 @@ public final class Condition {
             forLast = obj.getInt(FOR_TIMES);
         }
         return new Condition(
-                Operator.parse(obj.getString("comparison", ">")), 
+                Operator.parse(obj.getString("comparison", ">")),
                 obj.getJsonNumber("threshold").longValue(),
                 forLast,
                 obj.getBoolean("onAverage", false));

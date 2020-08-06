@@ -39,6 +39,8 @@
  */
 package fish.payara.monitoring.alert;
 
+import java.io.Serializable;
+
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
@@ -54,7 +56,7 @@ import fish.payara.monitoring.model.SeriesDataset;
  *
  * @author Jan Bernitt
  */
-public final class Circumstance {
+public final class Circumstance implements Serializable {
 
     /**
      * A "null" value object to use for a {@link Circumstance} that does not exist.
@@ -128,7 +130,7 @@ public final class Circumstance {
 
     public boolean equalTo(Circumstance other) {
         return level == other.level && start.equalTo(other.start) && stop.equalTo(other.stop)
-                && suppress.equalTo(other.suppress) 
+                && suppress.equalTo(other.suppress)
                 && (suppressing == null && other.suppressing == null || suppressing != null && suppressing.equalTo(other.suppressing));
     }
 
@@ -167,7 +169,7 @@ public final class Circumstance {
         }
         JsonObject obj = value.asJsonObject();
         return new Circumstance(
-                Level.parse(obj.getString("level")), 
+                Level.parse(obj.getString("level")),
                 Condition.fromJSON(obj.get("start")),
                 Condition.fromJSON(obj.get("stop")),
                 Metric.fromJSON(obj.get("suppressing")),

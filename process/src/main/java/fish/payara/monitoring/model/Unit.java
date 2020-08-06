@@ -41,7 +41,7 @@ package fish.payara.monitoring.model;
 
 /**
  * A {@link Unit} describes the type of values of a {@link SeriesDataset}.
- * 
+ *
  * @author Jan Bernitt
  */
 public enum Unit {
@@ -51,7 +51,8 @@ public enum Unit {
     BYTES("bytes"),
     SECONDS("sec"),
     MILLIS("ms"),
-    NANOS("ns");
+    NANOS("ns"),
+    UPDOWN("updown");
 
     public static Unit fromShortName(String shortName) {
         for (Unit u : values()) {
