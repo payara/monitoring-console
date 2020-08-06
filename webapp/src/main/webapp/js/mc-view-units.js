@@ -128,6 +128,7 @@ MonitoringConsole.View.Units = (function() {
       ns: NS_FACTORS,
       bytes: BYTES_FACTORS,
       percent: PERCENT_FACTORS,
+      updown: {},
    };
 
    const UNIT_NAMES = {
@@ -137,7 +138,8 @@ MonitoringConsole.View.Units = (function() {
       us: 'Microseconds',
       ns: 'Nanoseconds', 
       bytes: 'Bytes', 
-      percent: 'Percentage'
+      percent: 'Percentage',
+      updown: 'Up/Down',
    };
 
    const ALERT_STATUS_NAMES = { 
@@ -311,6 +313,13 @@ MonitoringConsole.View.Units = (function() {
       parseNanoseconds: (valueAsString) => parseNumber(valueAsString, NS_FACTORS),
       parseBytes: (valueAsString) => parseNumber(valueAsString, BYTES_FACTORS),
       converter: function(unit) {
+         if (unit == 'updown')
+            return {
+               format: (stateAsNumber) => stateAsNumber == 0 ? 'Down' : 'Up',
+               parse: (stateAsString) => stateAsString == 'Down' || stateAsString == '0' ? 0 : 1,
+               pattern: () => 'up|down|0|1',
+               patternHint: () => 'up, down, 0, 1'
+            };
          let factors = FACTORS[unit];
          return {
             format: (valueAsNumber, useDecimals) => formatNumber(valueAsNumber, factors, useDecimals),

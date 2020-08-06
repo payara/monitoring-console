@@ -65,7 +65,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import fish.payara.monitoring.adapt.MonitoringConsoleRuntime;
 import fish.payara.monitoring.adapt.MonitoringConsoleWatchConfig;
