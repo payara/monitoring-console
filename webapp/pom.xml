@@ -45,7 +45,7 @@
     <parent>
         <groupId>fish.payara.monitoring-console</groupId>
         <artifactId>parent</artifactId>
-        <version>1.3-SNAPSHOT</version>
+        <version>1.3</version>
     </parent>
         
     <artifactId>monitoring-console-webapp</artifactId>
