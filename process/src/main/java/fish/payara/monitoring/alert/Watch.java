@@ -42,6 +42,7 @@ package fish.payara.monitoring.alert;
 import static fish.payara.monitoring.alert.Alert.Level.*;
 import static java.util.Collections.emptyList;
 
+import java.io.Serializable;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,15 +72,15 @@ import fish.payara.monitoring.model.SeriesDataset;
 /**
  * A {@link Watch} uses descriptions of {@link Circumstance}s and their {@link Condition}s to determine a {@link Level}
  * the values of a particular {@link SeriesDataset}.
- * 
+ *
  * When the {@link Alert.Level} reaches {@link Level#AMBER} or {@link Level#RED} an {@link Alert} is created which ends
  * first when the same {@link SeriesDataset} reaches {@link Level#GREEN} or {@link Level#WHITE} again.
- * 
+ *
  * @see Alert
- * 
+ *
  * @author Jan Bernitt
  */
-public final class Watch implements WatchBuilder, Iterable<Watch.State> {
+public final class Watch implements WatchBuilder, Iterable<Watch.State>, Serializable {
 
     private static final String GREEN_PROPERTY = "green";
     private static final String AMBER_PROPERTY = "amber";
@@ -129,9 +130,9 @@ public final class Watch implements WatchBuilder, Iterable<Watch.State> {
     public final Circumstance amber;
     public final Circumstance green;
     private final Metric[] captured;
-    private final Map<String, State> statesByInstanceSeries;
-    private final AtomicBoolean stopped = new AtomicBoolean(false);
-    private final AtomicBoolean disabled;
+    private final transient Map<String, State> statesByInstanceSeries;
+    private final transient AtomicBoolean stopped = new AtomicBoolean(false);
+    private final transient AtomicBoolean disabled;
     private final boolean programmatic;
 
     public Watch(String name, Metric watched) {
@@ -208,8 +209,8 @@ public final class Watch implements WatchBuilder, Iterable<Watch.State> {
     /**
      * Programmatic watches are collected from {@link MonitoringWatchSource}s or created during initialisation.
      * The programmatic flag can be used by UIs to determine if a watch should be possible to delete.
-     * 
-     * @return A new {@link Watch} instance that {@link #isProgrammatic()}. 
+     *
+     * @return A new {@link Watch} instance that {@link #isProgrammatic()}.
      */
     public Watch programmatic() {
         return new Watch(name, watched, true, red, amber, green, captured, disabled, statesByInstanceSeries);
@@ -346,6 +347,16 @@ public final class Watch implements WatchBuilder, Iterable<Watch.State> {
         return name.equals(other.name);
     }
 
+    public boolean equalsFunctionally(Watch other) {
+        return name.equals(other.name)
+                && programmatic == other.programmatic
+                && watched.equalTo(other.watched)
+                && red.equalTo(other.red)
+                && amber.equalTo(other.amber)
+                && green.equalTo(other.green)
+                && Arrays.equals(captured, other.captured);
+    }
+
     @Override
     public String toString() {
         StringBuilder str = new StringBuilder();
@@ -439,7 +450,7 @@ public final class Watch implements WatchBuilder, Iterable<Watch.State> {
 
     private static Circumstance create(Level level, long startThreshold, Number startForLast,
             boolean startOnAverage, Long stopTheshold, Number stopForLast, boolean stopOnAverage) {
-        Operator startComparison = startThreshold < 0 
+        Operator startComparison = startThreshold < 0
                 ? level == GREEN ? Operator.LE : Operator.LT
                 : level == GREEN ? Operator.GE : Operator.GT;
         Operator stopOperator = stopTheshold != null && stopTheshold < 0
@@ -482,17 +493,17 @@ public final class Watch implements WatchBuilder, Iterable<Watch.State> {
         if (value == null || value == JsonValue.NULL) {
             return null;
         }
-        JsonObject obj = value.asJsonObject(); 
+        JsonObject obj = value.asJsonObject();
         JsonArray array = obj.getJsonArray("captured");
-        Metric[] captured = array == null 
+        Metric[] captured = array == null
                 ? new Metric[0]
                 : array.stream().map(Metric::fromJSON).toArray(Metric[]::new);
-        Watch out = new Watch(obj.getString("name"), 
-                Metric.fromJSON(obj.get("watched")), 
-                obj.getBoolean("programmatic", false), 
-                Circumstance.fromJson(obj.get(RED_PROPERTY)), 
-                Circumstance.fromJson(obj.get(AMBER_PROPERTY)), 
-                Circumstance.fromJson(obj.get(GREEN_PROPERTY)), 
+        Watch out = new Watch(obj.getString("name"),
+                Metric.fromJSON(obj.get("watched")),
+                obj.getBoolean("programmatic", false),
+                Circumstance.fromJson(obj.get(RED_PROPERTY)),
+                Circumstance.fromJson(obj.get(AMBER_PROPERTY)),
+                Circumstance.fromJson(obj.get(GREEN_PROPERTY)),
                 captured);
         if (obj.getBoolean("disabled", false)) {
             out.disable();
@@ -503,4 +514,16 @@ public final class Watch implements WatchBuilder, Iterable<Watch.State> {
         return out;
     }
 
+    /**
+     * Creates a local fully initialised instance of a serialised {@link Watch} which lacks all its transient fields.
+     *
+     * This mean the {@link Watch} is only used in its capacity of describing the conditions but not to track state.
+     *
+     * @param watch a serialised {@link Watch} instance
+     * @return A fully initialised {@link Watch} instance.
+     */
+    public static Watch fromRemote(Watch watch) {
+        return new Watch(watch.name, watch.watched, watch.programmatic, watch.red, watch.amber, watch.green,
+                watch.captured);
+    }
 }

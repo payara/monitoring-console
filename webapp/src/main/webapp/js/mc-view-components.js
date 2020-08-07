@@ -476,6 +476,29 @@ MonitoringConsole.View.Components = (function() {
     return { createComponent: createComponent };
   })();
 
+
+  const RAGIndicator = (function() {
+
+    function createComponent(model) {
+      const indicator = $('<div/>', { 'class': 'RAGIndicator' });
+      const itemHeight = Math.floor(100 / model.items.length);
+      for (let item of model.items) {
+        let text = item.label;
+        if (text == 'server')
+          text = 'DAS';
+        indicator.append($('<div/>', { 
+          title: item.state, 
+          'class': 'Item', 
+          style: 'background-color: '+item.background+ '; height: '+itemHeight+'%; border-left-color: '+item.color+';' })
+        .append($('<span/>').text(text)));
+      }
+      return indicator;
+    }
+
+    return { createComponent: createComponent };
+
+  })();
+
   /**
    * Component for any of the text+icon menus/toolbars.
    */
@@ -901,7 +924,7 @@ MonitoringConsole.View.Components = (function() {
       let text = '<b>' + levelText + ':</b> <em>If</em> ' + series + ' <em>in</em> ' + Units.names()[unit] + ' <em>is</em> ';
       text += plainText(formatCondition(model.start, unit));
       if (model.suppress)
-        text += ' <em>unless</em> ' + model.surpressingSeries + ' ' + plainText(formatCondition(model.suppress, modelsurpressingUnit));
+        text += ' <em>unless</em> ' + model.surpressingSeries + ' ' + plainText(formatCondition(model.suppress, model.surpressingUnit));
       if (model.stop)
         text += ' <em>until</em> ' + plainText(formatCondition(model.stop, unit));
       return circumstance.html(text);
@@ -1539,6 +1562,7 @@ MonitoringConsole.View.Components = (function() {
       createRoleSelector: (model) => RoleSelector.createComponent(model),
       createModalDialog: (model) => ModalDialog.createComponent(model),
       createSelectionWizard: (model) => SelectionWizard.createComponent(model),
+      createRAGIndicator: (model) => RAGIndicator.createComponent(model),
   };
 
 })();

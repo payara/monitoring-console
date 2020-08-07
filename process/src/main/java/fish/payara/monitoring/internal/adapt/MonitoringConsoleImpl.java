@@ -39,10 +39,14 @@
  */
 package fish.payara.monitoring.internal.adapt;
 
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import fish.payara.monitoring.adapt.GroupDataRepository;
 import fish.payara.monitoring.adapt.MonitoringConsole;
@@ -56,7 +60,9 @@ import fish.payara.monitoring.collect.MonitoringDataSource;
 import fish.payara.monitoring.collect.MonitoringWatchSource;
 import fish.payara.monitoring.data.SeriesRepository;
 import fish.payara.monitoring.internal.alert.InMemoryAlarmService;
+import fish.payara.monitoring.internal.alert.InMemoryAlarmService.WatchesSnapshot;
 import fish.payara.monitoring.internal.data.InMemorySeriesRepository;
+import fish.payara.monitoring.internal.data.InMemorySeriesRepository.SeriesDatasetsSnapshot;
 import fish.payara.monitoring.model.SeriesLookup;
 
 /**
@@ -67,6 +73,8 @@ import fish.payara.monitoring.model.SeriesLookup;
  * @since 1.0 (Payara 5.201)
  */
 public class MonitoringConsoleImpl implements MonitoringConsole, MonitoringDataSource {
+
+    private static final Logger LOGGER = Logger.getLogger("monitoring-console-core");
 
     private static final String ALERT_COUNT = "AlertCount";
 
@@ -86,7 +94,25 @@ public class MonitoringConsoleImpl implements MonitoringConsole, MonitoringDataS
             return extended;
         };
         data = new InMemorySeriesRepository(instance, receiver, runtime, extendedDataSource);
-        alerts = new InMemoryAlarmService(receiver, runtime, watchSources, data);
+        alerts = new InMemoryAlarmService(instance, receiver, runtime, watchSources, data);
+        if (receiver) {
+            runtime.receive(this::receiveMesssage);
+        }
+    }
+
+    private void receiveMesssage(byte[] msg) {
+        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(msg))) {
+            Object message = ois.readObject();
+            if (message instanceof SeriesDatasetsSnapshot) {
+                data.addRemoteDatasets((SeriesDatasetsSnapshot) message);
+            } else if (message instanceof WatchesSnapshot) {
+                alerts.addRemoteWatches((WatchesSnapshot) message);
+            } else {
+                LOGGER.log(Level.FINE, "Received a message of unknown type: {0}", message.getClass());
+            }
+        } catch (Exception ex) {
+            LOGGER.log(Level.FINE, "Failed to receive monitoring data message", ex);
+        }
     }
 
     @Override

@@ -293,7 +293,7 @@ MonitoringConsole.View = (function() {
         let thresholds = widget.decorations.thresholds;
         let settings = [];
         let collapsed = $('#settings-widget').children('tr:visible').length <= 1;
-        let typeOptions = { line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations' };
+        let typeOptions = { line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status' };
         let modeOptions = widget.type == 'annotation' ? { table: 'Table', list: 'List' } : { list: '(Default)' };
         settings.push({ id: 'settings-widget', caption: 'Widget', collapsed: collapsed, entries: [
             { label: 'Display Name', type: 'text', value: widget.displayName, onChange: (widget, value) => widget.displayName = value},
@@ -606,6 +606,20 @@ MonitoringConsole.View = (function() {
         return { status: status, color: Theme.color(status), text: statusInfo.hint };
     }
 
+    function createRAGIndicatorModel(widget, legend) {
+        const items = [];
+        for (let item of legend) {
+            items.push({
+                label: item.label,
+                status: item.status,
+                state: item.value,
+                color: item.color,
+                background: item.highlight,
+            });
+        }
+        return { items: items };
+    }
+
     function createAlertTableModel(widget, alerts, annotations) {
         if (widget.type === 'annotation')
             return {};
@@ -864,16 +878,25 @@ MonitoringConsole.View = (function() {
         let widgetNode = $('#widget-' + widget.target);
         let legendNode = widgetNode.find('.Legend').first();
         let indicatorNode = widgetNode.find('.Indicator').first();
+            if (indicatorNode.length == 0)
+                indicatorNode = widgetNode.find('.RAGIndicator').first();
         let alertsNode = widgetNode.find('.AlertTable').first();
         let annotationsNode = widgetNode.find('.AnnotationTable').first();
         let legend = createLegendModel(widget, data, alerts, annotations); // OBS this has side effect of setting .legend attribute in series data
         if (data !== undefined && (widget.type === 'line' || widget.type === 'bar')) {
             MonitoringConsole.Chart.getAPI(widget).onDataUpdate(update);
         }
-        alertsNode.replaceWith(Components.createAlertTable(createAlertTableModel(widget, alerts, annotations)));
-        legendNode.replaceWith(Components.createLegend(legend));
-        indicatorNode.replaceWith(Components.createIndicator(createIndicatorModel(widget, data)));
-        annotationsNode.replaceWith(Components.createAnnotationTable(createAnnotationTableModel(widget, annotations)));
+        if (widget.type == 'rag') {
+            alertsNode.hide();
+            legendNode.hide();
+            indicatorNode.replaceWith(Components.createRAGIndicator(createRAGIndicatorModel(widget, legend)));
+            annotationsNode.hide();
+        } else {
+            alertsNode.replaceWith(Components.createAlertTable(createAlertTableModel(widget, alerts, annotations)));
+            legendNode.replaceWith(Components.createLegend(legend));
+            indicatorNode.replaceWith(Components.createIndicator(createIndicatorModel(widget, data)));
+            annotationsNode.replaceWith(Components.createAnnotationTable(createAnnotationTableModel(widget, annotations)));            
+        }
     }
 
     /**

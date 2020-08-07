@@ -47,26 +47,19 @@ import static java.util.Collections.singleton;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -130,9 +123,6 @@ public class InMemorySeriesRepository implements SeriesRepository {
         this.instanceName = instanceName;
         this.runtime = runtime;
         this.sources = sources;
-        if (isDas) {
-            runtime.receive(this::receiveMesssage);
-        }
         instances.add(instanceName);
     }
 
@@ -150,15 +140,7 @@ public class InMemorySeriesRepository implements SeriesRepository {
         return instances;
     }
 
-    private void receiveMesssage(byte[] msg) {
-        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(msg))) {
-            addRemoteDatasets((SeriesDatasetsSnapshot) ois.readObject());
-        } catch (Exception ex) {
-            LOGGER.log(Level.FINE, "Failed to receive monitoring data message", ex);
-        }
-    }
-
-    private void addRemoteDatasets(SeriesDatasetsSnapshot snapshot) {
+    public void addRemoteDatasets(SeriesDatasetsSnapshot snapshot) {
         String instance = snapshot.instance;
         instances.add(instance);
         long time = snapshot.time;
@@ -212,10 +194,10 @@ public class InMemorySeriesRepository implements SeriesRepository {
         SeriesDatasetsSnapshot msg = new SeriesDatasetsSnapshot(instanceName, collectedSecond, estimatedNumberOfSeries);
         collectAll(new ConsumingMonitoringDataCollector(msg, msg));
         estimatedNumberOfSeries = msg.numberOfSeries;
-        sendMessaage(msg);
+        sendMessage(msg);
     }
 
-    private void sendMessaage(SeriesDatasetsSnapshot msg) {
+    private void sendMessage(SeriesDatasetsSnapshot msg) {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(bos)) {
             oos.writeObject(msg);
@@ -452,7 +434,7 @@ public class InMemorySeriesRepository implements SeriesRepository {
         return secondsRead.values();
     }
 
-    static final class SeriesDatasetsSnapshot
+    public static final class SeriesDatasetsSnapshot
             implements Serializable, MonitoringDataConsumer, MonitoringAnnotationConsumer {
 
         final String instance;

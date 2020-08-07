@@ -391,6 +391,21 @@ text      = string
 color     = string
 ```
 
+### RAG Indicator API
+Describes the model expected by the `RAGIndicator` component.
+This component gives a simple Red-Amber-Green status indication on the state of the series shown in the widget.
+
+```
+RAG_INDICATOR = { items }
+items         = [ RAG_ITEM ]
+RAG_ITEM      = { label, status, color, background }
+label         = string
+state         = string
+status        = Status
+color         = string
+background    = string
+```
+
 
 ### Menu API
 Describes the model expected by the `MENU` component that is used for any of the text + icon menus or toolbars.

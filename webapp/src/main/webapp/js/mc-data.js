@@ -112,6 +112,12 @@ MonitoringConsole.Data = (function() {
 					status: { missing: { hint: TEXT_WEB_HIGH }}},
 			]
 		},
+		rag: {
+			name: 'RAG Status',
+			numberOfColumns: 4,
+			type: 'query',
+			content: { series: 'ns:health ?:* *', maxSize: 32, ttl: 60 },
+		},
 		request_tracing: {
 			name: 'Request Tracing',
 			numberOfColumns: 4,

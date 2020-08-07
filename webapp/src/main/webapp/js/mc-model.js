@@ -441,7 +441,7 @@ MonitoringConsole.Model = (function() {
       	}
 		
 	   /**
-	    * Mapping from a possible unit alias to the unit key to use
+	    * Mapping from a possible MP unit alias to the unit key to use
 	    */
 	   	const Y_AXIS_UNIT = {
 	      days: 'sec',
@@ -454,6 +454,7 @@ MonitoringConsole.Model = (function() {
 	      nanoseconds: 'ns',
 	      percent: 'percent',
 	      bytes: 'bytes',
+	      updown: 'updown',
    		};
 
       	async function doQueryPage() {
@@ -488,7 +489,21 @@ MonitoringConsole.Model = (function() {
 			for (let i = 0; i < matches.length; i++) {
 				let match = matches[i];
 				let metadata = match.annotations.filter(a => a.permanent)[0];
-				let attrs = metadata === undefined ? {} : metadata.attrs || {};
+				let attrs = {};
+				let type = 'line';
+				if (metadata) {
+					if (metadata.atts)
+						attrs = metadata.attrs;
+				}
+				if (attrs.Unit === undefined && match.watches.length > 0) { // is there a watch we can used to get the unit from?
+					let watch = match.watches[0];
+					attrs.Unit = watch.unit;
+					let name = watch.name;
+					if (name.indexOf('RAG ') == 0)
+						name = name.substring(4);
+					attrs.DisplayName = name;
+					type = 'rag';
+				}
 				let data = match.data[0];
 				let scaleFactor;
 				if (attrs.ScaleToBaseUnit > 1) {
@@ -503,6 +518,7 @@ MonitoringConsole.Model = (function() {
 				}
 				widgets.push({
 					id: match.series,
+					type: type,
 					series: match.series,
 					displayName: attrs.DisplayName,
 					description: attrs.Description,
