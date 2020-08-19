@@ -54,51 +54,17 @@ MonitoringConsole.View = (function() {
     /**
      * Updates the DOM with the page navigation tabs so it reflects current model state
      */ 
-    function updatePageNavigation(selectedPage) {
-        let pages = MonitoringConsole.Model.listPages();
-        let activePage = selectedPage || pages.find(page => page.active).name;
-        let items = pages.map(function(page) {
-            return { label: page.name ? page.name : '(Unnamed)', onClick: () => onPageChange(MonitoringConsole.Model.Page.changeTo(page.id)) };
-        });
-        items.push({ label: 'Watches', onClick: onOpenWatchSettings });
-        let nav = { id: 'Navigation', groups: [
-            {label: activePage, items: items }
-        ]};
-        $('#Navigation').replaceWith(Components.createMenu(nav));
-    }
-
-    function updateMenu() {
-        let hasPreset = MonitoringConsole.Model.Page.hasPreset();
-        let isPaused = MonitoringConsole.Model.Refresh.isPaused();
-        let settingsOpen = MonitoringConsole.Model.Settings.isDispayed();
-        let toggleSettings = function() { MonitoringConsole.View.onPageMenu(); updateMenu(); };
-        let menu = { id: 'Menu', groups: [
-            { icon: '&#128463;', label: 'Page', items: [
-                { label: 'New...', icon: '&#128459;', description: 'Add a new blank page...', onClick: () => MonitoringConsole.View.onPageChange(MonitoringConsole.Model.Page.create('(Unnamed)')) },
-                { label: 'Delete', icon: '&times;', description: 'Delete current page', disabled: hasPreset, onClick: MonitoringConsole.View.onPageDelete },
-                { label: 'Reset', icon: '&#128260;', description: 'Reset Page to Preset', disabled: !hasPreset, onClick: MonitoringConsole.View.onPageReset },
-            ]},
-            { icon: '&#128472;', label: 'Data Refresh', items: [
-                { label: 'Pause', icon: '&#9208;', description: 'Pause Data Refresh', hidden: isPaused, onClick: function() { MonitoringConsole.Model.Refresh.pause(); updateMenu(); updateSettings(); } },
-                { label: 'Unpause', icon: '&#9654;', description: 'Unpause Data Refresh', hidden: !isPaused, onClick: function() { MonitoringConsole.Model.Refresh.resume(); updateMenu(); updateSettings(); } },
-                { label: 'Slow', icon: '&#128034;', description: 'Slow Data Refresh Rate', onClick: function() { MonitoringConsole.Model.Refresh.resume(4); updateMenu(); updateSettings(); } },
-                { label: 'Normal', icon: '&#128008;', description: 'Normal Data Refresh Rate', onClick: function() { MonitoringConsole.Model.Refresh.resume(2); updateMenu(); updateSettings(); } },
-                { label: 'Fast', icon: '&#128007;', description: 'Fast Data Refresh Rate', onClick: function() { MonitoringConsole.Model.Refresh.resume(1); updateMenu(); updateSettings(); } },
-            ]},
-            { icon: '&#9707;', label: 'Layout', items: [
-                { label: '1 Column', icon: '&#11034;', description: 'Use one column layout', onClick: () => MonitoringConsole.View.onPageLayoutChange(1) },
-                { label: ' 2 Columns', icon: '&#11034;&#11034;', description: 'Use two column layout', onClick: () => MonitoringConsole.View.onPageLayoutChange(2) },
-                { label: ' 3 Columns', icon: '&#11034;&#11034;&#11034;', description: 'Use three column layout', onClick: () => MonitoringConsole.View.onPageLayoutChange(3) },
-                { label: ' 4 Columns', icon: '&#11034;&#11034;&#11034;&#11034;', description: 'Use four column layout', onClick: () => MonitoringConsole.View.onPageLayoutChange(4) },
-            ]},
-            { icon: '&#9881;', label: 'Settings', clickable: true, items: [
-                { label: 'Hide', icon: '&times;', hidden: !settingsOpen, onClick: toggleSettings },
-                { label: 'Show', icon: '&plus;', hidden: settingsOpen, onClick: toggleSettings },
-                { label: 'Import...', icon: '&#9111;', description: 'Import Configuration...', onClick: () => $('#cfgImport').click() },
-                { label: 'Export...', icon: '&#9112;', description: 'Export Configuration...', onClick: MonitoringConsole.View.onPageExport },
-            ]},
-        ]};
-        $('#Menu').replaceWith(Components.createMenu(menu));
+    function updatePageNavigation() {
+        $('#NavSidebar').replaceWith(Components.createNavSidebar(createNavSidebarModel()));
+        const Navigation = MonitoringConsole.Model.Settings.Navigation;
+        let panelConsole = $('#console');
+        if (Navigation.isCollapsed()) {
+            panelConsole.removeClass('state-show-nav');
+        } else {
+            if (!panelConsole.hasClass('state-show-nav')) {
+                panelConsole.addClass('state-show-nav');                
+            }
+        }
     }
 
     /**
@@ -227,9 +193,11 @@ MonitoringConsole.View = (function() {
         const  pushAvailable = MonitoringConsole.Model.Role.isAdmin();
         const  pullAvailable = !MonitoringConsole.Model.Role.isGuest();
         return { id: 'settings-global', caption: 'Global', collapsed: initiallyCollapsed, entries: [
+            { label: 'Import', input: () => $('<button />', { text: 'Import Configuration...'}).click(() => $('#cfgImport').click()) },
+            { label: 'Export', input: () => $('<button />', { text: 'Export Configuration...'}).click(MonitoringConsole.View.onPageExport) },
             { label: 'Data Refresh', input: [
                 { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Refresh.interval(), onChange: (val) => MonitoringConsole.Model.Refresh.interval(val) },
-                { label: 'paused', type: 'checkbox', value: MonitoringConsole.Model.Refresh.isPaused(), onChange: function(checked) { MonitoringConsole.Model.Refresh.paused(checked); updateMenu(); } },
+                { label: 'paused', type: 'checkbox', value: MonitoringConsole.Model.Refresh.isPaused(), onChange: (checked) => MonitoringConsole.Model.Refresh.paused(checked) },
             ]},
             { label: 'Page Rotation', input: [
                 { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Settings.Rotation.interval(), onChange: (val) => MonitoringConsole.Model.Settings.Rotation.interval(val) },
@@ -394,11 +362,6 @@ MonitoringConsole.View = (function() {
         }
         const addWidgetsInput = $('<button/>', { text: 'Select metric(s)...' })
             .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel([], addWidgets))));
-        let pageNameOnChange = MonitoringConsole.Model.Page.hasPreset() ? undefined : function(text) {
-            if (MonitoringConsole.Model.Page.rename(text)) {
-                updatePageNavigation();                        
-            }
-        };
         let collapsed = $('#settings-page').children('tr:visible').length <= 1;
         let pushAvailable = !MonitoringConsole.Model.Role.isGuest() && MonitoringConsole.Model.Page.Sync.isLocallyChanged() && MonitoringConsole.Model.Role.isAdmin();
         let pullAvailable = !MonitoringConsole.Model.Role.isGuest();
@@ -407,7 +370,6 @@ MonitoringConsole.View = (function() {
         let queryAvailable = page.type === 'query';
         const configure =  MonitoringConsole.Model.Page.configure;
         return { id: 'settings-page', caption: 'Page', collapsed: collapsed, entries: [
-            { label: 'Name', type: 'text', value: MonitoringConsole.Model.Page.name(), onChange: pageNameOnChange },
             { label: 'Page Rotation', input: [
                 { label: 'Include in Rotation', type: 'checkbox', value: MonitoringConsole.Model.Page.rotate(), onChange: (checked) => MonitoringConsole.Model.Page.rotate(checked) },
             ]},
@@ -717,6 +679,57 @@ MonitoringConsole.View = (function() {
         ]};
     }
 
+    function createNavSidebarModel() {
+        const Navigation = MonitoringConsole.Model.Settings.Navigation;
+        const Rotation = MonitoringConsole.Model.Settings.Rotation;
+        const Refresh = MonitoringConsole.Model.Refresh;
+        const Page = MonitoringConsole.Model.Page;
+        const pages = [];
+        function createNavItem(page) {
+            const selected = page.active;
+            return {
+                id: page.id,
+                label: page.name,
+                selected: selected,
+                onSwitch: selected ? undefined : () => MonitoringConsole.View.onPageChange(Page.changeTo(page.id)),
+                onDelete: selected && !Page.hasPreset() ? () => MonitoringConsole.View.onPageDelete() : undefined,
+                onRename: selected && !Page.hasPreset() ? name => {
+                    Page.rename(name);
+                    updatePageNavigation();
+                } : undefined,
+                onReset: selected && Page.hasPreset() ? () => onPageRefresh(Page.reset()) : undefined,
+            };
+        }
+        for (let page of MonitoringConsole.Model.listPages()) {
+            pages.push(createNavItem(page));
+        }
+        let collapsed = Navigation.isCollapsed();
+        return { 
+            id: 'NavSidebar', 
+            collapsed: collapsed, 
+            rotationEnabled: Rotation.isEnabled(),
+            refreshSpeed: Refresh.interval(),
+            logo: collapsed ? undefined : 'payara-logo.png',
+            pages: pages,
+            onLogoClick: () => MonitoringConsole.View.onPageChange(Page.changeTo('core')),
+            onSidebarToggle: () => {
+                Navigation.toggle();
+                updatePageNavigation();
+            },
+            onRotationToggle: () => {
+                Rotation.enabled(!Rotation.isEnabled());
+                updateSettings();
+                updatePageNavigation();
+            },
+            onPageAdd: name => MonitoringConsole.View.onPageChange(Page.create(name)),
+            onLayoutChange: numberOfColumns => MonitoringConsole.View.onPageLayoutChange(numberOfColumns),
+            onRefreshSpeedChange: duration => { 
+                Refresh.resume(duration);
+                updateSettings();
+            }
+        };
+    }
+
     function createWizardModalDialogModel(initiallySelectedSeries, onExit) {
         if (initiallySelectedSeries !== undefined && !Array.isArray(initiallySelectedSeries))
             initiallySelectedSeries = [ initiallySelectedSeries ];
@@ -858,7 +871,6 @@ MonitoringConsole.View = (function() {
                     onEnable: (name, onSuccess, onFailure) => Controller.requestEnableWatch(name, wrapOnSuccess(onSuccess), onFailure),
                 },
             };
-            updatePageNavigation('Watches');
             $('#chart-grid').hide();
             $('#WatchManager').replaceWith(Components.createWatchManager(manager));
         });
@@ -918,7 +930,7 @@ MonitoringConsole.View = (function() {
         let maxRows = layout[0].length;
         let table = $("<table/>", { id: 'chart-grid', 'class': 'columns-'+numberOfColumns + ' rows-'+maxRows });
         let padding = 30;
-        let headerHeight = 40;
+        let headerHeight = 0;
         let minRowHeight = 160;
         let rowsPerScreen = maxRows;
         let windowHeight = $(window).height();
@@ -987,7 +999,6 @@ MonitoringConsole.View = (function() {
         onPageUpdate(layout);
         updatePageNavigation();
         updateSettings();
-        updateMenu();
     }
 
     function onOpenWidgetSettings(widgetId) {

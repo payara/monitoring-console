@@ -1494,6 +1494,141 @@ MonitoringConsole.View.Components = (function() {
     return { createComponent: createComponent };
   })();
 
+
+  /**
+   * A component that creates left navgation sidebar. 
+   *
+   * Main task of the sidebar is to manage and switch pages.
+   * It also gives access to data refresh speed and page rotation start/stop.
+   * The bar has a collapse and an expanded state. 
+   */ 
+  const NavSidebar = (function() {
+
+    function createComponent(model) {
+      const collapsed = model.collapsed === true; // false is default
+      const config = { 'class': 'NavSidebar' + (collapsed ? ' NavCollapsed' : ' NavExpanded') };
+      if (model.id)
+        config.id = model.id;
+
+      const sidebar = $('<div/>', config);
+      sidebar.append($('<button/>', { 'class': 'btn-icon btn-toggle default' })
+        .html(model.collapsed ? '&#10095;&#10095;' : '&#10094;&#10094;')
+        .click(model.onSidebarToggle));
+      if (model.logo !== undefined)
+        sidebar.append($('<a/>', { 'class': 'NavLogo' }).click(model.onLogoClick).append($('<img/>', { src: model.logo })));      
+      const controls = $('<dl/>', {'class': 'NavControls'});
+      if (collapsed) {
+        const page = model.pages.filter(page => page.selected)[0];
+        sidebar.append($('<span/>').text(page.label).click(model.onSidebarToggle));        
+        for (let i = 1; i <= 4; i++)
+          controls.append($('<dd/>').append(createLayoutButton(model, i)));
+        controls.append($('<dd/>').append(createRotationButton(model)));
+      } else {
+        sidebar.append(createPageList(model));
+        sidebar.append(createAddPagePanel(model));
+        controls.append($('<dt/>').text('Layout Columns'));
+        for (let i = 1; i <= 4; i++)
+          controls.append($('<dd/>').append(createLayoutButton(model, i)));
+        controls.append($('<dt/>').text('Data Refresh'));
+        controls.append($('<dd/>').append(createRefreshInput(model)));
+        controls.append($('<dt/>').text('Page Rotation'));
+        controls.append($('<dd/>').append(createRotationButton(model)));
+      }
+      sidebar.append(controls);
+      return sidebar;
+    }
+
+    function createPageList(model) {
+      const list = $('<div/>', { 'class': 'NavPages'});
+      for (let page of model.pages)
+        list.append(createPageItem(page));
+      return list;
+    }
+
+    function createPageItem(page) {      
+      const label = $('<span/>').text(page.label);
+      const item = $('<div/>', {'class': 'NavItem' + (page.selected ? ' selected' : '')});
+      item.append(label);
+      if (page.selected) {
+        const options = $('<div/>', { style: 'display: none;' });
+        let hasRename = typeof page.onRename === 'function';
+        let hasDelete = typeof page.onDelete === 'function';
+        let hasReset = typeof page.onReset === 'function';
+
+        item.append($('<span/>', {'class': 'btn-edit', title: 'Edit'}).html('&#9998;').click(() => options.toggle()));
+        if (hasRename) {
+          const name = $('<input/>', { type: 'text', value: page.label });
+          options.append($('<div/>').append(name).append($('<button/>').text('Rename').click(() => page.onRename(name.val()))));
+        }
+        if (hasDelete || hasReset) {
+          let bar = $('<div/>');
+          if (hasDelete)
+            bar.append($('<button/>').text('Delete').click(page.onDelete));
+          if (hasReset)
+            bar.append($('<button/>').text('Reset').click(page.onReset));
+          options.append(bar);
+        }
+        label.click(() => options.toggle());
+        item.append(options);
+      } else {
+        if (typeof page.onSwitch === 'function')
+          item.click(page.onSwitch);
+      }
+      return item;
+    }
+
+    function createAddPagePanel(model) {
+      const panel = $('<div/>', {'class': 'NavAdd'});
+      const details = $('<div/>', { style: 'display:none;'});
+      const name = $('<input/>', { type: 'text '});
+      details
+        .append($('<div/>')
+          .append($('<label/>').text('Page Name'))
+          .append(name)
+        )
+        .append($('<div/>')
+          .append($('<button/>', {'class': 'default'}).text('Cancel').click(() => details.hide()))
+          .append($('<button/>').text('Add').click(() => model.onPageAdd(name.val())))
+        );
+      panel
+        .append($('<button/>').text('Add Page').click(() => details.toggle()))
+        .append(details);
+      return panel;
+    }
+
+    function createRefreshInput(model) {
+      let max = Math.max(10, model.refreshSpeed);
+      const value = $('<span/>').text(model.refreshSpeed + 's');
+      const button = $('<input/>', { type: 'range', min: 0, max: max, step: 1, value: model.refreshSpeed });
+      button.on('change input', () =>  {
+          let val = Number(button.val());
+          value.text(val + 's');
+          model.onRefreshSpeedChange(val);
+      });
+      return $('<span/>')
+        .append($('<label/>').text('Speed'))
+        .append(button)
+        .append(value);
+    }
+
+    function createLayoutButton(model, numberOfColumns) {
+      return $('<button/>', {'class': 'btn-icon btn-layout' })
+        .text(numberOfColumns)
+        .click(() => model.onLayoutChange(numberOfColumns));
+    }
+
+    function createRotationButton(model) {
+      return $('<button/>', {
+        'class': 'btn-icon btn-rotation', 
+        title: (model.rotationEnabled ? 'stop' : 'start') + ' page rotation'
+      })
+        .html(model.rotationEnabled ? '&#9209;' : '&#9654;')
+        .click(model.onRotationToggle);
+    }
+
+    return { createComponent: createComponent };
+  })();
+
   /*
    * Shared functions
    */
@@ -1563,6 +1698,7 @@ MonitoringConsole.View.Components = (function() {
       createModalDialog: (model) => ModalDialog.createComponent(model),
       createSelectionWizard: (model) => SelectionWizard.createComponent(model),
       createRAGIndicator: (model) => RAGIndicator.createComponent(model),
+      createNavSidebar: (model) => NavSidebar.createComponent(model),
   };
 
 })();

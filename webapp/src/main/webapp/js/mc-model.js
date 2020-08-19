@@ -168,7 +168,9 @@ MonitoringConsole.Model = (function() {
 			if (settings.theme.colors === undefined)
 				settings.theme.colors = {};
 			if (settings.theme.options === undefined)
-				settings.theme.options = {};			
+				settings.theme.options = {};
+			if (settings.nav === undefined)
+				settings.nav = {};	
 			return settings;
 		}
 		
@@ -790,6 +792,23 @@ MonitoringConsole.Model = (function() {
 				doStore();
 			},
 
+			Navigation: {
+				isCollapsed: () => settings.nav.collapsed === true,
+				isExpanded: () => settings.nav.collapsed !== true,
+				collapse: () => {
+					settings.nav.collapsed = true;
+					doStore();
+				},
+				expand: () => {
+					settings.nav.collapsed = false;
+					doStore();
+				},
+				toggle: () => {
+					settings.nav.collapsed = settings.nav.collapsed !== true;
+					doStore();					
+				},
+			},
+
 			Role: {
 				get: () => settings.role || 'user',
 				set: (role) => {
@@ -1383,8 +1402,11 @@ MonitoringConsole.Model = (function() {
 					UI.Rotation.interval(duration);
 					Rotation.resume(UI.Rotation.isEnabled() ? UI.Rotation.interval() : 0);
 				}
-			}
+			},
+
+			Navigation: UI.Navigation,
 		},
+
 		
 		/**
 		 * API to control the active page manipulate the set of charts contained on it.

@@ -171,6 +171,15 @@ button:hover {
   box-shadow: 0px 1px 1px rgba(16,16,18,0.3);
   transform : translateY(1px);
 }
+button.default {
+  background: rgb(210,216,218);
+  box-shadow: 0px 3px 3px rgba(67,68,69,0.05), 0px 1px 1px rgba(67,68,69,0.05);
+}
+button.default:hover {
+  background: rgba(210,216,218,0.65);
+  box-shadow: 0px 1px 1px rgba(67,68,69,0.1);
+  transform: translateY(1px);
+}
 #logo {
   height: 30px;
   top: 5px;
@@ -328,10 +337,27 @@ h3 strong {
 #console.state-show-settings #Settings {
 	display: block;
 }
+
+#panel-grid,
+#panel-trace,
+#WatchManager {
+  margin-left: 40px;
+}
 #console.state-show-settings #panel-grid, 
 #console.state-show-settings #panel-trace,
 #console.state-show-settings #WatchManager {
-  width: calc(100% - 390px);
+  width: calc(100% - 430px);
+}
+#console.state-show-nav #panel-grid, 
+#console.state-show-nav #panel-trace,
+#console.state-show-nav #WatchManager {
+  width: calc(100% - 380px);
+  margin-left: 380px;
+}
+#console.state-show-nav.state-show-settings #panel-grid, 
+#console.state-show-nav.state-show-settings #panel-trace,
+#console.state-show-nav.state-show-settings #WatchManager {
+  width: calc(100% - 770px);
 }
 
 /* HTML Chart Tooltips */
@@ -469,20 +495,7 @@ table.tags th, table.tags td {
   border-bottom: 2px solid #001A25;
 }
 
-/* Page Navigation */
-#Navigation {
-  float: left;
-  margin-left: 40%;
-  margin-top: 6px;
-  font-weight: bold;
-  font-size: 20px;
-}
-
 /* Menus */
-#Menu {
-  margin-top: 10px;
-  padding-right: 30px;
-}
 .Menu {
   float: right;
   font-size: 14px;
@@ -858,4 +871,129 @@ table.AnnotationTable {
 }
 .PageManager table th + td, .PageManager table th + td + td, .PageManager table th + td + td + td {
   width: 30%;
+}
+
+/* NavSidebar Component */
+.NavSidebar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background-color: #fff;
+  z-index: 111;
+  color: #444;
+}
+.NavSidebar.NavCollapsed {
+  width: 40px;
+}
+.NavSidebar.NavCollapsed > span {
+  transform: rotate(-90deg);
+  white-space: nowrap;
+  font-size: 20px;
+  font-weight: bold;
+  display: block;
+  margin-top: 400px;
+  cursor: pointer;
+}
+.NavSidebar.NavExpanded {
+  width: 380px;
+  padding: 40px;
+  box-sizing: border-box;
+}
+.NavSidebar .NavLogo {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+}
+.NavSidebar .NavLogo img {
+  width: 180px;
+}
+.NavSidebar .NavPages {
+  margin-top: 110px;
+}
+.NavSidebar .NavPages .NavItem {
+  padding: 5px 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.NavSidebar .NavPages .NavItem .btn-edit {
+  float: right;
+  cursor: pointer;
+  font-weight: normal;
+  margin-right: 1em;
+}
+.NavSidebar .NavPages .NavItem.selected {
+  background-color: var(--page-bg-color);
+  color: white;
+  margin-right: -40px;
+  padding: 10px;
+  cursor: default;
+  font-size: 20px;
+  line-height: 1em;
+  border-radius: 3px 0 0 3px;
+}
+.NavSidebar .NavPages .NavItem.selected div div {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.NavSidebar .NavAdd {
+  width: 300px;
+  margin-top: 10px;
+}
+.NavSidebar .NavAdd input {
+  width: 120px;
+}
+.NavSidebar .NavAdd > div {
+  padding: 10px;
+  border: 2px solid rgb(240,152,27);
+  border-radius: 3px;
+}
+.NavSidebar .NavAdd div div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.NavSidebar .NavControls {
+  position: absolute;
+  bottom: 0;
+  margin-bottom: 40px;
+}
+.NavSidebar.NavExpanded .NavControls {
+  width: 300px;
+}
+.NavSidebar .NavControls > dt {
+  padding-top: 1em;
+  clear: both;
+  font-weight: bold;
+}
+.NavSidebar .NavControls > dd {
+  text-align: right;
+  margin: 5px;
+}
+.NavSidebar.NavExpanded .NavControls > dd {
+  float: right;
+}
+.NavSidebar .NavControls input[type="range"] {
+  width: 120px;
+  display: inline-block;
+  margin: 0 1em;
+}
+
+.NavSidebar button.btn-icon {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  text-align: center;
+  padding: 0;
+}
+.NavSidebar button.btn-toggle {
+  position: absolute;
+  right: 0;
+  top: 5px;
+  margin-right: 5px;
+  letter-spacing: -2px;
 }

@@ -644,3 +644,33 @@ results          = { *:* }
 onExit           = fn(*) => ()
 ```
 * when a particular button is clicked the named `property` of that button is extracted from `results` and passed to `onExit` function. This value can be of any type and change while the dialog is open.
+
+
+
+### NavSidebar API
+
+```
+NAV_SIDEBAR      = { id, collapsed, rotationEnabled, refreshSpeed, logo, pages,
+					onLogoClick, onSidebarToggle, onRotationToggle,
+					onPageAdd, onLayoutChange, onRefreshSpeedChange }
+id               = string
+pages            = [ PAGE_ITEM ]
+collapsed        = boolean
+rotationEnabled  = boolean
+refreshSpeed     = number
+logo             = string
+PAGE_ITEM        = { id, label, selected, onSwitch, onDelete, onRename, onReset }
+label            = string
+selected         = boolean
+onLogoClick      = function () => ()
+onSidebarToggle  = function () => ()
+onRotationToggle = function () => ()
+onSwitch         = function () => ()
+onDelete         = function () => ()
+onReset          = function () => ()
+onRename         = function (string) => ()
+onPageAdd        = function (string) => ()
+onLayoutChange   = function (number) => ()
+onRefreshSpeedChange = function (number) => ()
+```
+*`onSidebarToggle` has no argument since a sidebar created with `collapsed` being `true` should expand, likewise for `false` is should collapse
