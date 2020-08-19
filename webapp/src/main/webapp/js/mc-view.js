@@ -55,7 +55,6 @@ MonitoringConsole.View = (function() {
      * Updates the DOM with the page navigation tabs so it reflects current model state
      */ 
     function updatePageNavigation() {
-        $('#NavSidebar').replaceWith(Components.createNavSidebar(createNavSidebarModel()));
         const Navigation = MonitoringConsole.Model.Settings.Navigation;
         let panelConsole = $('#console');
         if (Navigation.isCollapsed()) {
@@ -65,29 +64,38 @@ MonitoringConsole.View = (function() {
                 panelConsole.addClass('state-show-nav');                
             }
         }
+        $('#NavSidebar').replaceWith(Components.createNavSidebar(createNavSidebarModel()));
     }
 
     /**
      * Updates the DOM with the page and selection settings so it reflects current model state
      */ 
     function updateSettings() {
-        let panelConsole = $('#console');
-        if (MonitoringConsole.Model.Settings.isDispayed()) {
+        const panelConsole = $('#console');
+        const collapsed = !MonitoringConsole.Model.Settings.isDispayed();
+        let groups = [];
+        if (collapsed) {
+            panelConsole.removeClass('state-show-settings');
+        } else {
             if (!panelConsole.hasClass('state-show-settings')) {
                 panelConsole.addClass('state-show-settings');                
             }
             let singleSelection = MonitoringConsole.Model.Page.Widgets.Selection.isSingle();
-            let groups = [];
             groups.push(createGlobalSettings(singleSelection));
             groups.push(createColorSettings());
             groups.push(createPageSettings());
-            if (singleSelection) {
+            if (singleSelection)
                 groups = groups.concat(createWidgetSettings(MonitoringConsole.Model.Page.Widgets.Selection.first()));
-            }
-            $('#Settings').replaceWith(Components.createSettings({id: 'Settings', groups: groups }));
-        } else {
-            panelConsole.removeClass('state-show-settings');
         }
+        $('#Settings').replaceWith(Components.createSettings({
+            id: 'Settings', 
+            collapsed: collapsed,            
+            groups: groups,
+            onSidebarToggle: () => {
+                MonitoringConsole.Model.Settings.toggle();
+                updateSettings();
+            }
+        }));
     }
 
     function updateDomOfWidget(parent, widget) {

@@ -291,18 +291,22 @@ h3 strong {
  * Widget Settings (Sizes and Visibility)
  */
 #Settings {
-    width: 380px;
-    padding: 0;
-    vertical-align: top;
-    position: absolute;
-    top: 5px;
-    right: 10px;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 100%;
+  position: absolute;
+  background-color: var(--sidebar-bg-color);
+  color: white;
+}
+#Settings.SettingsExpanded {
+  width: 380px;
+  padding: 40px;
+  box-sizing: border-box;
+  vertical-align: top;
 }
 #Settings table {
-    background-color: var(--widget-bg-color);
-    padding: 10px;
-    margin-top: 5px;
-    width: 100%;
+  width: 100%;
 }
 #Settings table th {
   cursor: pointer;
@@ -334,33 +338,40 @@ h3 strong {
 #Settings table div input[type=text] {
   width: 50px;
 }
-#console #Settings {
-	display: none;
-}
-#console.state-show-settings #Settings {
-	display: block;
+#Settings button.btn-toggle {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  margin-left: 5px;
+  letter-spacing: -2px;
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  text-align: center;
+  padding: 0;
 }
 
 #panel-grid,
 #panel-trace,
 #WatchManager {
   margin-left: 40px;
+  margin-right: 40px;
 }
 #console.state-show-settings #panel-grid, 
 #console.state-show-settings #panel-trace,
 #console.state-show-settings #WatchManager {
-  width: calc(100% - 430px);
+  width: calc(100% - 420px);
 }
 #console.state-show-nav #panel-grid, 
 #console.state-show-nav #panel-trace,
 #console.state-show-nav #WatchManager {
-  width: calc(100% - 380px);
+  width: calc(100% - 420px);
   margin-left: 380px;
 }
 #console.state-show-nav.state-show-settings #panel-grid, 
 #console.state-show-nav.state-show-settings #panel-trace,
 #console.state-show-nav.state-show-settings #WatchManager {
-  width: calc(100% - 770px);
+  width: calc(100% - 780px);
 }
 
 /* HTML Chart Tooltips */

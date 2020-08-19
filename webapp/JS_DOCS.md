@@ -304,7 +304,9 @@ The general idea of model driven UI components is that a model - usually a JS ob
 Describes the model expected by the `Settings` component.
 
 ```
-SETTINGS    = { id, groups }
+SETTINGS    = { id, collapsed, groups, onSidebarToggle }
+collapsed   = boolean
+onSidebarToggle = function () => ()
 groups      = [GROUP]
 GROUP       = { id, caption, entries, collapsed, available }
 id 		    = string

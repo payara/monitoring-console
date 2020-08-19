@@ -338,43 +338,51 @@ MonitoringConsole.View.Components = (function() {
       }
 
       function createComponent(model) {
-         let panel = $('<div/>', { id: model.id });
-         let syntheticId = 0;
-         let collapsed = false;
-         for (let t = 0; t < model.groups.length; t++) {
-            let group = model.groups[t];
-            if (group.available !== false) {
-              let table = createTable(group);
-              collapsed = group.collapsed === true;
-              panel.append(table);
-              for (let r = 0; r < group.entries.length; r++) {
-                 syntheticId++;
-                 let entry = group.entries[r];
-                 if (entry.available !== false) {
-                   let type = entry.type;
-                   let auto = type === undefined;
-                   let input = entry.input;
-                   if (entry.id === undefined)
-                     entry.id = 'setting_' + syntheticId;
-                   entry.collapsed = collapsed;
-                   if (type == 'header' || auto && input === undefined) {
-                      collapsed = entry.collapsed === true;
-                      table.append(createHeaderRow(entry));
-                   } else if (!auto) {
-                      table.append(createRow(entry, createInput(entry)));
-                   } else {
-                      if (Array.isArray(input)) {
-                        let [innerInput, innerSyntheticId] = createMultiInput(input, syntheticId, 'x-input');
-                        input = innerInput;
-                        syntheticId = innerSyntheticId;
-                      }
-                      table.append(createRow(entry, input));
-                   }
-                }
+        let sidebar = $('<div/>', { 
+          id: model.id,
+          'class': model.collapsed ? 'SettingsCollapsed' : 'SettingsExpanded',
+        });
+        sidebar.append($('<button/>', { 'class': 'btn-icon btn-toggle default' })
+          .html(model.collapsed ? '&#10094;&#10094;' : '&#10095;&#10095;')
+          .click(model.onSidebarToggle));
+        if (model.collapsed)
+          return sidebar;
+        let syntheticId = 0;
+        let collapsed = false;
+        for (let t = 0; t < model.groups.length; t++) {
+          let group = model.groups[t];
+          if (group.available !== false) {
+            let table = createTable(group);
+            collapsed = group.collapsed === true;
+            sidebar.append(table);
+            for (let r = 0; r < group.entries.length; r++) {
+               syntheticId++;
+               let entry = group.entries[r];
+               if (entry.available !== false) {
+                 let type = entry.type;
+                 let auto = type === undefined;
+                 let input = entry.input;
+                 if (entry.id === undefined)
+                   entry.id = 'setting_' + syntheticId;
+                 entry.collapsed = collapsed;
+                 if (type == 'header' || auto && input === undefined) {
+                    collapsed = entry.collapsed === true;
+                    table.append(createHeaderRow(entry));
+                 } else if (!auto) {
+                    table.append(createRow(entry, createInput(entry)));
+                 } else {
+                    if (Array.isArray(input)) {
+                      let [innerInput, innerSyntheticId] = createMultiInput(input, syntheticId, 'x-input');
+                      input = innerInput;
+                      syntheticId = innerSyntheticId;
+                    }
+                    table.append(createRow(entry, input));
+                 }
               }
             }
-         }
-         return panel;
+          }
+        }
+        return sidebar;
       }
 
       function createMultiInput(inputs, syntheticId, css) {
