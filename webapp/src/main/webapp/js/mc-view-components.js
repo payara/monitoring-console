@@ -1609,7 +1609,7 @@ MonitoringConsole.View.Components = (function() {
     function createRefreshInput(model) {
       let max = Math.max(10, model.refreshSpeed);
       const value = $('<span/>').html(model.refreshSpeed + 's&nbsp;');
-      const button = $('<input/>', { type: 'range', min: 0, max: max, step: 1, value: model.refreshSpeed });
+      const button = $('<input/>', { type: 'range', min: 1, max: max, step: 1, value: model.refreshSpeed });
       button.on('change input', () =>  {
           let val = Number(button.val());
           value.html(val + 's&nbsp;');
@@ -1623,7 +1623,10 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createLayoutButton(model, numberOfColumns) {
-      return $('<button/>', {'class': 'btn-icon btn-layout' })
+      return $('<button/>', {
+          'class': 'btn-icon btn-layout', 
+          title: 'Use '+numberOfColumns+' column layout' 
+      })
         .text(numberOfColumns)
         .click(() => model.onLayoutChange(numberOfColumns));
     }

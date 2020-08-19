@@ -308,8 +308,9 @@ SETTINGS    = { id, collapsed, groups, onSidebarToggle }
 collapsed   = boolean
 onSidebarToggle = function () => ()
 groups      = [GROUP]
-GROUP       = { id, caption, entries, collapsed, available }
+GROUP       = { id, type, caption, entries, collapsed, available }
 id 		    = string
+type        = 'app' | 'page' | 'widget'
 caption     = string
 entries     = [ENTRY]
 ENTRY       = { label, type, input, value, unit, min, max, options, onChange, description, defaultValue, collapsed, available } 
