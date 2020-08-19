@@ -1522,6 +1522,7 @@ MonitoringConsole.View.Components = (function() {
         sidebar.append($('<span/>').text(page.label).click(model.onSidebarToggle));        
         for (let i = 1; i <= 4; i++)
           controls.append($('<dd/>').append(createLayoutButton(model, i)));
+        controls.append($('<dd/>').append(createRefreshButton(model)));
         controls.append($('<dd/>').append(createRotationButton(model)));
       } else {
         sidebar.append(createPageList(model));
@@ -1539,15 +1540,15 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createPageList(model) {
-      const list = $('<div/>', { 'class': 'NavPages'});
+      const list = $('<ul/>');
       for (let page of model.pages)
         list.append(createPageItem(page));
-      return list;
+      return $('<nav/>', { 'class': 'NavPages'}).append(list);
     }
 
     function createPageItem(page) {      
       const label = $('<span/>').text(page.label);
-      const item = $('<div/>', {'class': 'NavItem' + (page.selected ? ' selected' : '')});
+      const item = $('<li/>', {'class': 'NavItem' + (page.selected ? ' selected' : '')});
       item.append(label);
       if (page.selected) {
         const options = $('<div/>', { style: 'display: none;' });
@@ -1598,17 +1599,18 @@ MonitoringConsole.View.Components = (function() {
 
     function createRefreshInput(model) {
       let max = Math.max(10, model.refreshSpeed);
-      const value = $('<span/>').text(model.refreshSpeed + 's');
+      const value = $('<span/>').html(model.refreshSpeed + 's&nbsp;');
       const button = $('<input/>', { type: 'range', min: 0, max: max, step: 1, value: model.refreshSpeed });
       button.on('change input', () =>  {
           let val = Number(button.val());
-          value.text(val + 's');
+          value.html(val + 's&nbsp;');
           model.onRefreshSpeedChange(val);
       });
       return $('<span/>')
         .append($('<label/>').text('Speed'))
         .append(button)
-        .append(value);
+        .append(value)
+        .append(createRefreshButton(model));
     }
 
     function createLayoutButton(model, numberOfColumns) {
@@ -1622,8 +1624,17 @@ MonitoringConsole.View.Components = (function() {
         'class': 'btn-icon btn-rotation', 
         title: (model.rotationEnabled ? 'stop' : 'start') + ' page rotation'
       })
-        .html(model.rotationEnabled ? '&#9209;' : '&#9654;')
+        .html(model.rotationEnabled ? '&#9209;' : '&#10561;') // '&#9654;')
         .click(model.onRotationToggle);
+    }
+
+    function createRefreshButton(model) {
+      return $('<button/>', {
+        'class': 'btn-icon',
+        title: (model.refreshEnabled ? 'pause' : 'unpause') + ' data updates'
+      })
+        .html(model.refreshEnabled ? '&#9208;' : '&#9654;')
+        .click(model.onRefreshToggle);
     }
 
     return { createComponent: createComponent };

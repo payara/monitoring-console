@@ -167,22 +167,9 @@ MonitoringConsole.View = (function() {
     function createWidgetToolbar(widget) {
         const Widgets = MonitoringConsole.Model.Page.Widgets;
         let widgetId = widget.id;
-        let items = [
-            { icon: '&times;', label: 'Remove', onClick: () => onWidgetDelete(widgetId)},
-            { icon: '&ltri;', label: 'Move Left', onClick: () => onPageUpdate(Widgets.moveLeft(widgetId)) },
-            { icon: '&rtri;', label: 'Move Right', onClick: () => onPageUpdate(Widgets.moveRight(widgetId)) },                
-        ];
-        if (widget.type === 'annotation') {
-            items.push({ icon: '&#9202', label: 'Sort By Wall Time', onClick: () => Widgets.configure(widgetId, (widget) => widget.sort = 'time') });
-            items.push({ icon: '&#128292;', label: 'Sort By Value', onClick: () => Widgets.configure(widgetId, (widget) => widget.sort = 'value') });
-        }
-        items.push({ icon: '&#128295;', label: 'Edit...', onClick: () => onOpenWidgetSettings(widgetId) });
-        let menu = { groups: [
-            { icon: '&#9881;', items: items },
-        ]};
         let title = widget.displayName ? widget.displayName : formatSeriesName(widget.series);
         return $('<div/>', {"class": "widget-title-bar"})
-            .append(Components.createMenu(menu))
+            .append($('<span/>', {'class':'btn-edit'}).html('&#9998;').click(() => onOpenWidgetSettings(widgetId)))
             .append($('<h3/>', {title: widget.description != '' ? widget.description : widget.series})
                 .html(title)
                 .click(() => onWidgetToolbarClick(widget)))            
@@ -275,6 +262,7 @@ MonitoringConsole.View = (function() {
                 { label: '&nbsp;x', type: 'range', min: 1, max: 4, value: widget.grid.colspan || 1, onChange: (widget, value) => widget.grid.colspan = value},
                 { type: 'range', min: 1, max: 4, value: widget.grid.rowspan || 1, onChange: (widget, value) => widget.grid.rowspan = value},
             ]},
+            { label: 'Actions', input: $('<button/>').text('Remove Widget').click(() => onWidgetDelete(widget.id)) },
         ]});
         settings.push({ id: 'settings-data', caption: 'Data', entries: [
             { label: 'Series', input: seriesInput },
@@ -708,6 +696,7 @@ MonitoringConsole.View = (function() {
             id: 'NavSidebar', 
             collapsed: collapsed, 
             rotationEnabled: Rotation.isEnabled(),
+            refreshEnabled: !Refresh.isPaused(),
             refreshSpeed: Refresh.interval(),
             logo: collapsed ? undefined : 'payara-logo.png',
             pages: pages,
@@ -721,11 +710,17 @@ MonitoringConsole.View = (function() {
                 updateSettings();
                 updatePageNavigation();
             },
+            onRefreshToggle: () => {
+                Refresh.paused(!Refresh.isPaused());
+                updateSettings();
+                updatePageNavigation();
+            },
             onPageAdd: name => MonitoringConsole.View.onPageChange(Page.create(name)),
             onLayoutChange: numberOfColumns => MonitoringConsole.View.onPageLayoutChange(numberOfColumns),
             onRefreshSpeedChange: duration => { 
                 Refresh.resume(duration);
                 updateSettings();
+                updatePageNavigation();
             }
         };
     }

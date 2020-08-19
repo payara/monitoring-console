@@ -48,7 +48,10 @@
   --button-color-rgb-bg:       210, 216, 218; /* #D2D8DA */
 
   /* Variables used in style definitons */
-  --page-bg-color: #002C3E;
+  --sidebar-bg-color: #00618A;
+  --page-bg-color: #151515; /* #00354B; */
+  --widget-bg-color: #151515; /* #000000; */
+  --widget-part-bg-color: #151515; /* rgba(0, 0, 0, .75); */
   --caption-bg-color: #0096D6;
   --modal-bg-color: rgb(218, 224, 226);
 }
@@ -197,7 +200,7 @@ button.default:hover {
   box-sizing: border-box;
 }
 #trace-widget {
-  background-color: #001A25;
+  background-color: var(--widget-bg-color);
   position: relative;
   padding: 10px;
 }
@@ -266,7 +269,7 @@ h3 strong {
   padding-top: 5px;
 }
 #chart-grid > tr > td {
-    background-color: #001A25;
+    background-color: var(--widget-bg-color);
     padding: 8px;
     vertical-align: top;
     position: relative;
@@ -296,7 +299,7 @@ h3 strong {
     right: 10px;
 }
 #Settings table {
-    background-color: #001A25;
+    background-color: var(--widget-bg-color);
     padding: 10px;
     margin-top: 5px;
     width: 100%;
@@ -375,7 +378,7 @@ table.tags th {
   width: 25%;
 }
 table.tags th, table.tags td {
-  background-color: #001A25;
+  background-color: var(--widget-bg-color);
 }
 
 /* Widget Settings Toolbar */
@@ -405,7 +408,7 @@ table.tags th, table.tags td {
   bottom: 10px;
   left: 15px;
   padding: 0;
-  background-color: rgba(0, 26, 37, .75);  
+  background-color: var(--widget-part-bg-color);  
 }
 .Legend li {
   display: inline-block;
@@ -441,7 +444,7 @@ table.tags th, table.tags td {
     color: red;
 }
 .Legend span, .Legend strong {
-  background-color: #001A25;
+  background-color: var(--widget-bg-color);
 }
 @keyframes blinker {
   50% {
@@ -458,7 +461,7 @@ table.tags th, table.tags td {
   left: 50%;
   transform: translate(-50%, 0);
   top: 25%;
-  background-color: #001A25;
+  background-color: var(--widget-bg-color);
 }
 .Indicator b {
   color: white;
@@ -492,7 +495,7 @@ table.tags th, table.tags td {
   align-items: center;
   position: relative;
   display: flex;
-  border-bottom: 2px solid #001A25;
+  border-bottom: 2px solid var(--widget-bg-color);
 }
 
 /* Menus */
@@ -561,7 +564,7 @@ table.tags th, table.tags td {
   top: 40px;
   left: 15px;
   width: calc(100% - 38px);
-  background-color: rgba(0, 26, 37, .75);
+  background-color: var(--widget-part-bg-color);
   max-height: calc(100% - 100px);
   overflow-y: auto;
   overflow-x: hidden;  
@@ -587,11 +590,11 @@ table.tags th, table.tags td {
   display: inline-block;
   margin: 0 0.9em 0 0.4em;
   padding: 1px;
-  background-color: rgba(0, 26, 37,0.75);
+  background-color: var(--widget-part-bg-color);
 }
 .AlertTable .Item small {
   color: #bbb;
-  background-color: rgba(0, 26, 37,0.75);
+  background-color: var(--widget-part-bg-color);
 }
 .AlertTable .Item span {
   white-space: nowrap;
@@ -623,7 +626,7 @@ table.tags th, table.tags td {
   top: 40px;
   left: 15px;
   width: calc(100% - 38px);
-  background-color: rgba(0, 26, 37, .75);
+  background-color: var(--widget-part-bg-color);
   max-height: calc(100% - 100px);
   overflow-y: auto;
   overflow-x: hidden;
@@ -639,11 +642,11 @@ table.tags th, table.tags td {
   display: inline-block;
   margin: 0 0.9em 0 0.4em;
   padding: 1px;
-  background-color: rgba(0, 26, 37,0.75);
+  background-color: var(--widget-part-bg-color);
 }
 .AnnotationTable .Annotation small {
   color: #bbb;
-  background-color: rgba(0, 26, 37,0.75);
+  background-color: var(--widget-part-bg-color);
 }
 .AnnotationTable .Annotation span {
   white-space: nowrap;
@@ -697,7 +700,7 @@ table.AnnotationTable {
 
 /* Watch List Component */
 .WatchItem {
-  background-color: #001A25;
+  background-color: var(--widget-bg-color);
   padding: 10px;
   margin: 5px 0;
   padding-left: 40px;
@@ -879,9 +882,9 @@ table.AnnotationTable {
   left: 0;
   top: 0;
   height: 100%;
-  background-color: #fff;
-  z-index: 111;
-  color: #444;
+  background-color: var(--sidebar-bg-color);
+  z-index: 108;
+  color: white;
 }
 .NavSidebar.NavCollapsed {
   width: 40px;
@@ -911,16 +914,21 @@ table.AnnotationTable {
 .NavSidebar .NavPages {
   margin-top: 110px;
 }
+.NavSidebar .NavPages ul {
+  padding: 0;
+}
 .NavSidebar .NavPages .NavItem {
   padding: 5px 10px;
   font-weight: bold;
   cursor: pointer;
+  list-style-type: none;
 }
-.NavSidebar .NavPages .NavItem .btn-edit {
+span.btn-edit {
   float: right;
   cursor: pointer;
   font-weight: normal;
   margin-right: 1em;
+  font-size: 18px;
 }
 .NavSidebar .NavPages .NavItem.selected {
   background-color: var(--page-bg-color);
@@ -969,6 +977,7 @@ table.AnnotationTable {
   padding-top: 1em;
   clear: both;
   font-weight: bold;
+  text-align: right;
 }
 .NavSidebar .NavControls > dd {
   text-align: right;
