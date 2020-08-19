@@ -345,7 +345,8 @@ MonitoringConsole.View.Components = (function() {
         sidebar.append($('<button/>', { 'class': 'btn-icon btn-toggle default' })
           .html(model.collapsed ? '&#10094;&#10094;' : '&#10095;&#10095;')
           .click(model.onSidebarToggle));
-        if (model.collapsed)
+        sidebar.append($('<span/>').text('Settings').click(model.onSidebarToggle));
+        if (model.collapsed) 
           return sidebar;
         let syntheticId = 0;
         let collapsed = false;
@@ -1527,7 +1528,7 @@ MonitoringConsole.View.Components = (function() {
       const controls = $('<dl/>', {'class': 'NavControls'});
       if (collapsed) {
         const page = model.pages.filter(page => page.selected)[0];
-        sidebar.append($('<span/>').text(page.label).click(model.onSidebarToggle));        
+        sidebar.append($('<span/>').text(page.label).click(model.onSidebarToggle));
         for (let i = 1; i <= 4; i++)
           controls.append($('<dd/>').append(createLayoutButton(model, i)));
         controls.append($('<dd/>').append(createRefreshButton(model)));

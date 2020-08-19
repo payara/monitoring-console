@@ -183,12 +183,6 @@ button.default:hover {
   box-shadow: 0px 1px 1px rgba(67,68,69,0.1);
   transform: translateY(1px);
 }
-#logo {
-  height: 30px;
-  top: 5px;
-  left: 15px;
-  position: absolute;
-}
 
 #panel-trace {
   position: absolute;
@@ -247,6 +241,7 @@ h3 {
   white-space: nowrap;
   padding: 1px 5px;
   text-align: center;
+  color: #F0981B;
 }
 h3 span {
   font-size: 80%;
@@ -294,7 +289,7 @@ h3 strong {
   top: 0;
   right: 0;
   width: 40px;
-  height: 100%;
+  min-height: 100%;
   position: absolute;
   background-color: var(--sidebar-bg-color);
   color: white;
@@ -350,6 +345,17 @@ h3 strong {
   text-align: center;
   padding: 0;
 }
+#Settings > span {
+  transform: rotate(-90deg);
+  white-space: nowrap;
+  font-size: 20px;
+  font-weight: bold;
+  display: block;
+  margin-top: 400px;
+  cursor: pointer;
+  position: absolute;
+  left: -20px;
+}
 
 #panel-grid,
 #panel-trace,
@@ -371,7 +377,7 @@ h3 strong {
 #console.state-show-nav.state-show-settings #panel-grid, 
 #console.state-show-nav.state-show-settings #panel-trace,
 #console.state-show-nav.state-show-settings #WatchManager {
-  width: calc(100% - 780px);
+  width: calc(100% - 760px);
 }
 
 /* HTML Chart Tooltips */
@@ -892,7 +898,7 @@ table.AnnotationTable {
   position: absolute;
   left: 0;
   top: 0;
-  height: 100%;
+  min-height: 100%;
   background-color: var(--sidebar-bg-color);
   z-index: 108;
   color: white;

@@ -494,7 +494,7 @@ MonitoringConsole.Model = (function() {
 				let attrs = {};
 				let type = 'line';
 				if (metadata) {
-					if (metadata.atts)
+					if (metadata.attrs)
 						attrs = metadata.attrs;
 				}
 				if (attrs.Unit === undefined && match.watches.length > 0) { // is there a watch we can used to get the unit from?
