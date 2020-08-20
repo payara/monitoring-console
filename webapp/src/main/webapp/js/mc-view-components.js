@@ -1473,11 +1473,19 @@ MonitoringConsole.View.Components = (function() {
   const ModalDialog = (function() {
 
     function createComponent(model) {
-      const config = { 'class' : 'ModalDialog' };
-      if (model.id)
-        config.id = model.id;
+      if (model.id === undefined)
+        model.id = 'ModalDialog';
+      const config = { 
+        id: model.id,
+        'class' : 'ModalDialog' 
+      };
       const dialog = $('<div/>', config);
-      const box = $('<div/>', {'class': 'ModalDialogContent'});
+      const boxConfig = {'class': 'ModalDialogContent', style: ''};
+      if (typeof model.width === 'number')
+        boxConfig.style += 'width: ' + model.width + 'px;';
+      if (typeof model.top === 'number')
+        boxConfig.style += 'margin-top: ' + model.top + 'px;';      
+      const box = $('<div/>', boxConfig);
       if (model.title !== undefined && model.title != '') {
         box.append($('<h3/>', { text: model.title }));
       }

@@ -250,7 +250,7 @@ MonitoringConsole.View = (function() {
             seriesInput.append(widget.series).append(' ');
         }
         seriesInput.append($('<br/>')).append($('<button/>', { text: 'Change metric(s)...' })
-                .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel(widget.series, changeSeries)))));
+                .click(() => showModalDialog(createWizardModalDialogModel(widget.series, changeSeries))));
         let options = widget.options;
         let unit = widget.unit;
         let thresholds = widget.decorations.thresholds;
@@ -352,12 +352,23 @@ MonitoringConsole.View = (function() {
     }
 
     function createPageSettings() {
+        
         function addWidgets(selectedSeries) {
             if (selectedSeries !== undefined && selectedSeries.length > 0)
                 onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries));
         }
+
+        function showIfRemotePageExists(jQuery) {
+            Controller.requestListOfRemotePageNames((pageIds) => { // OBS: this asynchronously makes the button visible
+                if (pageIds.indexOf(MonitoringConsole.Model.Page.id()) >= 0) {
+                    jQuery.show();
+                }
+            });                        
+            return jQuery;
+        }
+
         const addWidgetsInput = $('<button/>', { text: 'Select metric(s)...' })
-            .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel([], addWidgets))));
+            .click(() => showModalDialog(createWizardModalDialogModel([], addWidgets)));
         let collapsed = $('#settings-page').children('tr:visible').length <= 1;
         let pushAvailable = !MonitoringConsole.Model.Role.isGuest() && MonitoringConsole.Model.Page.Sync.isLocallyChanged() && MonitoringConsole.Model.Role.isAdmin();
         let pullAvailable = !MonitoringConsole.Model.Role.isGuest();
@@ -386,14 +397,27 @@ MonitoringConsole.View = (function() {
         ]};
     }
 
-    function showIfRemotePageExists(jQuery) {
-        Controller.requestListOfRemotePageNames((pageIds) => { // OBS: this asynchronously makes the button visible
-            if (pageIds.indexOf(MonitoringConsole.Model.Page.id()) >= 0) {
-                jQuery.show();
+    function createConfirmModualDialog(question, labelYes, labelNo, onConfirmation) {
+        return {
+            width: 300,
+            top: 200,
+            content: () => $('<p/>').html(question),
+            buttons: [
+                { property: 'no', label: labelNo, secondary: true },
+                { property: 'yes', label: labelYes },
+            ],
+            results: { yes: true, no: false },
+            onExit: result => {
+                if (result)
+                    onConfirmation();
             }
-        });                        
-        return jQuery;
+        };
     }
+
+    function showModalDialog(model) {
+        $('#ModalDialog').replaceWith(Components.createModalDialog(model));
+    }    
+
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Event Handlers ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1039,11 +1063,12 @@ MonitoringConsole.View = (function() {
         onPageExport: () => onPageExport('monitoring-console-config.json', MonitoringConsole.Model.exportPages()),
         onPageMenu: function() { MonitoringConsole.Model.Settings.toggle(); updateSettings(); },
         onPageLayoutChange: (numberOfColumns) => onPageUpdate(MonitoringConsole.Model.Page.arrange(numberOfColumns)),
-        onPageDelete: function() {
-            if (window.confirm("Do you really want to delete the current page?")) { 
+        onPageDelete: () => {
+            const name = MonitoringConsole.Model.Page.name();
+            showModalDialog(createConfirmModualDialog('Are you sure you want to delete the page <em>'+name+'</em>?', 'Delete', 'Cancel', () => {
                 onPageUpdate(MonitoringConsole.Model.Page.erase());
-                updatePageNavigation();
-            }
+                updatePageNavigation();                
+            }));
         },
     };
 })();

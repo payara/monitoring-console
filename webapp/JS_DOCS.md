@@ -636,9 +636,10 @@ filter           = string | fn (string) => boolean | fn (string, string) => bool
 ### ModalDialoge API
 
 ```
-MODAL_DIALOG     = { id, title, content, buttons, results, onExit }
+MODAL_DIALOG     = { id, title, content, width, top, buttons, results, onExit }
 title            = string
 content          = fn () => jQuery
+width            = number
 buttons          = [ DIALOG_BUTTON ]
 DIALOG_BUTTON    = { property, label, secondary }
 property         = string
@@ -648,6 +649,8 @@ results          = { *:* }
 onExit           = fn(*) => ()
 ```
 * when a particular button is clicked the named `property` of that button is extracted from `results` and passed to `onExit` function. This value can be of any type and change while the dialog is open.
+* `width` is optional to force a certain (smaller) width
+* `top` is optional to force top position other than 0
 
 
 
