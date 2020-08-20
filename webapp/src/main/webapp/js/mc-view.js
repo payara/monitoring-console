@@ -839,8 +839,8 @@ MonitoringConsole.View = (function() {
             title: 'Select Metric Series...',
             content: () => Components.createSelectionWizard(wizard),
             buttons: [
+                { property: 'cancel', label: 'Cancel', secondary: true },
                 { property: 'ok', label: 'OK' },
-                { property: 'cancel', label: 'Cancel' },
             ],
             results: results,
             onExit: onExit,

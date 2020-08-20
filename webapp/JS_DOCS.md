@@ -640,9 +640,10 @@ MODAL_DIALOG     = { id, title, content, buttons, results, onExit }
 title            = string
 content          = fn () => jQuery
 buttons          = [ DIALOG_BUTTON ]
-DIALOG_BUTTON    = { property, label }
+DIALOG_BUTTON    = { property, label, secondary }
 property         = string
 label            = string
+secondary        = boolean
 results          = { *:* }
 onExit           = fn(*) => ()
 ```

@@ -56,7 +56,7 @@ MonitoringConsole.View.Colors = (function() {
       Payara: {
          name: 'Payara',
          palette: [ 
-            '#4363d8', '#42d4f4', '#469990', '#aaffc3', 
+            '#00618A', '#42d4f4', '#469990', '#aaffc3', 
             '#bfef45', '#ffe119', '#ffd8b1', '#9A6324', 
             '#800000', '#911eb4', '#f032e6', '#fabebe', '#e6beff', '#fffac8' ],
          opacity: 10,

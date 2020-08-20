@@ -804,25 +804,23 @@ table.AnnotationTable {
 
 /* ModalDialog Component */
 .ModalDialog h3 {
-  background-color: var(--modal-bg-color);
-  color: #434445;
-  font-size: 16px;
-  font-style: normal;
-  font-weight: 700; 
-  text-align: left;
-  padding: 5px 10px;
+  padding: 15px 0;
+  margin: 0;
 }
 
-.ModalDialog > .content {
+.ModalDialog > .ModalDialogContent {
   position: relative;  
-  margin: 50px auto;
-  min-width: 640px;
-  width: 80%;
+  top: 0;
+  margin: 0 auto;
+  padding: 0 40px;
+  box-sizing: border-box;
+  width: calc(100% - 760px);
+  background-color: var(--sidebar-bg-color);
+  border-radius: 3px;
 }
 
-.ModalDialog .Buttons {
-  background-color: var(--caption-bg-color);
-  padding: 10px;
+.ModalDialog .ModalDialogButtons {
+  padding: 10px 0;
   text-align: right;
   clear: both;
 }
@@ -838,14 +836,14 @@ table.AnnotationTable {
   max-width: 240px;
 }
 .SelectionWizard .Search {
-  background-color: var(--caption-bg-color);
-  padding: 10px;
+  padding: 10px 0;
 }
 .SelectionWizard .Matches {
   padding: 20px;
   background-color: white;
   color: #434445;
   min-height: 10em;
+  border-radius: 3px;
 }
 .SelectionWizard .Matches .Selection {
   float: right;

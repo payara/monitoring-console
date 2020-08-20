@@ -1477,14 +1477,14 @@ MonitoringConsole.View.Components = (function() {
       if (model.id)
         config.id = model.id;
       const dialog = $('<div/>', config);
-      const box = $('<div/>', {'class': 'content'});
+      const box = $('<div/>', {'class': 'ModalDialogContent'});
       if (model.title !== undefined && model.title != '') {
         box.append($('<h3/>', { text: model.title }));
       }
       const content = model.content();
       box.append(content);
       if (model.buttons) {
-        const bar = $('<div/>', { 'class': 'Buttons' });
+        const bar = $('<div/>', { 'class': 'ModalDialogButtons' });
         for (let button of model.buttons)
           bar.append(createButton(model, button));        
         box.append(bar);
@@ -1493,7 +1493,10 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createButton(model, button) {
-      return $('<button/>', { text: button.label }).click(() => {
+      const config = { text: button.label };
+      if (button.secondary)
+        config['class'] = 'default';
+      return $('<button/>', config).click(() => {
         $('#' + model.id).hide();
         if (typeof model.onExit === 'function')
           model.onExit(model.results[button.property]);
