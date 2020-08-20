@@ -343,7 +343,7 @@ MonitoringConsole.View.Components = (function() {
           'class': model.collapsed ? 'SettingsCollapsed' : 'SettingsExpanded',
         });
         sidebar.append($('<button/>', { 'class': 'btn-icon btn-toggle default' })
-          .html(model.collapsed ? '&#10094;&#10094;' : '&#10095;&#10095;')
+          .html(model.collapsed ? '&laquo;' : '&raquo;')
           .click(model.onSidebarToggle));
         sidebar.append($('<span/>').text('Settings').click(model.onSidebarToggle));
         if (model.collapsed) 
@@ -1521,7 +1521,7 @@ MonitoringConsole.View.Components = (function() {
 
       const sidebar = $('<div/>', config);
       sidebar.append($('<button/>', { 'class': 'btn-icon btn-toggle default' })
-        .html(model.collapsed ? '&#10095;&#10095;' : '&#10094;&#10094;')
+        .html(model.collapsed ? '&raquo;' : '&laquo;')
         .click(model.onSidebarToggle));
       if (model.logo !== undefined)
         sidebar.append($('<a/>', { 'class': 'NavLogo' }).click(model.onLogoClick).append($('<img/>', { src: model.logo })));      
@@ -1531,7 +1531,7 @@ MonitoringConsole.View.Components = (function() {
         sidebar.append($('<span/>').text(page.label).click(model.onSidebarToggle));
         for (let i = 1; i <= 4; i++)
           controls.append($('<dd/>').append(createLayoutButton(model, i)));
-        controls.append($('<dd/>').append(createRefreshButton(model)));
+        controls.append($('<dd/>', { style: 'margin: 15px 5px' }).append(createRefreshButton(model)));
         controls.append($('<dd/>').append(createRotationButton(model)));
       } else {
         sidebar.append(createPageList(model));
@@ -1652,6 +1652,68 @@ MonitoringConsole.View.Components = (function() {
     return { createComponent: createComponent };
   })();
 
+
+  /**
+   * FeedbackBanner
+   */
+  const FeedbackBanner = (function() {
+
+    function createComponent(model) {
+      let typeClass = '';
+      const isSuccess = model.type == 'success';
+      const isError = model.type == 'error';
+      if (isSuccess)
+        typeClass = 'FeedbackBannerSuccess';
+      if (isError)
+        typeClass = 'FeedbackBannerError';
+      const config = { 
+        'class': 'FeedbackBanner' +  ' ' + typeClass,
+        style: 'background-color: ' + model.background + ';',
+      };
+      if (model.id)
+        config.id = model.id;      
+      const banner = $('<div/>', config);
+      banner.append($('<button/>', {title: 'btn-close'}).text('x').click(() => banner.remove()));
+      if (isSuccess)
+        banner.append($('<span/>', {'class': 'FeedbackBannerIcon'}).html('&check;'));
+      if (isError)
+        banner.append($('<span/>', {'class': 'FeedbackBannerIcon'}).html('&cross;'));
+      banner.append($('<p/>').append(model.message));
+      return banner;
+    }
+
+    return { createComponent: createComponent };
+  })();
+
+
+  /**
+   * WidgetHeader is the title and tool icon(s) bar on top of a widget.
+   */
+  const WidgetHeader = (function() {
+
+    function createComponent(model) {
+      const config = { 'class': 'WidgetHeader' + (model.selected() ? ' WidgetHeaderSelected' : '')};
+      if (model.id)
+        config.id = model.id;
+      const header = $('<div/>', config);
+      return header
+        .append($('<span/>', {'class':'btn-edit'}).html('&#9998;').click(model.onClick))
+        .append($('<h3/>', { title: model.description })
+          .text(model.title)
+          .click(() => {            
+            model.onClick();
+            if (model.selected()) {
+              header.addClass('WidgetHeaderSelected');
+            } else {
+              header.removeClass('WidgetHeaderSelected');
+            }
+          })); 
+    }
+
+    return { createComponent: createComponent };
+  })();
+
+
   /*
    * Shared functions
    */
@@ -1709,19 +1771,21 @@ MonitoringConsole.View.Components = (function() {
   * All methods return a jquery element reflecting the given model to be inserted into the DOM using jQuery
   */
   return {
-      createSettings: (model) => Settings.createComponent(model),
-      createLegend: (model) => Legend.createComponent(model),
-      createIndicator: (model) => Indicator.createComponent(model),
-      createMenu: (model) => Menu.createComponent(model),
-      createAlertTable: (model) => AlertTable.createComponent(model),
-      createAnnotationTable: (model) => AnnotationTable.createComponent(model),
-      createWatchManager: (model) => WatchManager.createComponent(model),
-      createPageManager: (model) => PageManager.createComponent(model),
-      createRoleSelector: (model) => RoleSelector.createComponent(model),
-      createModalDialog: (model) => ModalDialog.createComponent(model),
-      createSelectionWizard: (model) => SelectionWizard.createComponent(model),
-      createRAGIndicator: (model) => RAGIndicator.createComponent(model),
-      createNavSidebar: (model) => NavSidebar.createComponent(model),
+      createSettings: model => Settings.createComponent(model),
+      createLegend: model => Legend.createComponent(model),
+      createIndicator: model => Indicator.createComponent(model),
+      createMenu: model => Menu.createComponent(model),
+      createAlertTable: model => AlertTable.createComponent(model),
+      createAnnotationTable: model => AnnotationTable.createComponent(model),
+      createWatchManager: model => WatchManager.createComponent(model),
+      createPageManager: model => PageManager.createComponent(model),
+      createRoleSelector: model => RoleSelector.createComponent(model),
+      createModalDialog: model => ModalDialog.createComponent(model),
+      createSelectionWizard: model => SelectionWizard.createComponent(model),
+      createRAGIndicator: model => RAGIndicator.createComponent(model),
+      createNavSidebar: model => NavSidebar.createComponent(model),
+      createFeedbackBanner: model => FeedbackBanner.createComponent(model),
+      createWidgetHeader: model => WidgetHeader.createComponent(model),
   };
 
 })();

@@ -110,7 +110,7 @@ MonitoringConsole.View = (function() {
             if (previousParent.length > 0 && previousParent.children().length > 0) {
                 previousParent.children().appendTo(parent);
             } else {
-                parent.append(createWidgetToolbar(widget));
+                parent.append(Components.createWidgetHeader(createWidgetHeaderModel(widget)));
                 parent.append(createWidgetTargetContainer(widget));
                 parent.append(Components.createAlertTable({}));
                 parent.append(Components.createAnnotationTable({}));
@@ -134,54 +134,54 @@ MonitoringConsole.View = (function() {
             .append($('<canvas/>',{ id: widget.target }));
     }
 
-    function toWords(str) {
-        // camel case to words
-        let res = str.replace(/([A-Z]+)/g, " $1").replace(/([A-Z][a-z])/g, " $1");
-        if (res.indexOf('.') > 0) {
-            // dots to words with upper casing each word
-            return res.replace(/\.([a-z])/g, " $1").split(' ').map((s) => s.charAt(0).toUpperCase() + s.substring(1)).join(' ');
+    function createWidgetHeaderModel(widget) {
+        function toWords(str) {
+            // camel case to words
+            let res = str.replace(/([A-Z]+)/g, " $1").replace(/([A-Z][a-z])/g, " $1");
+            if (res.indexOf('.') > 0) {
+                // dots to words with upper casing each word
+                return res.replace(/\.([a-z])/g, " $1").split(' ').map((s) => s.charAt(0).toUpperCase() + s.substring(1)).join(' ');
+            }
+            return res;
         }
-        return res;
-    }
 
-    function formatSeriesName(series) {
-        if (Array.isArray(series))
-            return 'Multi-Series without Display Name';
-        let endOfTags = series.lastIndexOf(' ');
-        let metric = endOfTags <= 0 ? series : series.substring(endOfTags + 1);
-        if (endOfTags <= 0 )
-            return toWords(metric);
-        let tags = series.substring(0, endOfTags).split(' ');
-        let text = '';
-        let metricText = toWords(metric);
-        let grouped = false;
-        for (let i = 0; i < tags.length; i++) {
-            let tag = tags[i];
-            let tagName = tag.substring(0, tag.indexOf(':'));
-            let tagValue = tag.substring(tag.indexOf(':') + 1);
-            if (tagName ===  '@') {
-                grouped = true;
-                text += metricText;
-                text += ': <strong>'+tagValue+'</strong> ';
+        function metricName(series) {
+            let start = series.indexOf(' ') + 1;
+            let groupStart = series.indexOf('@:') + 1;
+            if (groupStart > start)
+                start = groupStart + 1;
+            return series.substring(start);
+        }
+
+        const Widgets = MonitoringConsole.Model.Page.Widgets;
+        const series = widget.series;
+        let title = widget.displayName;
+        if (title == '' || title === undefined) {
+            if (Array.isArray(series)) {
+                title = series.map(e => toWords(metricName(e))).join(', ');
             } else {
-                text +=' <span>'+tagName+':<strong>'+tagValue+'</strong></span> ';
+                title = toWords(metricName(series));        
+            }
+        } 
+        let description = widget.description;
+        if (description == '' || description === undefined) {
+            if (Array.isArray(series)) {
+                description = series.join(', ');
+            } else {
+                description = series;
             }
         }
-        if (!grouped)
-            text += metricText;
-        return text;
-    }
+        return {
+            id: 'WidgetHeader-' + widget.target,
+            title: title,
+            description:  description,
+            selected: () => MonitoringConsole.Model.Page.Widgets.Selection.listSeries().indexOf(widget.id) >= 0,
+            onClick: () => {
+                Widgets.Selection.toggle(widget.id, true);
+                updateSettings();
+            },
 
-    function createWidgetToolbar(widget) {
-        const Widgets = MonitoringConsole.Model.Page.Widgets;
-        let widgetId = widget.id;
-        let title = widget.displayName ? widget.displayName : formatSeriesName(widget.series);
-        return $('<div/>', {"class": "widget-title-bar"})
-            .append($('<span/>', {'class':'btn-edit'}).html('&#9998;').click(() => onOpenWidgetSettings(widgetId)))
-            .append($('<h3/>', {title: widget.description != '' ? widget.description : widget.series})
-                .html(title)
-                .click(() => onWidgetToolbarClick(widget)))            
-            ;
+        };
     }
 
     function createGlobalSettings(initiallyCollapsed) {
@@ -397,11 +397,7 @@ MonitoringConsole.View = (function() {
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Event Handlers ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    function onWidgetToolbarClick(widget) {
-        MonitoringConsole.Model.Page.Widgets.Selection.toggle(widget.id, true);
-        updateDomOfWidget(undefined, widget);
-        updateSettings();
-    }
+   
 
     function onWidgetDelete(widgetId) {
         if (window.confirm('Do you really want to remove the chart from the page?')) {
@@ -891,6 +887,7 @@ MonitoringConsole.View = (function() {
         let annotations = update.annotations;
         updateDomOfWidget(undefined, widget);
         let widgetNode = $('#widget-' + widget.target);
+        let headerNode = widgetNode.find('.WidgetHeader').first();
         let legendNode = widgetNode.find('.Legend').first();
         let indicatorNode = widgetNode.find('.Indicator').first();
             if (indicatorNode.length == 0)
@@ -901,6 +898,7 @@ MonitoringConsole.View = (function() {
         if (data !== undefined && (widget.type === 'line' || widget.type === 'bar')) {
             MonitoringConsole.Chart.getAPI(widget).onDataUpdate(update);
         }
+        headerNode.replaceWith(Components.createWidgetHeader(createWidgetHeaderModel(widget)));
         if (widget.type == 'rag') {
             alertsNode.hide();
             legendNode.hide();
@@ -1004,13 +1002,6 @@ MonitoringConsole.View = (function() {
         updateSettings();
     }
 
-    function onOpenWidgetSettings(widgetId) {
-        MonitoringConsole.Model.Page.Widgets.Selection.clear();
-        MonitoringConsole.Model.Page.Widgets.Selection.toggle(widgetId);
-        MonitoringConsole.Model.Settings.open();
-        updateSettings();
-    }
-
     /**
      * Public API of the View object:
      */
@@ -1054,6 +1045,5 @@ MonitoringConsole.View = (function() {
                 updatePageNavigation();
             }
         },
-        onOpenWidgetSettings: (widgetId) => onOpenWidgetSettings(widgetId),
     };
 })();

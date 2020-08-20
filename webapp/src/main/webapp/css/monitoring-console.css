@@ -226,36 +226,7 @@ button.default:hover {
   width: calc(100% - 20px); 
   height: calc(100% - 100px);
 }
-.widget-title-bar {
-  position: absolute;
-  z-index: 101;
-  width: calc(100% - 20px);
-}
-h3 {
-  font-size: 130%;
-  font-weight: bold;
-  margin: 0;
-  cursor: pointer;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-  padding: 1px 5px;
-  text-align: center;
-  color: #F0981B;
-}
-h3 span {
-  font-size: 80%;
-  font-weight: normal;
-  font-style: normal;
-  color: #bbb;
-  margin-right: 1em;
-  float: left;
-}
-h3 strong {
-  font-style: normal;
-  margin-left: 0.5em;
-  color: white;
-}	
+
 #chart-grid {
 	width: 100%;
 	table-layout:fixed;
@@ -269,9 +240,6 @@ h3 strong {
     vertical-align: top;
     position: relative;
     border: 2px solid transparent;
-}
-#chart-grid > tr > td.chart-selected {
-    border: 2px solid #0096D6;
 }
 #chart-grid .widget.empty {
   text-align: center;
@@ -344,6 +312,8 @@ h3 strong {
   height: 30px;
   text-align: center;
   padding: 0;
+  font-size: 20px;
+  line-height: 1em;
 }
 #Settings > span {
   transform: rotate(-90deg);
@@ -774,6 +744,39 @@ table.AnnotationTable {
   max-width: 200px;
 }
 
+
+/**
+ * FeedbackBanner
+ */
+.FeedbackBannerContainer {
+  position: absolute;
+  z-index: 110;
+  width: 50%;
+  margin: 2em 25%;
+}
+.FeedbackBanner {
+  padding: 10px;
+  position: relative;
+}
+.FeedbackBanner p {
+  margin-left: 60px;
+}
+.FeedbackBanner .FeedbackBannerIcon {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  font-size: 20px;
+}
+.FeedbackBanner .btn-close {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: none;
+  border-width: 0;
+}
+
+
+
 /* Modal Components */
 .PageManager, 
 .RoleSelector, 
@@ -1022,4 +1025,38 @@ span.btn-edit {
   top: 5px;
   margin-right: 5px;
   letter-spacing: -2px;
+  font-size: 20px;
+  line-height: 1em;
+}
+
+
+/**
+ * WidgetHeader component
+ **/
+.WidgetHeader {
+  position: absolute;
+  z-index: 101;
+  width: 100%;
+}
+.WidgetHeader.WidgetHeaderSelected h3 {
+  color: white;
+}
+.WidgetHeader h3 {
+  font-size: 130%;
+  font-weight: bold;
+  margin: 0;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 1px 5px;
+  text-align: center;
+  color: #F0981B;
+}
+.WidgetHeader h3 .btn-edit {
+  color: #bbb;
+  margin-right: 1em;
+  position: absolute;
+  top: 10px;
+  right: 10px;
 }

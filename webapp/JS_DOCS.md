@@ -679,3 +679,29 @@ onLayoutChange   = function (number) => ()
 onRefreshSpeedChange = function (number) => ()
 ```
 *`onSidebarToggle` has no argument since a sidebar created with `collapsed` being `true` should expand, likewise for `false` is should collapse
+
+
+
+### FeedbackBanner API
+
+```
+FEEDBACK_BANNER = { id, type, message, background }
+id              = string
+type            = 'success' | 'error'
+message         = string
+background      = string
+```
+* `message` is HTML
+
+
+
+### WidgetHeader API
+
+```
+WIDGET_HEADER    = { id, title, description, selected, onClick }
+id               = string
+title            = string
+description      = string
+selected         = function () => boolean
+onClick          = function () => ()
+```
