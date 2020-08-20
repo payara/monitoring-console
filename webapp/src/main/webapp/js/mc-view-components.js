@@ -475,11 +475,25 @@ MonitoringConsole.View.Components = (function() {
   const Indicator = (function() {
 
     function createComponent(model) {
-       if (!model.text) {
-          return $('<div/>', {'class': 'Indicator', style: 'display: none;'});
-       }
-       let html = model.text.replace(/\*([^*]+)\*/g, '<b>$1</b>').replace(/_([^_]+)_/g, '<i>$1</i>');
-       return $('<div/>', { 'class': 'Indicator status-' + model.status, style: 'color: ' + model.color + ';' }).html(html);
+      if (!model.text) {
+        return $('<div/>', {'class': 'Indicator', style: 'display: none;'});
+      }
+      let title;
+      if (model.status == 'missing') {
+        title = model.text.replace(/\*([^*]+)\*/g, '$1').replace(/_([^_]+)_/g, '$1');
+      }
+      const indicator = $('<div/>', { 
+        'class': 'Indicator status-' + model.status, 
+        style: 'color: ' + model.color + ';',
+        title: title,
+      });
+      if (model.status == 'missing') {
+        indicator.prepend($('<p/>').html('&#128268;'));
+      } else {
+        let html = model.text.replace(/\*([^*]+)\*/g, '<b>$1</b>').replace(/_([^_]+)_/g, '<i>$1</i>');
+        indicator.html(html);
+      }
+      return indicator;
     }
 
     return { createComponent: createComponent };
@@ -1635,7 +1649,7 @@ MonitoringConsole.View.Components = (function() {
 
     function createLayoutButton(model, numberOfColumns) {
       return $('<button/>', {
-          'class': 'btn-icon btn-layout', 
+          'class': 'btn-icon btn-layout' + (model.layoutColumns == numberOfColumns ? ' btn-selected' : ''), 
           title: 'Use '+numberOfColumns+' column layout' 
       })
         .text(numberOfColumns)

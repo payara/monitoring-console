@@ -261,6 +261,7 @@ button.default:hover {
   position: absolute;
   background-color: var(--sidebar-bg-color);
   color: white;
+  border-radius: 3px 0 0 3px;
 }
 #Settings.SettingsExpanded {
   width: 380px;
@@ -450,14 +451,27 @@ table.tags th, table.tags td {
   top: 25%;
   background-color: var(--widget-bg-color);
 }
+.Indicator.status-missing {
+  width: 100%;
+  max-width: 100%;
+  height: calc(100% - 30px);
+  box-sizing: border-box;
+  top: 30px;
+  background-color: var(--page-bg-color);
+  text-align: left;
+  padding: 20px;
+}
+.Indicator.status-missing p {
+  font-size: 50px;
+  text-align: center;
+  color: #e6194B;
+}
 .Indicator b {
   color: white;
-  white-space: nowrap;
-  font-weight: normal;
 }
 .Indicator i {
-  color: #DAE0E2;
-  white-space: nowrap;
+  font-style: normal;
+  color: #ddd;
 }
 
 
@@ -915,6 +929,7 @@ table.AnnotationTable {
   background-color: var(--sidebar-bg-color);
   z-index: 108;
   color: white;
+  border-radius: 0 3px 3px 0;
 }
 .NavSidebar.NavCollapsed {
   width: 40px;
@@ -937,6 +952,7 @@ table.AnnotationTable {
   position: absolute;
   top: 40px;
   left: 40px;
+  cursor: pointer;
 }
 .NavSidebar .NavLogo img {
   width: 180px;
@@ -1037,6 +1053,10 @@ span.btn-edit {
   letter-spacing: -2px;
   font-size: 20px;
   line-height: 1em;
+}
+.NavSidebar button.btn-selected {
+  background: rgba(240, 152, 27, 0.9);
+  box-shadow: 0 0 0 4px rgba(0, 150, 214, 0.7);
 }
 
 

@@ -643,11 +643,14 @@ MonitoringConsole.Model = (function() {
 				let deletion = () => {
 					delete pages[settings.home];
 					settings.home = pageIds[0];
+					doStore(false);
 				};
 				if (settings.role === 'admin') {
 					let page = pages[settings.home];
 					if (page.sync.basedOnRemoteLastModified !== undefined) {
 						Controller.requestDeleteRemotePage(settings.home, deletion);
+					} else {
+						deletion();
 					}
 				} else {
 					deletion();
@@ -1423,7 +1426,8 @@ MonitoringConsole.Model = (function() {
 			rename: UI.renamePage,
 			rotate: UI.rotatePage,
 			isEmpty: () => (Object.keys(UI.currentPage().widgets).length === 0),
-			
+			numberOfColumns: () => UI.currentPage().numberOfColumns,
+
 			create: function(name) {
 				UI.createPage(name);
 				Charts.clear();

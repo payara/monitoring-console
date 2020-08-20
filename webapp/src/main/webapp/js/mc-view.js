@@ -733,6 +733,7 @@ MonitoringConsole.View = (function() {
             rotationEnabled: Rotation.isEnabled(),
             refreshEnabled: !Refresh.isPaused(),
             refreshSpeed: Refresh.interval(),
+            layoutColumns: Page.numberOfColumns(),
             logo: collapsed ? undefined : 'payara-logo.png',
             pages: pages,
             onLogoClick: () => MonitoringConsole.View.onPageChange(Page.changeTo('core')),
@@ -750,8 +751,15 @@ MonitoringConsole.View = (function() {
                 updateSettings();
                 updatePageNavigation();
             },
-            onPageAdd: name => MonitoringConsole.View.onPageChange(Page.create(name)),
-            onLayoutChange: numberOfColumns => MonitoringConsole.View.onPageLayoutChange(numberOfColumns),
+            onPageAdd: name => {
+                MonitoringConsole.View.onPageChange(Page.create(name));
+                showFeedback({ type: 'success', message: 'Your page <em>' + name + '</em> has been added.'});
+            },
+            onLayoutChange: numberOfColumns => {
+                MonitoringConsole.View.onPageLayoutChange(numberOfColumns);
+                updateSettings();
+                updatePageNavigation();  
+            },
             onRefreshSpeedChange: duration => { 
                 Refresh.resume(duration);
                 updateSettings();

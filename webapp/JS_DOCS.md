@@ -657,7 +657,7 @@ onExit           = fn(*) => ()
 ### NavSidebar API
 
 ```
-NAV_SIDEBAR      = { id, collapsed, rotationEnabled, refreshEnabled, refreshSpeed, logo, pages,
+NAV_SIDEBAR      = { id, collapsed, rotationEnabled, refreshEnabled, refreshSpeed, layoutColumns, logo, pages,
 					onLogoClick, onSidebarToggle, onRotationToggle, onRefreshToggle,
 					onPageAdd, onLayoutChange, onRefreshSpeedChange }
 id               = string
@@ -666,6 +666,7 @@ collapsed        = boolean
 rotationEnabled  = boolean
 refreshEnabled   = boolean
 refreshSpeed     = number
+layoutColumns    = number
 logo             = string
 PAGE_ITEM        = { id, label, selected, onSwitch, onDelete, onRename, onReset }
 label            = string
