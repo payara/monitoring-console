@@ -689,11 +689,10 @@ onRefreshSpeedChange = function (number) => ()
 ### FeedbackBanner API
 
 ```
-FEEDBACK_BANNER = { id, type, message, background }
+FEEDBACK_BANNER = { id, type, message }
 id              = string
 type            = 'success' | 'error'
 message         = string
-background      = string
 ```
 * `message` is HTML
 

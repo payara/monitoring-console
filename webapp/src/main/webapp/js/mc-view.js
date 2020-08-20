@@ -416,7 +416,13 @@ MonitoringConsole.View = (function() {
 
     function showModalDialog(model) {
         $('#ModalDialog').replaceWith(Components.createModalDialog(model));
-    }    
+    }
+
+    function showFeedback(model) {
+        const banner = Components.createFeedbackBanner(model);
+        $('#FeedbackBannerContainer').append(banner);
+        banner.delay(3000).fadeOut();
+    }
 
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Event Handlers ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1067,7 +1073,8 @@ MonitoringConsole.View = (function() {
             const name = MonitoringConsole.Model.Page.name();
             showModalDialog(createConfirmModualDialog('Are you sure you want to delete the page <em>'+name+'</em>?', 'Delete', 'Cancel', () => {
                 onPageUpdate(MonitoringConsole.Model.Page.erase());
-                updatePageNavigation();                
+                updatePageNavigation();
+                showFeedback({ type: 'success', message: 'Your page <em>' + name + '</em> has been deleted.' });             
             }));
         },
     };

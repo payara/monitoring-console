@@ -1677,14 +1677,12 @@ MonitoringConsole.View.Components = (function() {
         typeClass = 'FeedbackBannerSuccess';
       if (isError)
         typeClass = 'FeedbackBannerError';
-      const config = { 
-        'class': 'FeedbackBanner' +  ' ' + typeClass,
-        style: 'background-color: ' + model.background + ';',
-      };
-      if (model.id)
-        config.id = model.id;      
+      const config = { 'class': 'FeedbackBanner' +  ' ' + typeClass };
+      if (model.id === undefined)
+        model.id = 'FeedbackBanner';
+      config.id = model.id;      
       const banner = $('<div/>', config);
-      banner.append($('<button/>', {title: 'btn-close'}).text('x').click(() => banner.remove()));
+      banner.append($('<button/>', {'class': 'btn-close'}).text('x').click(() => banner.remove()));
       if (isSuccess)
         banner.append($('<span/>', {'class': 'FeedbackBannerIcon'}).html('&check;'));
       if (isError)

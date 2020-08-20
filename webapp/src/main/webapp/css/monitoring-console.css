@@ -748,30 +748,41 @@ table.AnnotationTable {
 /**
  * FeedbackBanner
  */
-.FeedbackBannerContainer {
+#FeedbackBannerContainer {
   position: absolute;
-  z-index: 110;
+  z-index: 120;
   width: 50%;
   margin: 2em 25%;
 }
 .FeedbackBanner {
   padding: 10px;
   position: relative;
+  background-color: white;
+  color: black;
+  border-radius: 3px;
 }
+.FeedbackBanner.FeedbackBannerSuccess {
+  background-color: #3cb44b;
+}
+.FeedbackBanner.FeedbackBannerError {
+  background-color: #e6194B;
+}
+
 .FeedbackBanner p {
   margin-left: 60px;
 }
 .FeedbackBanner .FeedbackBannerIcon {
   position: absolute;
   left: 20px;
-  top: 20px;
-  font-size: 20px;
+  top: 10px;
+  font-size: 40px;
 }
 .FeedbackBanner .btn-close {
   position: absolute;
   right: 10px;
   top: 10px;
   background: none;
+  box-shadow: none;
   border-width: 0;
 }
 
