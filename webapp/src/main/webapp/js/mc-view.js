@@ -270,7 +270,7 @@ MonitoringConsole.View = (function() {
                 { label: '&nbsp;x', type: 'range', min: 1, max: 4, value: widget.grid.colspan || 1, onChange: (widget, value) => widget.grid.colspan = value},
                 { type: 'range', min: 1, max: 4, value: widget.grid.rowspan || 1, onChange: (widget, value) => widget.grid.rowspan = value},
             ]},
-            { label: 'Actions', input: $('<button/>').text('Remove Widget').click(() => onWidgetDelete(widget.id)) },
+            { label: 'Actions', input: $('<button/>').text('Remove Widget').click(() => onWidgetDelete(widget)) },
         ]});
         settings.push({ id: 'settings-data', caption: 'Data', entries: [
             { label: 'Series', input: seriesInput },
@@ -427,12 +427,13 @@ MonitoringConsole.View = (function() {
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Event Handlers ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   
-
-    function onWidgetDelete(widgetId) {
-        if (window.confirm('Do you really want to remove the chart from the page?')) {
-            onPageChange(MonitoringConsole.Model.Page.Widgets.remove(widgetId));
-        }
+    function onWidgetDelete(widget) {
+        const description = Array.isArray(widget.series)
+            ? widget.series.join(', ')
+            : widget.series;
+        const question = 'Do you really want to remove the widget with metric series <code>'+ description + '</code> from the page?';
+        showModalDialog(createConfirmModualDialog(question, 'Remove', 'Cancel', 
+            () => onPageChange(MonitoringConsole.Model.Page.Widgets.remove(widget.id))));
     }
 
     function onPageExport(filename, text) {

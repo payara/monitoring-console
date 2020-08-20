@@ -815,7 +815,7 @@ table.AnnotationTable {
 
 /* ModalDialog Component */
 .ModalDialog h3 {
-  padding: 15px 0;
+  padding: 0 0 20px 0;
   margin: 0;
 }
 
