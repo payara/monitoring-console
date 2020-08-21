@@ -882,6 +882,7 @@ MonitoringConsole.View = (function() {
                 { property: 'ok', label: 'OK' },
             ],
             results: results,
+            closeProperty: 'cancel',
             onExit: onExit,
         };
     }
@@ -914,6 +915,7 @@ MonitoringConsole.View = (function() {
                 content: () => Components.createWatchManager(manager),
                 buttons: [{ property: 'close', label: 'Close' }],
                 results: { close: true },                
+                closeProperty: 'close',
             });
         });
     }

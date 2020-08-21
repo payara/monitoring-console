@@ -688,6 +688,7 @@ table.AnnotationTable {
 .WatchManager {
 
 }
+
 /* Watch List Component */
 .WatchListContainer > h3:first-letter {
   font-size: 40px;
@@ -816,7 +817,16 @@ table.AnnotationTable {
   padding-bottom: 50px;
 }
 
+
 /* ModalDialog Component */
+.ModalDialog .btn-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  cursor: pointer;
+  padding: 15px 20px;
+}
+
 .ModalDialog .ModalDialogContent > h3 {
   padding: 0 0 20px 0;
   margin: 0;

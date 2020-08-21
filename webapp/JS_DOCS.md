@@ -636,7 +636,7 @@ filter           = string | fn (string) => boolean | fn (string, string) => bool
 ### ModalDialoge API
 
 ```
-MODAL_DIALOG     = { id, title, content, width, top, buttons, results, onExit }
+MODAL_DIALOG     = { id, title, content, width, top, buttons, results, closeProperty, onExit }
 title            = string
 content          = fn () => jQuery
 width            = number
@@ -646,11 +646,13 @@ property         = string
 label            = string
 secondary        = boolean
 results          = { *:* }
+closeProperty    = string
 onExit           = fn(*) => ()
 ```
 * when a particular button is clicked the named `property` of that button is extracted from `results` and passed to `onExit` function. This value can be of any type and change while the dialog is open.
 * `width` is optional to force a certain (smaller) width
 * `top` is optional to force top position other than 0
+* `closeProperty` is an optional field refering to the property used for the window close (x) button, if it is undefined the window has no such button
 
 
 

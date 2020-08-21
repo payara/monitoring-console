@@ -1510,6 +1510,11 @@ MonitoringConsole.View.Components = (function() {
       if (typeof model.top === 'number')
         boxConfig.style += 'margin-top: ' + model.top + 'px;';      
       const box = $('<div/>', boxConfig);
+      if (typeof model.closeProperty === 'string') {
+        box.append($('<span/>', {'class': 'btn-close'})
+          .html('&times;')
+          .click(createClickHandler(model, model.closeProperty)))
+      }
       if (model.title !== undefined && model.title != '')
         box.append($('<h3/>').html(model.title));
       const content = model.content();
@@ -1527,11 +1532,15 @@ MonitoringConsole.View.Components = (function() {
       const config = { text: button.label };
       if (button.secondary)
         config['class'] = 'default';
-      return $('<button/>', config).click(() => {
+      return $('<button/>', config).click(createClickHandler(model, button.property));
+    }
+
+    function createClickHandler(model, property) {
+      return () => {
         $('#' + model.id).hide();
         if (typeof model.onExit === 'function')
-          model.onExit(model.results[button.property]);
-      });
+          model.onExit(model.results[property]);
+      };
     }
 
     return { createComponent: createComponent };
