@@ -198,7 +198,7 @@ MonitoringConsole.View = (function() {
                 { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Settings.Rotation.interval(), onChange: (val) => MonitoringConsole.Model.Settings.Rotation.interval(val) },
                 { label: 'enabled', type: 'checkbox', value: MonitoringConsole.Model.Settings.Rotation.isEnabled(), onChange: (checked) => MonitoringConsole.Model.Settings.Rotation.enabled(checked) },
             ]},
-            { label: 'Role', type: 'dropdown', options: {guest: 'Guest', user: 'User', admin: 'Administrator'}, value: MonitoringConsole.Model.Role.get(), onChange: (val) => { MonitoringConsole.Model.Role.set(val); updateSettings(); } },
+            { label: 'Role', input: () => $('<button />').text(MonitoringConsole.Model.Role.name() + ' (change...)').click(() => showRoleSelectionModalDialog()) },
             { label: 'Page Sync', available: pushAvailable || pullAvailable, input: [
                 { available: pushAvailable, input: () => $('<button />', { text: 'Update Remote Pages', title: 'Push local state of all know remote pages to server'}).click(MonitoringConsole.Model.Page.Sync.pushAllLocal) },
                 { available: pullAvailable, input: () => $('<button/>', { text: 'Update Local Pages', title: 'Open Page synchronisation dialoge'}).click(onPagesSync) }, 
@@ -689,17 +689,33 @@ MonitoringConsole.View = (function() {
         return { id: widget.target + '_annotations', mode: widget.mode, sort: widget.sort, items: items };
     }
 
-    function createRoleSelectionModel(onExit) {
-        return { id: 'RoleSelector', onChange: role => {
-                MonitoringConsole.Model.Role.set(role);
-                $('#RoleSelector').hide();
-                if (onExit !== undefined)
-                    onExit();
-            }, items: [
-            { name: 'guest', label: 'Guest' , description: 'Automatically uses latest server page configuration. Existing local changes are overridden. Local changes during the session do not affect the remote configuration.'},
-            { name: 'user', label: 'User' , description: 'Can select for each individual page if server configuration replaces local page. Can manually update local page with server page configuration during the session.' },
-            { name: 'admin', label: 'Administrator' , description: 'Can select for each individual page if server configuration replaces local page. Can manually update local pages with server page configuration or update server configuration with local changes. For pages with automatic synchronisation local changes do affect server page configurations.' },
-        ]};
+    function showRoleSelectionModalDialog(onExitCall) {
+        const Role = MonitoringConsole.Model.Role;
+        const currentRole = Role.isDefined() ? Role.get() : 'guest';
+        showModalDialog({
+            title: 'User Role Selection',
+            content: () => $('<dl/>')
+                .append($('<dt/>').text('Guest'))
+                .append($('<dd/>').text('Automatically uses latest server page configuration. Existing local changes are overridden. Local changes during the session do not affect the remote configuration.'))
+                .append($('<dt/>').text('User'))
+                .append($('<dd/>').text('Can select for each individual page if server configuration replaces local page. Can manually update local page with server page configuration during the session.'))
+                .append($('<dt/>').text('Administrator'))
+                .append($('<dd/>').text('Can select for each individual page if server configuration replaces local page. Can manually update local pages with server page configuration or update server configuration with local changes. For pages with automatic synchronisation local changes do affect server page configurations.')),
+            buttons: [
+                { property: 'admin', label: 'Administrator', secondary: true },
+                { property: 'user', label: 'User' },
+                { property: 'guest', label: 'Guest' },
+            ],
+            results: { admin: 'admin' , user: 'user', guest: 'guest', current: currentRole },
+            closeProperty: 'current',
+            onExit: role =>  {
+                Role.set(role);
+                updateSettings();
+                showFeedback({ type: 'success', message: 'User Role changed to <em>' + Role.name() + '</em>' });
+                if (onExitCall !== undefined)
+                    onExitCall();
+            }
+        });
     }
 
     function createNavSidebarModel() {
@@ -1071,7 +1087,7 @@ MonitoringConsole.View = (function() {
                 }
             });
             if (!MonitoringConsole.Model.Role.isDefined()) {
-                $('#RoleSelector').replaceWith(Components.createRoleSelector(createRoleSelectionModel(onPagesSync)));
+                showRoleSelectionModalDialog(onPagesSync);
             } else {
                 onPagesSync();
             }

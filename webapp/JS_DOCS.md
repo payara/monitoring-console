@@ -576,21 +576,6 @@ lastRemoteUpdate = number
 * `onCancel` is called when dialoge is cancelled
 
 
-### RoleSelector API
-Descrives the model expected by the component used to create a role selection modal dialoge. 
-
-```
-ROLE_SELECTOR    = { id, items, onChange }
-items            = [ ROLE_ITEM ]
-ROLE_ITEM        = { name, label, description }
-name             = string
-label            = string
-description      = string
-onChange         = fn (string) => ()
-```
-* `onChange` gets passed the `name` of the selected item
-
-
 ### SelectionWizard API
 
 ```

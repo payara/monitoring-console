@@ -822,6 +822,14 @@ MonitoringConsole.Model = (function() {
 				isGuest: () => settings.role == 'guest',
 				isUser:  () => settings.role === undefined || settings.role == 'user',
 				isDefined: () => settings.role !== undefined,
+				name: function() {
+					return {
+						guest: 'Guest',
+						user: 'User',
+						admin: 'Administrator'
+					}[settings.role || 'user'];
+				},
+					
 			}, 
 
 			Sync: {

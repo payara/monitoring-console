@@ -1189,38 +1189,6 @@ MonitoringConsole.View.Components = (function() {
   })();
 
 
-  /**
-   * A component that creates a panel (for modal dialogue) that presents possible roles for user to select one.
-   */
-  const RoleSelector = (function(){
-
-    function createComponent(model) {
-      const config = { 'class': 'RoleSelector' };
-      if (model.id)
-        config.id = model.id;
-      const selector = $('<div/>', config);
-      const box = $('<div/>', {'class': 'content'}).append($('<h3/>').text('Select User Role'));
-      const list = $('<ul/>');
-      box.append(list);
-      let seletion = [undefined];
-      model.items.forEach(role => list.append(createItem(role, seletion)));
-      box.append($('<button/>', { text: 'Select' }).click(() => model.onChange(seletion[0])));
-      return selector.append(box);
-    }
-
-    function createItem(role, seletion) {
-      const id = 'role-'+role.name;
-      return $('<li/>')
-        .append($('<input/>', { type: 'radio', name: 'role', value: role.name, id: id }).change(function() {
-            seletion[0] = this.value;
-          }))
-        .append($('<label/>', { for: id }).append($('<b/>').text(role.label)).append('<br/>').append(role.description));
-    }
-
-    return { createComponent: createComponent };
-  })();
-
-
 
   /**
     * A component that creates a wizard for series selection
@@ -1820,7 +1788,6 @@ MonitoringConsole.View.Components = (function() {
       createAnnotationTable: model => AnnotationTable.createComponent(model),
       createWatchManager: model => WatchManager.createComponent(model),
       createPageManager: model => PageManager.createComponent(model),
-      createRoleSelector: model => RoleSelector.createComponent(model),
       createModalDialog: model => ModalDialog.createComponent(model),
       createSelectionWizard: model => SelectionWizard.createComponent(model),
       createRAGIndicator: model => RAGIndicator.createComponent(model),
