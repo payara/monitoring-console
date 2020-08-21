@@ -1147,30 +1147,21 @@ MonitoringConsole.View.Components = (function() {
         .append($('<th/>').text('Based on Remote Version'))
         .append($('<th/>').text('Remote Version'))
       );
-      const selection = {};
-      model.pages.forEach(page => list.append(createItem(page, selection)));
-      const updateBtn = $('<button/>', { text: 'Update', title: 'Updates checked pages locally with the remote configuration for these pages'})
-        .click(() => model.onUpdate(Object.keys(selection)));
-      const cancelBtn = $('<button/>', { text: 'Cancel'}).click(model.onCancel);
-      return manager.append($('<div/>', {'class': 'content'})
-        .append($('<h3/>').text('Page Synchronisation'))
+      model.pages.forEach(page => list.append(createItem(model, page)));
+      return manager
         .append($('<p/>').text('Please select the pages that should be updated with their server (remote) configuration (newest highlighted in green):'))
-        .append(list)
-        .append(updateBtn)
-        .append(cancelBtn)
-      );
+        .append(list);
     }
 
-    function createItem(page, selection) {
+    function createItem(model, page) {
       if (page.checked)
-        selection[page.id] = true;
-      const onChange = (checked) => { selection[page.id] = checked; };
+        model.onSelection(page.id);
       const checkbox = $('<input/>', { type: 'checkbox', checked: page.checked })
         .on('change', function() {
           if (this.checked) {
-            selection[page.id] = true;
+            model.onSelection(page.id);
           } else {
-            delete selection[page.id];
+            model.onDeselection(page.id);
           }
         });
       const localAttrs = page.lastLocalChange >= page.lastRemoteChange ? {'class': 'recent'} : {};

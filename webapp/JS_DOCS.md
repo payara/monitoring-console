@@ -559,10 +559,10 @@ style           = 'fill' | 'outline'
 Describes the model expected by the component used to create a tabular overview for pages and their synchronisation state.
 
 ```
-PAGE_MANAGER     = { id, pages, onUpdate, onCancel }
+PAGE_MANAGER     = { id, pages, onSelection, onDeselection }
 pages            = [ PAGE_SYNC_ITEM ]
-onUpdate         = fn ([string]) => ()
-onCancel         = fn () => ()
+onSelection      = function (string) => ()
+onDeselection    = function (string) => ()
 PAGE_SYNC_ITEM   = { id, name, checked, lastLocalChange, lastRemoteChange, lastRemoteUpdate }
 id               = string
 name             = string
@@ -572,8 +572,7 @@ lastRemoteChange = number
 lastRemoteUpdate = number
 ```
 * `id` of `PAGE_SYNC_ITEM` is a page ID, `id` of the `PAGE_MANAGER` is the id of the HTML element
-* `onUpdate` is called with the pages selected by the user if dialoge is not cancelled
-* `onCancel` is called when dialoge is cancelled
+* `onSelection` and `onDeselection` are called with page id whenever the page is selected or deselected
 
 
 ### SelectionWizard API
@@ -626,10 +625,11 @@ title            = string
 content          = fn () => jQuery
 width            = number
 buttons          = [ DIALOG_BUTTON ]
-DIALOG_BUTTON    = { property, label, secondary }
+DIALOG_BUTTON    = { property, label, secondary, tooltip }
 property         = string
 label            = string
 secondary        = boolean
+tooltip          = string
 results          = { *:* }
 closeProperty    = string
 onExit           = fn(*) => ()

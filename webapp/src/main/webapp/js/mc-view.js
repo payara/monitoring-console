@@ -201,7 +201,7 @@ MonitoringConsole.View = (function() {
             { label: 'Role', input: () => $('<button />').text(MonitoringConsole.Model.Role.name() + ' (change...)').click(() => showRoleSelectionModalDialog()) },
             { label: 'Page Sync', available: pushAvailable || pullAvailable, input: [
                 { available: pushAvailable, input: () => $('<button />', { text: 'Update Remote Pages', title: 'Push local state of all know remote pages to server'}).click(MonitoringConsole.Model.Page.Sync.pushAllLocal) },
-                { available: pullAvailable, input: () => $('<button/>', { text: 'Update Local Pages', title: 'Open Page synchronisation dialoge'}).click(onPagesSync) }, 
+                { available: pullAvailable, input: () => $('<button/>', { text: 'Update Local Pages', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
             ]},
             { label: 'Watches', input: $('<button/>').text('Open Settings').click(onOpenWatchSettings) },
         ]};
@@ -1033,17 +1033,31 @@ MonitoringConsole.View = (function() {
         onPageRefresh();
     }
 
-    function onPagesSync() {
+    function showPageSyncModalDialog() {
         MonitoringConsole.Model.Page.Sync.providePullRemoteModel(model => {
-            let onUpdate = model.onUpdate;
-            model.id = 'PageManager';
-            model.onUpdate = async function(pageIds) {
-                await onUpdate(pageIds);
-                $('#PageManager').hide();
-                onPageRefresh();
-            };
-            model.onCancel = () => $('#PageManager').hide();
-            $('#PageManager').replaceWith(Components.createPageManager(model));
+            // abses the object properties as a set of ids
+            const results = { empty: {}, selected: {} };
+            model.onSelection = pageId => results.selected[pageId] = true;
+            model.onDeselection = pageId => delete results.selected[pageId];
+            showModalDialog({
+                title: 'Manage Page Synchronisation',
+                content: () => Components.createPageManager(model),
+                buttons: [
+                    { property: 'empty', label: 'Cancel', secondary: true },
+                    { property: 'selected', label: 'Update', tooltip: 'Updates checked pages locally with the remote configuration for these pages' },
+                ],
+                closeProperty: 'empty',
+                results: results,
+                onExit: async function(pageIdMap) {
+                    const pageIds = Object.keys(pageIdMap);
+                    if (pageIds.length > 0) {
+                        await model.onUpdate(pageIds);
+                        let names = MonitoringConsole.Model.listPages().filter(e => pageIds.indexOf(e.id) >= 0).map(e => e.name).join(', ');
+                        showFeedback({type: 'success', message: 'Updated local pages <em>' + names + '</em> with remote configuration.'});
+                        onPageRefresh(); 
+                    }
+                },
+            });
         });
     }    
 
@@ -1087,9 +1101,9 @@ MonitoringConsole.View = (function() {
                 }
             });
             if (!MonitoringConsole.Model.Role.isDefined()) {
-                showRoleSelectionModalDialog(onPagesSync);
+                showRoleSelectionModalDialog(showPageSyncModalDialog);
             } else {
-                onPagesSync();
+                showPageSyncModalDialog();
             }
         },
         onPageChange: (layout) => onPageChange(layout),
