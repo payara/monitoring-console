@@ -897,44 +897,52 @@ MonitoringConsole.View.Components = (function() {
   const WatchList = (function() {
 
     function createComponent(model) {
-      const config = { 'class': 'WatchList' };
+      const config = { 'class': 'WatchListContainer' };
       if (model.id)
         config.id = model.id;
-      const list = $('<div/>', config);
-      for (let item of model.items) {
-        list.append(createItem(item, model.colors, model.actions));
+      const container = $('<div/>', config);
+      let items = model.items.filter(watch => watch.programmatic);
+      if (items.length > 0) {
+        container.append($('<h3>').html('&#129302; System Watches'));
+        container.append(createList(items, model));
       }
-      return list;
+      items = model.items.filter(watch => !watch.programmatic);
+      if (items.length > 0) {
+        container.append($('<h3>').html('&#129488; User Watches'));
+        container.append(createList(items, model));
+      }      
+      return container;
     }
 
-    function createItem(item, colors, actions) {
-      const watch = $('<div/>', { 'class': 'WatchItem ' + 'state-' + (item.disabled || item.stopped ? 'disabled' : 'enabled') });
-      const disableButton = Settings.createInput({ type: 'checkbox', value: !item.disabled, onChange: (checked) => {
-        if (checked) {
-          actions.onEnable(item.name);
-        } else {
-          actions.onDisable(item.name);
-        }
-      }});
-      const menu = [
-        { icon: '&#128295;', label: item.programmatic ? 'Duplicate' : 'Edit', onClick: () => actions.onEdit(item) }
-      ];
-      if (item.disabled) {
-        menu.push({ icon: '&#9745;', label: 'Enable', onClick: () => actions.onEnable(item.name) });        
-      } else {
-        menu.push({ icon: '&#9746;', label: 'Disable', onClick: () => actions.onDisable(item.name) });        
-      }
+    function createList(items, model) {
+        const list = $('<dl/>', { 'class': 'WatchList' });
+        for (let item of items)
+          createItem(list, item, model.colors, model.actions);
+        return list;
+    }
+
+    function createItem(list, item, colors, actions) {
+      const label = $('<b/>').text(item.name + (item.stopped ? ' (stopped)' : ''));
+      const dt = $('<dt/>', { 'class': 'state-' + (item.disabled || item.stopped ? 'disabled' : 'enabled') })
+        .append(label)
+        .append($('<code/>').text(item.series))
+        .append($('<button/>').text(item.programmatic ? 'Duplicate' : 'Edit').click(() => actions.onEdit(item)))
+        ;
+      label.click(() => dt.nextUntil('dt').toggle());
       if (!item.programmatic) {
-        menu.push({ icon: '&times;', label: 'Delete', onClick: () => actions.onDelete(item.name) });
+        dt.append($('<button/>').text('Delete').click(() => actions.onDelete(item.name)));
+      } else {
+        dt.append($('<span/>'));
       }
-      const general = $('<h3/>').append(disableButton).append(item.name + (item.stopped ? ' (stopped)' : '')).click(() => actions.onEdit(item));
-      watch
-        .append(Menu.createComponent({ groups: [{ icon: '&#9881;', items: menu }]}))
-        .append(general);
+      if (item.disabled) {
+        dt.append($('<button/>').text('Enable').click(() => actions.onEnable(item.name)));        
+      } else {
+        dt.append($('<button/>', {'class': 'default'}).text('Disable').click(() => actions.onDisable(item.name)));        
+      }
+      list.append(dt);
       for (let level of ['red', 'amber', 'green'])
         if (item[level])
-          watch.append(createCircumstance(level, item[level], item.unit, item.series, colors[level]));
-      return watch;
+          list.append(createCircumstance(level, item[level], item.unit, item.series, colors[level]));
     }
 
     function createCircumstance(level, model, unit, series, color) {
@@ -942,7 +950,7 @@ MonitoringConsole.View.Components = (function() {
         let text = condition.text();
         return text.substring(text.indexOf('value') + 5);
       }
-      const circumstance = $('<div/>', { 'class': 'WatchCondition', style: 'color: '+ color +';'});
+      const circumstance = $('<dd/>', { 'class': 'WatchCondition', style: 'color: '+ color +'; display: none;'});
       let levelText = paddedLeftWith('&nbsp;', Units.Alerts.name(level), 'Unhealthy'.length);
       let text = '<b>' + levelText + ':</b> <em>If</em> ' + series + ' <em>in</em> ' + Units.names()[unit] + ' <em>is</em> ';
       text += plainText(formatCondition(model.start, unit));
@@ -973,7 +981,9 @@ MonitoringConsole.View.Components = (function() {
       }
       const builder = $('<div/>', config);
       const nameInput = Settings.createInput({ type: 'text', value: editedWatch.name, onChange: (name) => editedWatch.name = name });
-      builder.append($('<h3/>').append(nameInput));
+      builder
+        .append($('<label/>').text('Name'))
+        .append(nameInput);
       const unitDropdowns = [];
       const seriesInputs = [];
       for (let level of ['red', 'amber', 'green']) {
@@ -1110,8 +1120,8 @@ MonitoringConsole.View.Components = (function() {
         builder.replaceWith(newBuilder);
         builder = newBuilder;
       };
-      manager.append(list);
       manager.append(builder);
+      manager.append(list);
       return manager;
     }
 
@@ -1500,9 +1510,8 @@ MonitoringConsole.View.Components = (function() {
       if (typeof model.top === 'number')
         boxConfig.style += 'margin-top: ' + model.top + 'px;';      
       const box = $('<div/>', boxConfig);
-      if (model.title !== undefined && model.title != '') {
-        box.append($('<h3/>', { text: model.title }));
-      }
+      if (model.title !== undefined && model.title != '')
+        box.append($('<h3/>').html(model.title));
       const content = model.content();
       box.append(content);
       if (model.buttons) {

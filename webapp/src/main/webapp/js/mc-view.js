@@ -909,8 +909,12 @@ MonitoringConsole.View = (function() {
                     onEnable: (name, onSuccess, onFailure) => Controller.requestEnableWatch(name, wrapOnSuccess(onSuccess), onFailure),
                 },
             };
-            $('#chart-grid').hide();
-            $('#WatchManager').replaceWith(Components.createWatchManager(manager));
+            showModalDialog({
+                title: 'Manage Watches',
+                content: () => Components.createWatchManager(manager),
+                buttons: [{ property: 'close', label: 'Close' }],
+                results: { close: true },                
+            });
         });
     }
 
@@ -1034,7 +1038,6 @@ MonitoringConsole.View = (function() {
      */
     function onPageChange(layout) {
         MonitoringConsole.Chart.Trace.onClosePopup();
-        $('#WatchManager').hide();
         $('#chart-grid').show();
         onPageUpdate(layout);
         updatePageNavigation();

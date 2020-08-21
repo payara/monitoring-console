@@ -329,25 +329,21 @@ button.default:hover {
 }
 
 #panel-grid,
-#panel-trace,
-#WatchManager {
+#panel-trace {
   margin-left: 40px;
   margin-right: 40px;
 }
 #console.state-show-settings #panel-grid, 
-#console.state-show-settings #panel-trace,
-#console.state-show-settings #WatchManager {
+#console.state-show-settings #panel-trace {
   width: calc(100% - 420px);
 }
 #console.state-show-nav #panel-grid, 
-#console.state-show-nav #panel-trace,
-#console.state-show-nav #WatchManager {
+#console.state-show-nav #panel-trace {
   width: calc(100% - 420px);
   margin-left: 380px;
 }
 #console.state-show-nav.state-show-settings #panel-grid, 
-#console.state-show-nav.state-show-settings #panel-trace,
-#console.state-show-nav.state-show-settings #WatchManager {
+#console.state-show-nav.state-show-settings #panel-trace {
   width: calc(100% - 760px);
 }
 
@@ -690,59 +686,52 @@ table.AnnotationTable {
 
 /* Watch Manager/Settings Component */
 .WatchManager {
-  position: absolute;
-  top: 32px;
-  left: 0;
-  z-index: 110;
-  padding: 10px;
-  box-sizing: border-box;
-  width: 100%;
-}
 
+}
 /* Watch List Component */
-.WatchItem {
-  background-color: var(--widget-bg-color);
+.WatchListContainer > h3:first-letter {
+  font-size: 40px;
+  font-weight: normal;
+}
+.WatchList {
+  background-color: white;
+  border-radius: 3px;
+  color: black;
   padding: 10px;
-  margin: 5px 0;
-  padding-left: 40px;
-  position: relative;
 }
-.WatchItem.state-disabled h3 {
-  color: #888;
+.WatchList dt {
+  margin: 10px 0;
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr 1fr 1fr;
+  grid-gap: 5px;
 }
-.WatchItem h3 {
-  text-align: left;
-  margin-bottom: 0.25em;
+.WatchList dt b {
+  cursor: pointer;
 }
-.WatchItem h3 input[type=checkbox] {
-  position: absolute;
-  left: 15px;
+.WatchList dt.state-disabled b {
+  text-decoration: line-through;
 }
 .WatchCondition {
   padding: 0 0.5em;
   font-family: monospace;
 }
 .WatchCondition em {
-  color: #bbb;
   font-style: normal;
 }
 .WatchCondition select, .WatchCondition input {
   width: auto;
   max-width: auto;
-  background-color: transparent;
-  border-color: transparent;
   color: inherit;
   font-family: monospace;
 }
 .WatchCondition input {
-  border-bottom: 1px dotted #ccc;
 }
 .WatchCondition input.input-value, .WatchCondition span span span input.input-text {
   width: 50px;
 }
 .WatchCondition input.input-text {
-  width: 300px;
-  max-width: 300px;
+  width: 200px;
+  max-width: 200px;
 }
 .WatchBuilder {
   position: relative;
@@ -828,7 +817,7 @@ table.AnnotationTable {
 }
 
 /* ModalDialog Component */
-.ModalDialog h3 {
+.ModalDialog .ModalDialogContent > h3 {
   padding: 0 0 20px 0;
   margin: 0;
 }
