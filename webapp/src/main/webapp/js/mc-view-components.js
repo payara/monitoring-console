@@ -345,6 +345,10 @@ MonitoringConsole.View.Components = (function() {
         sidebar.append($('<button/>', { 'class': 'btn-icon btn-toggle default' })
           .html(model.collapsed ? '&laquo;' : '&raquo;')
           .click(model.onSidebarToggle));
+        if (model.collapsed)
+          sidebar.append($('<button/>', { 'class': 'btn-icon btn-add', title: 'Add a widget to this page...' })
+            .html('&plus;')
+            .click(model.onWidgetAdd));
         sidebar.append($('<span/>').text('Settings').click(model.onSidebarToggle));
         if (model.collapsed) 
           return sidebar;

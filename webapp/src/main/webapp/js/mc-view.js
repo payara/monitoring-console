@@ -94,9 +94,11 @@ MonitoringConsole.View = (function() {
             onSidebarToggle: () => {
                 MonitoringConsole.Model.Settings.toggle();
                 updateSettings();
-            }
+            },
+            onWidgetAdd: showAddWidgetModalDialog,
         }));
     }
+
 
     function updateDomOfWidget(parent, widget) {
         if (!parent) {
@@ -352,11 +354,6 @@ MonitoringConsole.View = (function() {
     }
 
     function createPageSettings() {
-        
-        function addWidgets(selectedSeries) {
-            if (selectedSeries !== undefined && selectedSeries.length > 0)
-                onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries));
-        }
 
         function showIfRemotePageExists(jQuery) {
             Controller.requestListOfRemotePageNames((pageIds) => { // OBS: this asynchronously makes the button visible
@@ -367,8 +364,7 @@ MonitoringConsole.View = (function() {
             return jQuery;
         }
 
-        const addWidgetsInput = $('<button/>', { text: 'Select metric(s)...' })
-            .click(() => showModalDialog(createWizardModalDialogModel([], addWidgets)));
+        const addWidgetsInput = $('<button/>', { text: 'Select metric(s)...' }).click(showAddWidgetModalDialog);
         let collapsed = $('#settings-page').children('tr:visible').length <= 1;
         let pushAvailable = !MonitoringConsole.Model.Role.isGuest() && MonitoringConsole.Model.Page.Sync.isLocallyChanged() && MonitoringConsole.Model.Role.isAdmin();
         let pullAvailable = !MonitoringConsole.Model.Role.isGuest();
@@ -412,6 +408,13 @@ MonitoringConsole.View = (function() {
                     onConfirmation();
             }
         };
+    }
+
+    function showAddWidgetModalDialog() {
+        showModalDialog(createWizardModalDialogModel([], selectedSeries => {
+                if (selectedSeries !== undefined && selectedSeries.length > 0)
+                    onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries));
+        }));
     }
 
     function showModalDialog(model) {

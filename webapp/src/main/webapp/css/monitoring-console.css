@@ -1026,26 +1026,7 @@ span.btn-edit {
   margin: 0 1em;
 }
 
-.NavSidebar button.btn-icon {
-  display: inline-block;
-  width: 30px;
-  height: 30px;
-  text-align: center;
-  padding: 0;
-}
-.NavSidebar button.btn-toggle {
-  position: absolute;
-  right: 0;
-  top: 5px;
-  margin-right: 5px;
-  letter-spacing: -2px;
-  font-size: 20px;
-  line-height: 1em;
-}
-.NavSidebar button.btn-selected {
-  background: rgba(240, 152, 27, 0.9);
-  box-shadow: 0 0 0 4px rgba(0, 150, 214, 0.7);
-}
+
 
 
 /**
@@ -1077,4 +1058,31 @@ span.btn-edit {
   position: absolute;
   top: 10px;
   right: 10px;
+}
+
+/* Overall */
+button.btn-icon {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  text-align: center;
+  padding: 0;
+}
+button.btn-toggle {
+  position: absolute;
+  right: 0;
+  top: 5px;
+  margin-right: 5px;
+  letter-spacing: -2px;
+  font-size: 20px;
+  line-height: 1em;
+}
+button.btn-selected {
+  background: rgba(240, 152, 27, 0.9);
+  box-shadow: 0 0 0 4px rgba(0, 150, 214, 0.7);
+}
+button.btn-add {
+  position: absolute;
+  bottom: 45px;
+  left: 5px;
 }
