@@ -198,12 +198,12 @@ MonitoringConsole.View = (function() {
                 { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Settings.Rotation.interval(), onChange: (val) => MonitoringConsole.Model.Settings.Rotation.interval(val) },
                 { label: 'enabled', type: 'checkbox', value: MonitoringConsole.Model.Settings.Rotation.isEnabled(), onChange: (checked) => MonitoringConsole.Model.Settings.Rotation.enabled(checked) },
             ]},
-            { label: 'Role', input: () => $('<button />').text(MonitoringConsole.Model.Role.name() + ' (change...)').click(() => showRoleSelectionModalDialog()) },
+            { label: 'Role', input: () => $('<button />').text(MonitoringConsole.Model.Role.name() + '...').click(showRoleSelectionModalDialog) },
             { label: 'Page Sync', available: pushAvailable || pullAvailable, input: [
-                { available: pushAvailable, input: () => $('<button />', { text: 'Update Remote Pages', title: 'Push local state of all know remote pages to server'}).click(MonitoringConsole.Model.Page.Sync.pushAllLocal) },
-                { available: pullAvailable, input: () => $('<button/>', { text: 'Update Local Pages', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
+                { available: pushAvailable, input: () => $('<button />', { text: 'Push All Local Pages', title: 'Push local state of all know remote pages to server'}).click(MonitoringConsole.Model.Page.Sync.pushAllLocal) },
+                { available: pullAvailable, input: () => $('<button/>', { text: 'Manage Local Pages...', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
             ]},
-            { label: 'Watches', input: $('<button/>').text('Open Settings').click(onOpenWatchSettings) },
+            { label: 'Watches', input: $('<button/>').text('Manage Watches...').click(showWatchConfigModalDialoh) },
         ]};
     }
 
@@ -694,12 +694,13 @@ MonitoringConsole.View = (function() {
         const currentRole = Role.isDefined() ? Role.get() : 'guest';
         showModalDialog({
             title: 'User Role Selection',
+            width: 400,
             content: () => $('<dl/>')
-                .append($('<dt/>').text('Guest'))
+                .append($('<dt/>').append($('<b/>').text('Guest')))
                 .append($('<dd/>').text('Automatically uses latest server page configuration. Existing local changes are overridden. Local changes during the session do not affect the remote configuration.'))
-                .append($('<dt/>').text('User'))
+                .append($('<dt/>').append($('<b/>').text('User')))
                 .append($('<dd/>').text('Can select for each individual page if server configuration replaces local page. Can manually update local page with server page configuration during the session.'))
-                .append($('<dt/>').text('Administrator'))
+                .append($('<dt/>').append($('<b/>').text('Administrator')))
                 .append($('<dd/>').text('Can select for each individual page if server configuration replaces local page. Can manually update local pages with server page configuration or update server configuration with local changes. For pages with automatic synchronisation local changes do affect server page configurations.')),
             buttons: [
                 { property: 'admin', label: 'Administrator', secondary: true },
@@ -906,12 +907,12 @@ MonitoringConsole.View = (function() {
     /**
      * This function is called when the watch details settings should be opened
      */
-    function onOpenWatchSettings() {
+    function showWatchConfigModalDialoh() {
         function wrapOnSuccess(onSuccess) {
             return () => {
                 if (typeof onSuccess === 'function')
                     onSuccess();
-                onOpenWatchSettings();
+                showWatchConfigModalDialoh();
             };
         }
         Controller.requestListOfWatches((watches) => {
@@ -929,7 +930,7 @@ MonitoringConsole.View = (function() {
             showModalDialog({
                 title: 'Manage Watches',
                 content: () => Components.createWatchManager(manager),
-                buttons: [{ property: 'close', label: 'Close' }],
+                buttons: [{ property: 'close', label: 'Close', secondary: true }],
                 results: { close: true },                
                 closeProperty: 'close',
             });
