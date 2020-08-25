@@ -163,33 +163,18 @@ MonitoringConsole.View.Components = (function() {
       }
 
       function createToggleInput(model) {
-        const toggle = $('<span/>');
-        let flip = false;
+        const toggle = $('<span/>', {'class': 'toggle'});
         const onChange = enhancedOnChange(model.onChange);
-        const change = val => {
-          switch(val) {
-            case 'true': onChange(true); break;
-            case 'false': onChange(false); break;
-            default: onChange(val); break;
-          }
-        };
-        for (const [key, value] of Object.entries(model.options)) {
-          const id = model.id + '_' + key;
-          const label = $('<label/>', { for: id }).text(value);
-          const radio = $('<input/>', { 
-            type: 'radio', 
-            name: model.id, 
-            id: id, 
-            value: key, 
-            checked: model.value.toString() == key });
-          radio.change(() => change(radio.val()));
-          if (flip) {
-            toggle.append(radio).append(label);
-          } else {
-            toggle.append(label).append(radio);
-          }
-          flip = !flip;
-        }
+        const input = $('<input/>', { id: model.id, type: 'checkbox', checked: model.value });
+        input.change(function() {
+          let checked = this.checked;
+          onChange(checked);
+        });
+        toggle
+          .append($('<span/>').text(model.options['false']).click(() => input.prop( "checked", false ).change()))
+          .append(input)
+          .append($('<span/>').text(model.options['true']).click(() => input.prop( "checked", true ).change()))
+          ;
         return toggle;
       }
 

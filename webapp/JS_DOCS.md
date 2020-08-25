@@ -347,7 +347,7 @@ Mandatory members of `ENTRY` depend on `type` member. Variants are:
 'toggle'   : { label, value, options, onChange }
 ```
 * `onChange` may be omitted for _text_ inputs which makes the field _readonly_.
-* `options` provided for a `toggle` are given in the form of `{ 'true': 'Yes', 'false': 'No' }`, where the order of `true` and `false` determines which is the left and which the right option.
+* `options` provided for a `toggle` are given in the form of `{ true: 'Yes', false: 'No' }`. Toggles are always considered "on" when `true`.
 * Settings of type `'value'` are inputs for a number that depends on the `unit` 
 used by the widget range. E.g. a duration in ms or ns, a size in bytes, a percentage or a plain number. The actual input component created will therefore depend on the `unit` provided.
 If no unit is provided or the unit is undefined a plain number is assumed.

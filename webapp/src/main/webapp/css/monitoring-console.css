@@ -121,30 +121,36 @@ button.big-plus {
   color: white;
   box-shadow: none;
 }
-input[type=button] {
+input[type="button"] {
   border-radius: 2px;
   border: 2px outset #ccc;
   margin: 1px;
   vertical-align: middle;
   display: inline-block;
 }
-input[type=text], input[type=number] {
+input[type="text"], input[type="number"] {
 	border: 1px solid #ccc;
   padding: 3px 5px;
   border-radius: 2px;
 }
-input[type=text] {
+input[type="text"] {
   width: 150px;
   max-width: 150px;
 }
-input[type=text]:invalid {
+input[type="text"]:invalid {
   background-color: #ffdddd;
 }
-input[type=number] {
+input[type="number"] {
   width: 50px;
 }
-input[type=checkbox] {
+input[type="checkbox"] {
   vertical-align: middle;
+}
+.state-on input[type="radio"] {
+  background-color: green;
+}
+.state-off input[type="radio"] {
+  background-color: #444;
 }
 input[readonly] {
   background-color: transparent;
