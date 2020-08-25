@@ -936,8 +936,8 @@ MonitoringConsole.View = (function() {
             'Are you sure you want to override all <b>shared</b> pages with the current local state?', 
             'Push All', 'Cancel', () => {
                 MonitoringConsole.Model.Page.Sync.pushAllLocal(
-                    page => showFeedback({ type: 'success', message: 'Remote page '+ page.name +' updated successfully.' }),
-                    page => showFeedback({ type: 'error', message: 'Failed to update remote page '+ page.name +'.' }));
+                    page => showFeedback({ type: 'success', message: 'Remote page <em>'+ page.name +'</em> updated successfully.' }),
+                    page => showFeedback({ type: 'error', message: 'Failed to update remote page <em>'+ page.name +'</em>.' }));
             }));
     }
 
