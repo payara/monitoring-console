@@ -187,8 +187,9 @@ MonitoringConsole.View = (function() {
     }
 
     function createGlobalSettings(initiallyCollapsed) {
-        const  pushAvailable = MonitoringConsole.Model.Role.isAdmin();
-        const  pullAvailable = !MonitoringConsole.Model.Role.isGuest();
+        const pushAvailable = MonitoringConsole.Model.Role.isAdmin();
+        const pullAvailable = !MonitoringConsole.Model.Role.isGuest();
+        const watchesAvailable = !MonitoringConsole.Model.Role.isGuest();
         return { id: 'settings-global', caption: 'Global', collapsed: initiallyCollapsed, entries: [
             { label: 'Import', input: () => $('<button />', { text: 'Import Configuration...'}).click(() => $('#cfgImport').click()) },
             { label: 'Export', input: () => $('<button />', { text: 'Export Configuration...'}).click(MonitoringConsole.View.onPageExport) },
@@ -205,7 +206,7 @@ MonitoringConsole.View = (function() {
                 { available: pushAvailable, input: () => $('<button />', { text: 'Push All Local Pages...', title: 'Push local state of all know remote pages to server'}).click(showPagePushModalDialog) },
                 { available: pullAvailable, input: () => $('<button/>', { text: 'Manage Local Pages...', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
             ]},
-            { label: 'Watches', input: $('<button/>').text('Manage Watches...').click(showWatchConfigModalDialog) },
+            { label: 'Watches', available: watchesAvailable, input: $('<button/>').text('Manage Watches...').click(showWatchConfigModalDialog) },
         ]};
     }
 
