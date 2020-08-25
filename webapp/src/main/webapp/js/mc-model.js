@@ -170,7 +170,11 @@ MonitoringConsole.Model = (function() {
 			if (settings.theme.options === undefined)
 				settings.theme.options = {};
 			if (settings.nav === undefined)
-				settings.nav = {};	
+				settings.nav = {};
+			if (settings.rotation === undefined)
+				settings.rotation = {};
+			if (typeof settings.rotation.interval !== 'number')
+				settings.rotation.interval = 60;
 			return settings;
 		}
 		

@@ -199,7 +199,7 @@ MonitoringConsole.View = (function() {
             ]},
             { label: 'Page Rotation', input: [
                 { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Settings.Rotation.interval(), onChange: (val) => MonitoringConsole.Model.Settings.Rotation.interval(val) },
-                { label: 'enabled', type: 'checkbox', value: MonitoringConsole.Model.Settings.Rotation.isEnabled(), onChange: (checked) => MonitoringConsole.Model.Settings.Rotation.enabled(checked) },
+                { type: 'toggle', options: { false: 'Off', true: 'On' }, value: MonitoringConsole.Model.Settings.Rotation.isEnabled(), onChange: (checked) => MonitoringConsole.Model.Settings.Rotation.enabled(checked) },
             ]},
             { label: 'Role', input: () => $('<button />').text(MonitoringConsole.Model.Role.name() + '...').click(showRoleSelectionModalDialog) },
             { label: 'Page Sync', available: pushAvailable || pullAvailable, input: [
