@@ -194,7 +194,7 @@ MonitoringConsole.View = (function() {
             { label: 'Export', input: () => $('<button />', { text: 'Export Configuration...'}).click(MonitoringConsole.View.onPageExport) },
             { label: 'Data Refresh', input: [
                 { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Refresh.interval(), onChange: (val) => MonitoringConsole.Model.Refresh.interval(val) },
-                { label: 'paused', type: 'checkbox', value: MonitoringConsole.Model.Refresh.isPaused(), onChange: (checked) => MonitoringConsole.Model.Refresh.paused(checked) },
+                { type: 'toggle', options: { true: 'Pause', false: 'Play'}, value: MonitoringConsole.Model.Refresh.isPaused(), onChange: (checked) => MonitoringConsole.Model.Refresh.paused(checked) },
             ]},
             { label: 'Page Rotation', input: [
                 { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Settings.Rotation.interval(), onChange: (val) => MonitoringConsole.Model.Settings.Rotation.interval(val) },

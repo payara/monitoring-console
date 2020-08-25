@@ -162,6 +162,37 @@ MonitoringConsole.View.Components = (function() {
         return dropdown;
       }
 
+      function createToggleInput(model) {
+        const toggle = $('<span/>');
+        let flip = false;
+        const onChange = enhancedOnChange(model.onChange);
+        const change = val => {
+          switch(val) {
+            case 'true': onChange(true); break;
+            case 'false': onChange(false); break;
+            default: onChange(val); break;
+          }
+        };
+        for (const [key, value] of Object.entries(model.options)) {
+          const id = model.id + '_' + key;
+          const label = $('<label/>', { for: id }).text(value);
+          const radio = $('<input/>', { 
+            type: 'radio', 
+            name: model.id, 
+            id: id, 
+            value: key, 
+            checked: model.value.toString() == key });
+          radio.change(() => change(radio.val()));
+          if (flip) {
+            toggle.append(radio).append(label);
+          } else {
+            toggle.append(label).append(radio);
+          }
+          flip = !flip;
+        }
+        return toggle;
+      }
+
       function createValueInput(model) {
         let unit = model.unit;
         if (typeof unit === 'string') {
@@ -333,6 +364,7 @@ MonitoringConsole.View.Components = (function() {
             case 'value'   : return createValueInput(model);
             case 'text'    : return createTextInput(model);
             case 'color'   : return createColorInput(model);
+            case 'toggle'  : return createToggleInput(model);
             default        : return model.input;
          }
       }

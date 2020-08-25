@@ -316,7 +316,7 @@ caption     = string
 entries     = [ENTRY]
 ENTRY       = { label, type, input, value, unit, min, max, options, onChange, description, defaultValue, collapsed, available } 
 label       = string
-type        = undefined | 'header' | 'checkbox' | 'range' | 'dropdown' | 'value' | 'text' | 'color'
+type        = undefined | 'header' | 'checkbox' | 'range' | 'dropdown' | 'value' | 'text' | 'color' | 'toggle'
 unit        = string | fn () => string
 value       = number | string | [number] | [string]
 defaultValue= number | string
@@ -344,8 +344,10 @@ Mandatory members of `ENTRY` depend on `type` member. Variants are:
 'value'    : { label, value, unit, onChange }
 'text'     : { label, value, onChange }
 'color'    : { label, value, defaultValue, onChange }
+'toggle'   : { label, value, options, onChange }
 ```
 * `onChange` may be omitted for _text_ inputs which makes the field _readonly_.
+* `options` provided for a `toggle` are given in the form of `{ 'true': 'Yes', 'false': 'No' }`, where the order of `true` and `false` determines which is the left and which the right option.
 * Settings of type `'value'` are inputs for a number that depends on the `unit` 
 used by the widget range. E.g. a duration in ms or ns, a size in bytes, a percentage or a plain number. The actual input component created will therefore depend on the `unit` provided.
 If no unit is provided or the unit is undefined a plain number is assumed.
