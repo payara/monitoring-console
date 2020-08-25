@@ -432,8 +432,10 @@ MonitoringConsole.View = (function() {
             ? widget.series.join(', ')
             : widget.series;
         const question = 'Do you really want to remove the widget with metric series <code>'+ description + '</code> from the page?';
-        showModalDialog(createConfirmModualDialog(question, 'Remove', 'Cancel', 
-            () => onPageChange(MonitoringConsole.Model.Page.Widgets.remove(widget.id))));
+        showModalDialog(createConfirmModualDialog(question, 'Remove', 'Cancel', () =>  {
+            onPageChange(MonitoringConsole.Model.Page.Widgets.remove(widget.id));
+            showFeedback({ type: 'success', message: 'Widget ' + description + ' removed.'});
+        }));
     }
 
     function onPageExport(filename, text) {
@@ -689,6 +691,32 @@ MonitoringConsole.View = (function() {
         return { id: widget.target + '_annotations', mode: widget.mode, sort: widget.sort, items: items };
     }
 
+    function showAddPageModalDialog() {
+        const results = {};
+        const input = $('<input/>', { type: 'text'});
+        input.change(() => results.input = input.val());
+        showModalDialog({
+            title: 'Add Page',
+            width: 300,
+            top: 200,
+            content: () => $('<form/>')
+                .append($('<label/>').text('Page Name')).append(' ')
+                .append(input),
+            buttons: [
+                { property: 'cancel', label: 'Cancel', secondary: true },
+                { property: 'input', label: 'Add Page' }
+            ],
+            results: results,
+            closeProperty: 'cancel',
+            onExit: name => {
+                if (name != '' && name !== undefined) {
+                    MonitoringConsole.View.onPageChange(MonitoringConsole.Model.Page.create(name));
+                    showFeedback({ type: 'success', message: 'Your page <em>' + name + '</em> has been added.'});
+                }
+            }
+        });
+    }
+
     function showRoleSelectionModalDialog(onExitCall) {
         const Role = MonitoringConsole.Model.Role;
         const currentRole = Role.isDefined() ? Role.get() : 'guest';
@@ -768,9 +796,8 @@ MonitoringConsole.View = (function() {
                 updateSettings();
                 updatePageNavigation();
             },
-            onPageAdd: name => {
-                MonitoringConsole.View.onPageChange(Page.create(name));
-                showFeedback({ type: 'success', message: 'Your page <em>' + name + '</em> has been added.'});
+            onPageAdd: () => {
+                showAddPageModalDialog();
             },
             onLayoutChange: numberOfColumns => {
                 MonitoringConsole.View.onPageLayoutChange(numberOfColumns);

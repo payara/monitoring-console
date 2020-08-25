@@ -1498,7 +1498,7 @@ MonitoringConsole.View.Components = (function() {
       return () => {
         $('#' + model.id).hide();
         if (typeof model.onExit === 'function')
-          model.onExit(model.results[property]);
+          model.onExit(model.results[property], property);
       };
     }
 
@@ -1590,22 +1590,8 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createAddPagePanel(model) {
-      const panel = $('<div/>', {'class': 'NavAdd'});
-      const details = $('<div/>', { style: 'display:none;'});
-      const name = $('<input/>', { type: 'text '});
-      details
-        .append($('<div/>')
-          .append($('<label/>').text('Page Name'))
-          .append(name)
-        )
-        .append($('<div/>')
-          .append($('<button/>', {'class': 'default'}).text('Cancel').click(() => details.hide()))
-          .append($('<button/>').text('Add').click(() => model.onPageAdd(name.val())))
-        );
-      panel
-        .append($('<button/>').text('Add Page').click(() => details.toggle()))
-        .append(details);
-      return panel;
+      return $('<div/>', {'class': 'NavAdd'})
+        .append($('<button/>').text('Add Page').click(model.onPageAdd));
     }
 
     function createRefreshInput(model) {
