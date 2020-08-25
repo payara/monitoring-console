@@ -200,10 +200,10 @@ MonitoringConsole.View = (function() {
             ]},
             { label: 'Role', input: () => $('<button />').text(MonitoringConsole.Model.Role.name() + '...').click(showRoleSelectionModalDialog) },
             { label: 'Page Sync', available: pushAvailable || pullAvailable, input: [
-                { available: pushAvailable, input: () => $('<button />', { text: 'Push All Local Pages', title: 'Push local state of all know remote pages to server'}).click(MonitoringConsole.Model.Page.Sync.pushAllLocal) },
+                { available: pushAvailable, input: () => $('<button />', { text: 'Push All Local Pages...', title: 'Push local state of all know remote pages to server'}).click(showPagePushModalDialog) },
                 { available: pullAvailable, input: () => $('<button/>', { text: 'Manage Local Pages...', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
             ]},
-            { label: 'Watches', input: $('<button/>').text('Manage Watches...').click(showWatchConfigModalDialoh) },
+            { label: 'Watches', input: $('<button/>').text('Manage Watches...').click(showWatchConfigModalDialog) },
         ]};
     }
 
@@ -931,15 +931,25 @@ MonitoringConsole.View = (function() {
         };
     }
 
+    function showPagePushModalDialog() {
+        showModalDialog(createConfirmModualDialog(
+            'Are you sure you want to override all <b>shared</b> pages with the current local state?', 
+            'Push All', 'Cancel', () => {
+                MonitoringConsole.Model.Page.Sync.pushAllLocal(
+                    page => showFeedback({ type: 'success', message: 'Remote page '+ page.name +' updated successfully.' }),
+                    page => showFeedback({ type: 'error', message: 'Failed to update remote page '+ page.name +'.' }));
+            }));
+    }
+
     /**
      * This function is called when the watch details settings should be opened
      */
-    function showWatchConfigModalDialoh() {
+    function showWatchConfigModalDialog() {
         function wrapOnSuccess(onSuccess) {
             return () => {
                 if (typeof onSuccess === 'function')
                     onSuccess();
-                showWatchConfigModalDialoh();
+                showWatchConfigModalDialog();
             };
         }
         Controller.requestListOfWatches((watches) => {

@@ -182,11 +182,11 @@ MonitoringConsole.Model = (function() {
 			}
 			window.localStorage.setItem(LOCAL_UI_KEY, doExport());
 			if (isPageUpdate && page.sync.autosync && settings.role == 'admin') {
-				doPushLocal(undefined, page);
+				doPushLocal(undefined, undefined, page);
 			}
 		}
 
-		function doPushLocal(onSuccess, page) {
+		function doPushLocal(onSuccess, onError, page) {
 			if (page === undefined)
 				page = pages[settings.home];
 			let basedOnRemoteLastModified = page.sync.basedOnRemoteLastModified;
@@ -199,20 +199,22 @@ MonitoringConsole.Model = (function() {
 				() => { // success
 					doStore();
 					if (onSuccess)
-						onSuccess();
+						onSuccess(page);
 				},
 				() => { // failure
 					page.sync.basedOnRemoteLastModified = basedOnRemoteLastModified;
 					page.sync.lastModifiedLocally = lastModifiedLocally;
 					page.sync.preferredOverRemoteLastModified = preferredOverRemoteLastModified;
+					if (onError)
+						onError(page);
 				}
 			);			
 		}
 
-		function doPushAllLocal() {	
+		function doPushAllLocal(onSuccess, onError) {	
 			Controller.requestListOfRemotePageNames((pageIds) => {
 				pageIds.forEach(pageId => {
-					doPushLocal(undefined, pages[pageId]);
+					doPushLocal(onSuccess, onError, pages[pageId]);
 				});
 			});
 		}
