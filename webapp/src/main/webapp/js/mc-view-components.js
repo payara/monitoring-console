@@ -355,19 +355,22 @@ MonitoringConsole.View.Components = (function() {
       }
 
       function createComponent(model) {
-        let sidebar = $('<div/>', { 
-          id: model.id,
-          'class': model.collapsed ? 'SettingsCollapsed' : 'SettingsExpanded',
-        });
-        sidebar.append($('<button/>', { 'class': 'btn-icon btn-toggle default' })
-          .html(model.collapsed ? '&laquo;' : '&raquo;')
-          .click(model.onSidebarToggle));
-        if (model.collapsed)
+        const config = { id: model.id };
+        const hasToggle = typeof model.onSidebarToggle === 'function';
+        if (hasToggle)
+          config['class'] = model.collapsed ? 'SettingsCollapsed' : 'SettingsExpanded';
+        const sidebar = $('<div/>', config);
+        if (hasToggle)
+          sidebar.append($('<button/>', { 'class': 'btn-icon btn-toggle default' })
+            .html(model.collapsed ? '&laquo;' : '&raquo;')
+            .click(model.onSidebarToggle));
+        if (hasToggle && model.collapsed)
           sidebar.append($('<button/>', { 'class': 'btn-icon btn-add', title: 'Add a widget to this page...' })
             .html('&plus;')
             .click(model.onWidgetAdd));
-        sidebar.append($('<span/>').text('Settings').click(model.onSidebarToggle));
-        if (model.collapsed) 
+        if (hasToggle)
+          sidebar.append($('<span/>').text('Settings').click(model.onSidebarToggle));
+        if (hasToggle && model.collapsed) 
           return sidebar;
         let syntheticId = 0;
         let collapsed = false;

@@ -374,9 +374,7 @@ MonitoringConsole.View = (function() {
         let queryAvailable = page.type === 'query';
         const configure =  MonitoringConsole.Model.Page.configure;
         return { id: 'settings-page', caption: 'Page', collapsed: collapsed, entries: [
-            { label: 'Page Rotation', input: [
-                { label: 'Include in Rotation', type: 'checkbox', value: MonitoringConsole.Model.Page.rotate(), onChange: (checked) => MonitoringConsole.Model.Page.rotate(checked) },
-            ]},
+            { label: 'Include in Rotation', type: 'toggle', options: { false: 'No', true: 'Yes' }, value: MonitoringConsole.Model.Page.rotate(), onChange: (checked) => MonitoringConsole.Model.Page.rotate(checked) },
             { label: 'Type', type: 'dropdown', options: {manual: 'Manual', query: 'Query'}, value: page.type, onChange: (type) => { onPageUpdate(configure(page => page.type = type)); updateSettings(); } },            
             { label: 'Max Size', available: queryAvailable, type: 'value', min: 1, unit: 'count', value: page.content.maxSize,  onChange: (value) => configure(page => page.content.maxSize = value) },
             { label: 'Query Series', available: queryAvailable, type: 'text', value: page.content.series, onChange: (value) => configure(page => page.content.series = value) },
