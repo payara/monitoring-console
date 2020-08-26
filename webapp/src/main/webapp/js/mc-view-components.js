@@ -372,23 +372,30 @@ MonitoringConsole.View.Components = (function() {
           sidebar.append($('<span/>').text('Settings').click(model.onSidebarToggle));
         if (hasToggle && model.collapsed) 
           return sidebar;
-        let syntheticId = 0;
+        const SyntheticId = (function() {
+          let nextId = 0;
+          return { next: () => nextId++ };
+        })();
+        createGroups(model.groups, sidebar, SyntheticId);
+        return sidebar;
+      }
+
+      function createGroups(groups, parent, idProvider) {
         let collapsed = false;
-        for (let t = 0; t < model.groups.length; t++) {
-          let group = model.groups[t];
+        for (let t = 0; t < groups.length; t++) {
+          let group = groups[t];
           if (group.available !== false) {
             let table = createTable(group);
             collapsed = group.collapsed === true;
-            sidebar.append(table);
+            parent.append(table);
             for (let r = 0; r < group.entries.length; r++) {
-               syntheticId++;
                let entry = group.entries[r];
                if (entry.available !== false) {
                  let type = entry.type;
                  let auto = type === undefined;
                  let input = entry.input;
                  if (entry.id === undefined)
-                   entry.id = 'setting_' + syntheticId;
+                   entry.id = 'setting_' + idProvider.next();
                  entry.collapsed = collapsed;
                  if (type == 'header' || auto && input === undefined) {
                     collapsed = entry.collapsed === true;
@@ -397,9 +404,7 @@ MonitoringConsole.View.Components = (function() {
                     table.append(createRow(entry, createInput(entry)));
                  } else {
                     if (Array.isArray(input)) {
-                      let [innerInput, innerSyntheticId] = createMultiInput(input, syntheticId, 'x-input');
-                      input = innerInput;
-                      syntheticId = innerSyntheticId;
+                      input = createMultiInput(input, idProvider, 'x-input');
                     }
                     table.append(createRow(entry, input));
                  }
@@ -407,21 +412,17 @@ MonitoringConsole.View.Components = (function() {
             }
           }
         }
-        return sidebar;
       }
 
-      function createMultiInput(inputs, syntheticId, css) {
+      function createMultiInput(inputs, idProvider, css) {
         let box = $('<div/>', {'class': css});
         for (let i = 0; i < inputs.length; i++) {
           let entry = inputs[i];
           if (Array.isArray(entry)) {
-            let [innerBox, innerSyntheticId] = createMultiInput(entry, syntheticId);
-            box.append(innerBox);
-            syntheticId = innerSyntheticId;
+            box.append(createMultiInput(entry, idProvider));
           } else if (entry.available !== false) {
-            syntheticId++;
             if (entry.id === undefined)
-              entry.id = 'setting_' + syntheticId;
+              entry.id = 'setting_' + idProvider.next();
             let input = createInput(entry);
             if (entry.label) {
               let config = { 'for': entry.id };
@@ -433,7 +434,7 @@ MonitoringConsole.View.Components = (function() {
             }
           }                    
         }
-        return [box, syntheticId];
+        return box;
       }
 
       return { 
