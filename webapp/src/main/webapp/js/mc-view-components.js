@@ -62,33 +62,6 @@ MonitoringConsole.View.Components = (function() {
     */
    let Settings = (function() {
 
-      function createHeaderRow(model) {
-        let caption = model.label;
-        let config = {colspan: 2};
-        if (model.description)
-          config.title = model.description;
-        let th = $('<th/>', config);
-        let showHide = function() {
-          let tr = th.closest('tr').next();
-          let toggleAll = tr.children('th').length > 0;
-          while (tr.length > 0 && (toggleAll || tr.children('th').length == 0)) {
-              if (tr.children('th').length == 0) {
-                  tr.toggle();                    
-              }
-              tr = tr.next();
-          }
-        };
-        return $('<tr/>').append(
-            th.html(caption).click(showHide));
-      }
-
-      function createTable(model) {
-        let table = $('<table />', { id: model.id });
-        if (model.caption)
-          table.append(createHeaderRow({ label: model.caption, description: model.description, collapsed: model.collapsed }));
-        return table;
-      }
-
       function createRow(model, inputs) {
         let components = $.isFunction(inputs) ? inputs() : inputs;
         if (typeof components === 'string')
@@ -98,8 +71,6 @@ MonitoringConsole.View.Components = (function() {
           config.title = model.description;
         let tr = $('<tr/>');
         tr.append($('<td/>', config).text(model.label)).append($('<td/>').append(components));
-        if (model.collapsed)
-          tr.css('display', 'none');
         return tr;
       }
 
@@ -376,7 +347,20 @@ MonitoringConsole.View.Components = (function() {
           let nextId = 0;
           return { next: () => nextId++ };
         })();
-        createGroups(model.groups, sidebar, SyntheticId);
+        const appGroups = model.groups.filter(g => g.type == 'app');
+        const pageGroups = model.groups.filter(g => g.type == 'page');
+        const widgetGroups = model.groups.filter(g => g.type === undefined || g.type == 'widget');
+        if (appGroups.length > 0) {
+          const box = $('<div/>', {'class': 'SettingsAppTabs'});
+          createGroups(appGroups, box, SyntheticId);
+          sidebar.append(box);
+        }
+        if (pageGroups.length > 0) {
+          createGroups(pageGroups, sidebar, SyntheticId);  
+        }
+        if (widgetGroups.length > 0) {
+          createGroups(widgetGroups, sidebar, SyntheticId);  
+        }
         return sidebar;
       }
 
@@ -389,8 +373,17 @@ MonitoringConsole.View.Components = (function() {
       }
 
       function createGroup(group, idProvider) {
-        let table = createTable(group);
-        let collapsed = group.collapsed === true;        
+        function upper(str) {
+          return str.charAt(0).toUpperCase() + str.slice(1);      
+        }
+        const config = {};
+        if (group.description)
+          config.title = group.description;
+        const header = $('<h4/>', config).text(group.caption);
+        const table = $('<table />');
+        if (group.collapsed === true)
+          table.css('display', 'none');
+        header.click(() => table.toggle());        
         for (let entry of group.entries) {
            if (entry.available !== false) {
              let type = entry.type;
@@ -398,11 +391,7 @@ MonitoringConsole.View.Components = (function() {
              let input = entry.input;
              if (entry.id === undefined)
                entry.id = 'setting_' + idProvider.next();
-             entry.collapsed = collapsed;
-             if (type == 'header' || auto && input === undefined) {
-                collapsed = entry.collapsed === true;
-                table.append(createHeaderRow(entry));
-             } else if (!auto) {
+            if (!auto) {
                 table.append(createRow(entry, createInput(entry)));
              } else {
                 if (Array.isArray(input)) {
@@ -412,7 +401,9 @@ MonitoringConsole.View.Components = (function() {
              }
           }
         }
-        return table;
+        return $('<div/>', { id: group.id, 'class': 'Settings' + upper(group.type || 'Widget') })
+          .append(header)
+          .append(table);
       }
 
       function createMultiInput(inputs, idProvider, css) {

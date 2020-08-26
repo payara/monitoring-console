@@ -190,7 +190,7 @@ MonitoringConsole.View = (function() {
         const pushAvailable = MonitoringConsole.Model.Role.isAdmin();
         const pullAvailable = !MonitoringConsole.Model.Role.isGuest();
         const watchesAvailable = !MonitoringConsole.Model.Role.isGuest();
-        return { id: 'settings-global', caption: 'Global', collapsed: initiallyCollapsed, entries: [
+        return { id: 'settings-global', type: 'app', caption: 'General', collapsed: initiallyCollapsed, entries: [
             { label: 'Import', input: () => $('<button />', { text: 'Import Configuration...'}).click(() => $('#cfgImport').click()) },
             { label: 'Export', input: () => $('<button />', { text: 'Export Configuration...'}).click(MonitoringConsole.View.onPageExport) },
             { label: 'Data Refresh', input: [
@@ -224,7 +224,7 @@ MonitoringConsole.View = (function() {
             return { label: label, type: 'color', value: Theme.color(name), onChange: createChangeColorDefaultFn(name) };
         }
         let collapsed = $('#settings-colors').children('tr:visible').length <= 1;
-        return { id: 'settings-colors', caption: 'Colors', collapsed: collapsed, entries: [
+        return { id: 'settings-colors', type: 'app', caption: 'Colors', collapsed: collapsed, entries: [
             { label: 'Scheme', type: 'dropdown', options: Colors.schemes(), value: undefined, onChange: (name) => { Colors.scheme(name); updateSettings(); } },
             { label: 'Data #', type: 'color', value: Theme.palette(), onChange: (colors) => Theme.palette(colors) },
             { label: 'Defaults', input: [
@@ -373,7 +373,7 @@ MonitoringConsole.View = (function() {
         let page = MonitoringConsole.Model.Page.current();
         let queryAvailable = page.type === 'query';
         const configure =  MonitoringConsole.Model.Page.configure;
-        return { id: 'settings-page', caption: 'Page', collapsed: collapsed, entries: [
+        return { id: 'settings-page', type: 'page', caption: 'Page', collapsed: collapsed, entries: [
             { label: 'Include in Rotation', type: 'toggle', options: { false: 'No', true: 'Yes' }, value: MonitoringConsole.Model.Page.rotate(), onChange: (checked) => MonitoringConsole.Model.Page.rotate(checked) },
             { label: 'Type', type: 'dropdown', options: {manual: 'Manual', query: 'Query'}, value: page.type, onChange: (type) => { onPageUpdate(configure(page => page.type = type)); updateSettings(); } },            
             { label: 'Max Size', available: queryAvailable, type: 'value', min: 1, unit: 'count', value: page.content.maxSize,  onChange: (value) => configure(page => page.content.maxSize = value) },
