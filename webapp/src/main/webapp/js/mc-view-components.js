@@ -329,7 +329,7 @@ MonitoringConsole.View.Components = (function() {
         const config = { id: model.id };
         const hasToggle = typeof model.onSidebarToggle === 'function';
         if (hasToggle)
-          config['class'] = model.collapsed ? 'SettingsCollapsed' : 'SettingsExpanded';
+          config['class'] = model.collapsed ? 'Settings SettingsCollapsed' : 'Settings SettingsExpanded';
         const sidebar = $('<div/>', config);
         if (hasToggle)
           sidebar.append($('<button/>', { 'class': 'btn-icon btn-toggle default' })
@@ -347,43 +347,73 @@ MonitoringConsole.View.Components = (function() {
           let nextId = 0;
           return { next: () => nextId++ };
         })();
-        const appGroups = model.groups.filter(g => g.type == 'app');
-        const pageGroups = model.groups.filter(g => g.type == 'page');
-        const widgetGroups = model.groups.filter(g => g.type === undefined || g.type == 'widget');
-        if (appGroups.length > 0) {
-          const box = $('<div/>', {'class': 'SettingsAppTabs'});
-          createGroups(appGroups, box, SyntheticId);
-          sidebar.append(box);
-        }
-        if (pageGroups.length > 0) {
-          createGroups(pageGroups, sidebar, SyntheticId);  
-        }
-        if (widgetGroups.length > 0) {
-          createGroups(widgetGroups, sidebar, SyntheticId);  
-        }
+        const groups = model.groups.filter(g => g.available !== false);
+        const appGroups = groups.filter(g => g.type == 'app');
+        const pageGroups = groups.filter(g => g.type == 'page');
+        const widgetGroups = groups.filter(g => g.type === undefined || g.type == 'widget');
+        if (appGroups.length > 0)
+          sidebar.append(createGroupList(appGroups, SyntheticId, true));
+        if (pageGroups.length > 0) 
+          sidebar.append(createGroupList(pageGroups, SyntheticId));  
+        if (widgetGroups.length > 0) 
+          sidebar.append(createGroupList(widgetGroups, SyntheticId));  
         return sidebar;
       }
 
-      function createGroups(groups, parent, idProvider) {
-        for (let group of groups) {
-          if (group.available !== false) {
-            parent.append(createGroup(group, idProvider));
-          }
-        }
-      }
-
-      function createGroup(group, idProvider) {
+      function createGroupList(groups, idProvider, tabs = false) {
         function upper(str) {
           return str.charAt(0).toUpperCase() + str.slice(1);      
         }
+
+        const list = $('<div/>', {'class': !tabs ? '' : 'SettingsTabs ' + ('Settings' + upper(groups[0].type || 'Widget'))});
+        const containers = [];
+        for (let group of groups) {          
+          const container = $('<div/>', { id: group.id, 'class': 'SettingsGroup' + (tabs ? '' : ' Settings' + upper(group.type || 'Widget')) });
+          if (!tabs && group.collapsed === true)
+            container.css('display', 'none');
+          const table = createGroup(group, idProvider);
+          containers.push(container.append(table));
+        }
+        const headers = [];
+        for (let group of groups) {
+          headers.push(createHeader(group));
+        }
+        for (let i = 0; i < groups.length; i++) {
+          const container = containers[i];
+          const header = headers[i];
+          if (tabs) {
+            header.click(() => {
+              containers.forEach(c => c.hide());
+              container.show();
+              headers.forEach(h => h.removeClass('state-active'));
+              header.addClass('state-active');
+            });
+            if (i == 0) {
+              header.addClass('state-active');
+            } else {
+              container.css('display', 'none');
+            }
+            list.append(header);
+          } else {
+            list.append(header.click(() => container.toggle()));
+            list.append(container);
+          }
+        }
+        if (tabs) // when using tabs containers are appended last
+          for (let container of containers)
+            list.append(container);
+        return list;
+      }
+
+      function createHeader(group) {
         const config = {};
         if (group.description)
           config.title = group.description;
-        const header = $('<h4/>', config).text(group.caption);
+        return $('<h4/>', config).text(group.caption);
+      }
+
+      function createGroup(group, idProvider) {
         const table = $('<table />');
-        if (group.collapsed === true)
-          table.css('display', 'none');
-        header.click(() => table.toggle());        
         for (let entry of group.entries) {
            if (entry.available !== false) {
              let type = entry.type;
@@ -401,9 +431,7 @@ MonitoringConsole.View.Components = (function() {
              }
           }
         }
-        return $('<div/>', { id: group.id, 'class': 'Settings' + upper(group.type || 'Widget') })
-          .append(header)
-          .append(table);
+        return table;
       }
 
       function createMultiInput(inputs, idProvider, css) {

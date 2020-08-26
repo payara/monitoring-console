@@ -80,11 +80,10 @@ MonitoringConsole.View = (function() {
             if (!panelConsole.hasClass('state-show-settings')) {
                 panelConsole.addClass('state-show-settings');                
             }
-            let singleSelection = MonitoringConsole.Model.Page.Widgets.Selection.isSingle();
-            groups.push(createGlobalSettings(singleSelection));
+            groups = groups.concat(createAppSettings());
             groups.push(createColorSettings());
             groups.push(createPageSettings());
-            if (singleSelection)
+            if (MonitoringConsole.Model.Page.Widgets.Selection.isSingle())
                 groups = groups.concat(createWidgetSettings(MonitoringConsole.Model.Page.Widgets.Selection.first()));
         }
         $('#Settings').replaceWith(Components.createSettings({
@@ -186,28 +185,32 @@ MonitoringConsole.View = (function() {
         };
     }
 
-    function createGlobalSettings(initiallyCollapsed) {
+    function createAppSettings() {
         const pushAvailable = MonitoringConsole.Model.Role.isAdmin();
         const pullAvailable = !MonitoringConsole.Model.Role.isGuest();
         const watchesAvailable = !MonitoringConsole.Model.Role.isGuest();
-        return { id: 'settings-global', type: 'app', caption: 'General', collapsed: initiallyCollapsed, entries: [
-            { label: 'Import', input: () => $('<button />', { text: 'Import Configuration...'}).click(() => $('#cfgImport').click()) },
-            { label: 'Export', input: () => $('<button />', { text: 'Export Configuration...'}).click(MonitoringConsole.View.onPageExport) },
-            { label: 'Data Refresh', input: [
-                { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Refresh.interval(), onChange: (val) => MonitoringConsole.Model.Refresh.interval(val) },
-                { type: 'toggle', options: { false: 'Pause', true: 'Play'}, value: !MonitoringConsole.Model.Refresh.isPaused(), onChange: (checked) => MonitoringConsole.Model.Refresh.paused(!checked) },
+        return [
+            { id: 'settings-general', type: 'app', caption: 'General', entries: [
+                { label: 'Data Refresh', input: [
+                    { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Refresh.interval(), onChange: (val) => MonitoringConsole.Model.Refresh.interval(val) },
+                    { type: 'toggle', options: { false: 'Pause', true: 'Play'}, value: !MonitoringConsole.Model.Refresh.isPaused(), onChange: (checked) => MonitoringConsole.Model.Refresh.paused(!checked) },
+                ]},
+                { label: 'Page Rotation', input: [
+                    { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Settings.Rotation.interval(), onChange: (val) => MonitoringConsole.Model.Settings.Rotation.interval(val) },
+                    { type: 'toggle', options: { false: 'Off', true: 'On' }, value: MonitoringConsole.Model.Settings.Rotation.isEnabled(), onChange: (checked) => MonitoringConsole.Model.Settings.Rotation.enabled(checked) },
+                ]},
+                { label: 'Role', input: () => $('<button />').text(MonitoringConsole.Model.Role.name() + '...').click(showRoleSelectionModalDialog) },
+                { label: 'Watches', available: watchesAvailable, input: $('<button/>').text('Go to Watch Settings').click(showWatchConfigModalDialog) },
             ]},
-            { label: 'Page Rotation', input: [
-                { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Settings.Rotation.interval(), onChange: (val) => MonitoringConsole.Model.Settings.Rotation.interval(val) },
-                { type: 'toggle', options: { false: 'Off', true: 'On' }, value: MonitoringConsole.Model.Settings.Rotation.isEnabled(), onChange: (checked) => MonitoringConsole.Model.Settings.Rotation.enabled(checked) },
+            { id: 'settings-share', available: pushAvailable || pullAvailable, type: 'app', caption: 'Page Sharing', entries: [
+                { label: 'Page Sync', input: [
+                    { available: pushAvailable, input: () => $('<button />', { text: 'Push All Local Pages...', title: 'Push local state of all know remote pages to server'}).click(showPagePushModalDialog) },
+                    { available: pullAvailable, input: () => $('<button/>', { text: 'Manage Local Pages...', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
+                ]},
+                { label: 'Import', input: () => $('<button />', { text: 'Import Configuration...'}).click(() => $('#cfgImport').click()) },
+                { label: 'Export', input: () => $('<button />', { text: 'Export Configuration...'}).click(MonitoringConsole.View.onPageExport) },
             ]},
-            { label: 'Role', input: () => $('<button />').text(MonitoringConsole.Model.Role.name() + '...').click(showRoleSelectionModalDialog) },
-            { label: 'Page Sync', available: pushAvailable || pullAvailable, input: [
-                { available: pushAvailable, input: () => $('<button />', { text: 'Push All Local Pages...', title: 'Push local state of all know remote pages to server'}).click(showPagePushModalDialog) },
-                { available: pullAvailable, input: () => $('<button/>', { text: 'Manage Local Pages...', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
-            ]},
-            { label: 'Watches', available: watchesAvailable, input: $('<button/>').text('Manage Watches...').click(showWatchConfigModalDialog) },
-        ]};
+        ];
     }
 
     function createColorSettings() {
@@ -223,8 +226,7 @@ MonitoringConsole.View = (function() {
                 label = name[0].toUpperCase() + name.slice(1);
             return { label: label, type: 'color', value: Theme.color(name), onChange: createChangeColorDefaultFn(name) };
         }
-        let collapsed = $('#settings-colors').children('tr:visible').length <= 1;
-        return { id: 'settings-colors', type: 'app', caption: 'Colors', collapsed: collapsed, entries: [
+        return { id: 'settings-appearance', type: 'app', caption: 'Appearance', entries: [
             { label: 'Scheme', type: 'dropdown', options: Colors.schemes(), value: undefined, onChange: (name) => { Colors.scheme(name); updateSettings(); } },
             { label: 'Data #', type: 'color', value: Theme.palette(), onChange: (colors) => Theme.palette(colors) },
             { label: 'Defaults', input: [
@@ -743,7 +745,7 @@ MonitoringConsole.View = (function() {
                 Role.set(role);
                 updateSettings();
                 showFeedback({ type: 'success', message: 'User Role changed to <em>' + Role.name() + '</em>' });
-                if (onExitCall !== undefined)
+                if (typeof onExitCall === 'function')
                     onExitCall();
             }
         });

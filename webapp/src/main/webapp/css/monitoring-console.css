@@ -275,40 +275,40 @@ button.default:hover {
   box-sizing: border-box;
   vertical-align: top;
 }
-#Settings table {
+.SettingsTabs h4 {
+  display: inline;
+  padding: 2px 5px;
+}
+.Settings table {
   width: 100%;
 }
-#Settings table th {
+.Settings h4 {
   cursor: pointer;
-  font-weight: normal;
+  margin-bottom: 0;
 }
-#Settings table tr:first-child th {
-  font-weight: bold;
-  border-bottom: 1px solid #bbb;
-}
-#Settings table td {
+.Settings table td {
   max-width: 230px;
 }
-#Settings table td:first-child {
+.Settings table td:first-child {
   width: 120px;
   vertical-align: top;
   padding-top: 5px;
 }
-#Settings a, #Settings a:visited {
+.Settings a, .Settings a:visited {
   color: white;
 }
-#Settings label {
+.Settings label {
   padding-right: 1em;
   padding-left: 3px;
   white-space: nowrap;
 }
-#Settings .x-input span {
+.Settings .x-input span {
   white-space: nowrap;
 }
-#Settings table div input[type=text] {
+.Settings table div input[type=text] {
   width: 50px;
 }
-#Settings button.btn-toggle {
+.Settings button.btn-toggle {
   position: absolute;
   left: 0;
   top: 5px;
@@ -322,7 +322,7 @@ button.default:hover {
   font-size: 20px;
   line-height: 1em;
 }
-#Settings > span {
+.Settings > span {
   transform: rotate(-90deg);
   white-space: nowrap;
   font-size: 20px;
