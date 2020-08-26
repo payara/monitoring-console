@@ -381,37 +381,38 @@ MonitoringConsole.View.Components = (function() {
       }
 
       function createGroups(groups, parent, idProvider) {
-        let collapsed = false;
-        for (let t = 0; t < groups.length; t++) {
-          let group = groups[t];
+        for (let group of groups) {
           if (group.available !== false) {
-            let table = createTable(group);
-            collapsed = group.collapsed === true;
-            parent.append(table);
-            for (let r = 0; r < group.entries.length; r++) {
-               let entry = group.entries[r];
-               if (entry.available !== false) {
-                 let type = entry.type;
-                 let auto = type === undefined;
-                 let input = entry.input;
-                 if (entry.id === undefined)
-                   entry.id = 'setting_' + idProvider.next();
-                 entry.collapsed = collapsed;
-                 if (type == 'header' || auto && input === undefined) {
-                    collapsed = entry.collapsed === true;
-                    table.append(createHeaderRow(entry));
-                 } else if (!auto) {
-                    table.append(createRow(entry, createInput(entry)));
-                 } else {
-                    if (Array.isArray(input)) {
-                      input = createMultiInput(input, idProvider, 'x-input');
-                    }
-                    table.append(createRow(entry, input));
-                 }
-              }
-            }
+            parent.append(createGroup(group, idProvider));
           }
         }
+      }
+
+      function createGroup(group, idProvider) {
+        let table = createTable(group);
+        let collapsed = group.collapsed === true;        
+        for (let entry of group.entries) {
+           if (entry.available !== false) {
+             let type = entry.type;
+             let auto = type === undefined;
+             let input = entry.input;
+             if (entry.id === undefined)
+               entry.id = 'setting_' + idProvider.next();
+             entry.collapsed = collapsed;
+             if (type == 'header' || auto && input === undefined) {
+                collapsed = entry.collapsed === true;
+                table.append(createHeaderRow(entry));
+             } else if (!auto) {
+                table.append(createRow(entry, createInput(entry)));
+             } else {
+                if (Array.isArray(input)) {
+                  input = createMultiInput(input, idProvider, 'x-input');
+                }
+                table.append(createRow(entry, input));
+             }
+          }
+        }
+        return table;
       }
 
       function createMultiInput(inputs, idProvider, css) {
