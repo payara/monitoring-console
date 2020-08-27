@@ -904,6 +904,10 @@ table.AnnotationTable {
   text-align: right;
   clear: both;
 }
+.ModalDialog em {
+  font-style: normal;
+  color: rgb(var(--primary-color-rgb-orange));
+}
 
 /* SelectionWizard Component */
 

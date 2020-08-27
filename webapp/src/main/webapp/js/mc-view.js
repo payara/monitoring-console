@@ -406,18 +406,22 @@ MonitoringConsole.View = (function() {
         ]};
     }
 
-    function createConfirmModualDialog(question, labelYes, labelNo, onConfirmation) {
+    /**
+     * Model: { title, question, yes, no, onYes }
+     */
+    function createYesNoModualDialog(model) {
         return {
+            title: model.title,
             width: 300,
-            content: () => $('<p/>').html(question),
+            content: () => $('<p/>').html(model.question),
             buttons: [
-                { property: 'no', label: labelNo, secondary: true },
-                { property: 'yes', label: labelYes },
+                { property: 'no', label: model.no, secondary: true },
+                { property: 'yes', label: model.yes },
             ],
             results: { yes: true, no: false },
             onExit: result => {
                 if (result)
-                    onConfirmation();
+                    model.onYes();
             }
         };
     }
@@ -446,10 +450,15 @@ MonitoringConsole.View = (function() {
         const description = Array.isArray(widget.series)
             ? widget.series.join(', ')
             : widget.series;
-        const question = 'Do you really want to remove the widget with metric series <code>'+ description + '</code> from the page?';
-        showModalDialog(createConfirmModualDialog(question, 'Remove', 'Cancel', () =>  {
-            onPageChange(MonitoringConsole.Model.Page.Widgets.remove(widget.id));
-            showFeedback({ type: 'success', message: 'Widget ' + description + ' removed.'});
+        showModalDialog(createYesNoModualDialog({ 
+            title: 'Remove Widget?',
+            question: 'Do you really want to remove the widget with metric series <code>'+ description + '</code> from the page?',
+            yes: 'Remove', 
+            no: 'Cancel', 
+            onYes: () =>  {
+                onPageChange(MonitoringConsole.Model.Page.Widgets.remove(widget.id));
+                showFeedback({ type: 'success', message: 'Widget ' + description + ' removed.'});
+            }
         }));
     }
 
@@ -942,13 +951,17 @@ MonitoringConsole.View = (function() {
     }
 
     function showPagePushModalDialog() {
-        showModalDialog(createConfirmModualDialog(
-            'Are you sure you want to override all <b>shared</b> pages with the current local state?', 
-            'Push All', 'Cancel', () => {
+        showModalDialog(createYesNoModualDialog({
+            title: 'Push Local to Remote',
+            question: 'Are you sure you want to override all <b>shared</b> pages with the current local state?',
+            yes: 'Push All',
+            no: 'Cancel',
+            onYes: () => {
                 MonitoringConsole.Model.Page.Sync.pushAllLocal(
                     page => showFeedback({ type: 'success', message: 'Remote page <em>'+ page.name +'</em> updated successfully.' }),
                     page => showFeedback({ type: 'error', message: 'Failed to update remote page <em>'+ page.name +'</em>.' }));
-            }));
+            } 
+        }));
     }
 
     /**
@@ -1163,10 +1176,16 @@ MonitoringConsole.View = (function() {
         onPageLayoutChange: (numberOfColumns) => onPageUpdate(MonitoringConsole.Model.Page.arrange(numberOfColumns)),
         onPageDelete: () => {
             const name = MonitoringConsole.Model.Page.name();
-            showModalDialog(createConfirmModualDialog('Are you sure you want to delete the page <em>'+name+'</em>?', 'Delete', 'Cancel', () => {
+            showModalDialog(createYesNoModualDialog({
+                title: 'Delete Page?',
+                question: 'Are you sure you want to delete the page <em>'+name+'</em>?', 
+                yes: 'Delete', 
+                no: 'Cancel', 
+                onYes: () => {
                 onPageUpdate(MonitoringConsole.Model.Page.erase());
                 updatePageNavigation();
                 showFeedback({ type: 'success', message: 'Your page <em>' + name + '</em> has been deleted.' });             
+                }
             }));
         },
     };
