@@ -208,7 +208,7 @@ MonitoringConsole.View = (function() {
                     { available: pullAvailable, input: () => $('<button/>', { text: 'Manage Local Pages...', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
                 ]},
                 { label: 'Import', input: () => $('<button />', { text: 'Import Configuration...'}).click(() => $('#cfgImport').click()) },
-                { label: 'Export', input: () => $('<button />', { text: 'Export Configuration...'}).click(MonitoringConsole.View.onPageExport) },
+                { label: 'Export', input: () => $('<button />', { text: 'Export Configuration...'}).click(showExportPagesModalDialog) },
             ]},
         ];
     }
@@ -462,19 +462,65 @@ MonitoringConsole.View = (function() {
         }));
     }
 
-    function onPageExport(filename, text) {
-        let pom = document.createElement('a');
-        pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-        pom.setAttribute('download', filename);
+    function showExportPagesModalDialog() {
+        function download(text) {
+            let pom = document.createElement('a');
+            pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            pom.setAttribute('download', 'monitoring-console-pages.json');
 
-        if (document.createEvent) {
-            let event = document.createEvent('MouseEvents');
-            event.initEvent('click', true, true);
-            pom.dispatchEvent(event);
+            if (document.createEvent) {
+                let event = document.createEvent('MouseEvents');
+                event.initEvent('click', true, true);
+                pom.dispatchEvent(event);
+            } else {
+                pom.click();
+            }
         }
-        else {
-            pom.click();
+
+        const pages = MonitoringConsole.Model.exportPages();
+        const results = { empty: [], selected: [] };
+        const content = $('<ul/>');
+        const createInput = (id, page) => $('<input/>', { type: 'checkbox', id: id, checked: false })
+            .change(function() {
+                const include = this.checked;
+                const contained = results.selected.find(p => p.name == page.name) !== undefined;
+                if (include && !contained) {
+                    results.selected.push(page);
+                } else if (!include && contained) {
+                    results.selected = results.selected.filter(p => p.name != page.name);
+                }
+            });
+        const inputs = [];
+        for (let page of pages) {
+            const id = 'page-' + page.name;
+            const input = createInput(id, page);
+            inputs.push(input);
+            content.append($('<li/>')
+                .append(input)
+                .append(' ')
+                .append($('<label/>', { for: id }).text(page.name))
+                );
         }
+        content.prepend($('<li/>').html('&nbsp;')).prepend($('<li/>').append($('<input/>', { type: 'checkbox', id: 'pages-all', checked: false }).change(function() {
+            inputs.forEach(i => i.prop('checked', this.checked).change());
+        })).append($('<label/>', { for: 'pages-all' }).append($('<i/>').text('All'))));
+        showModalDialog({
+            title: 'Export Pages',
+            width: 400,
+            content: content,
+            buttons: [
+                { property: 'empty', label: 'Cancel', secondary: true },
+                { property: 'selected', label: 'Export' },
+            ],
+            results: results,
+            onExit: selected => {
+                if (selected.length > 0) {
+                    download(JSON.stringify(selected, null, 2));
+                    const names = selected.map(p => p.name).join(', ');
+                    showFeedback({ type: 'success', message: 'Exported pages <em>'+names+'</em>.'});
+                }
+            }
+        });
     }
 
     function createLegendModel(widget, data, alerts, annotations) {
@@ -1171,7 +1217,6 @@ MonitoringConsole.View = (function() {
         onPageUpdate: (layout) => onPageUpdate(layout),
         onPageReset: () => onPageChange(MonitoringConsole.Model.Page.reset()),
         onPageImport: (src) => MonitoringConsole.Model.importPages(src, onPageChange),
-        onPageExport: () => onPageExport('monitoring-console-config.json', MonitoringConsole.Model.exportPages()),
         onPageMenu: function() { MonitoringConsole.Model.Settings.toggle(); updateSettings(); },
         onPageLayoutChange: (numberOfColumns) => onPageUpdate(MonitoringConsole.Model.Page.arrange(numberOfColumns)),
         onPageDelete: () => {

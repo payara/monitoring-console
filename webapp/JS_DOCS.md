@@ -625,7 +625,7 @@ filter           = string | fn (string) => boolean | fn (string, string) => bool
 ```
 MODAL_DIALOG     = { id, title, content, width, buttons, results, closeProperty, onExit }
 title            = string
-content          = fn () => jQuery
+content          = fn () => jQuery | jQuery
 width            = number
 buttons          = [ DIALOG_BUTTON ]
 DIALOG_BUTTON    = { property, label, secondary, tooltip }

@@ -1527,7 +1527,7 @@ MonitoringConsole.View.Components = (function() {
       }
       if (model.title !== undefined && model.title != '')
         box.append($('<h3/>').html(model.title));
-      const content = model.content();
+      const content = typeof model.context === 'function' ? model.content() : model.content;
       box.append(content);
       if (model.buttons) {
         const bar = $('<div/>', { 'class': 'ModalDialogButtons' });

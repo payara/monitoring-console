@@ -908,6 +908,13 @@ table.AnnotationTable {
   font-style: normal;
   color: rgb(var(--primary-color-rgb-orange));
 }
+.ModalDialog ul {
+  list-style-type: none;
+  padding: 0;
+}
+.ModalDialog input[type=checkbox] + label {
+  cursor: pointer;
+}
 
 /* SelectionWizard Component */
 

@@ -323,9 +323,8 @@ MonitoringConsole.Model = (function() {
 			return true;
 		}
 		
-		function doExport(prettyPrint) {
-			let ui = { pages: pages, settings: settings };
-			return prettyPrint ? JSON.stringify(ui, null, 2) : JSON.stringify(ui);
+		function doExport() {
+			return JSON.stringify({ pages: pages, settings: settings });
 		}
 
 		function readTextFile(file) {
@@ -575,7 +574,7 @@ MonitoringConsole.Model = (function() {
 			},
 			
 			exportPages: function() {
-				return doExport(true);
+				return JSON.parse(JSON.stringify(Object.values(pages)));
 			},
 			
 			/**
