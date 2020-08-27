@@ -327,18 +327,7 @@ MonitoringConsole.Model = (function() {
 			return JSON.stringify({ pages: pages, settings: settings });
 		}
 
-		function readTextFile(file) {
-          	return new Promise(function(resolve, reject) {
-				let reader = new FileReader();
-				reader.onload = function(evt){
-				  resolve(evt.target.result);
-				};
-				reader.onerror = function(err) {
-				  reject(err);
-				};
-				reader.readAsText(file);
-          	});
-      	}
+
 
       	function doLayout(columns) {
 			let page = pages[settings.home];
@@ -577,22 +566,8 @@ MonitoringConsole.Model = (function() {
 				return JSON.parse(JSON.stringify(Object.values(pages)));
 			},
 			
-			/**
-			 * @param {FileList|object} userInterface - a plain user interface configuration object or a file containing such an object
-			 * @param {function} onImportComplete - optional function to call when import is done
-			 */
-			importPages: async (userInterface, onImportComplete) => {
-				if (userInterface instanceof FileList) {
-					let file = userInterface[0];
-					if (file) {
-						let json = await readTextFile(file);
-						doImport(JSON.parse(json), true);
-					}
-				} else {
-					doImport(userInterface, true);
-				}
-				if (onImportComplete)
-					onImportComplete();
+			importPages: function(pages) {
+				doImport(pages, true);
 			},
 
 			queryPage: () => doQueryPage(),
@@ -641,14 +616,20 @@ MonitoringConsole.Model = (function() {
 			 * Deletes the active page and changes to the first page.
 			 * Does not delete the last page.
 			 */
-			deletePage: function() {
+			deletePage: function(onSuccess) {
+				let presets = Data.PAGES;
+				let hasPreset = presets && presets[settings.home];
+				if (hasPreset)
+					return;
 				let pageIds = Object.keys(pages);
 				if (pageIds.length <= 1)
-					return undefined;
+					return;;
 				let deletion = () => {
 					delete pages[settings.home];
 					settings.home = pageIds[0];
 					doStore(false);
+					if (typeof onSuccess === 'function')
+						onSuccess();
 				};
 				if (settings.role === 'admin') {
 					let page = pages[settings.home];
@@ -660,7 +641,6 @@ MonitoringConsole.Model = (function() {
 				} else {
 					deletion();
 				}
-				return pages[settings.home];
 			},
 
 			resetPage: function() {
@@ -1353,9 +1333,7 @@ MonitoringConsole.Model = (function() {
 
 		listPages: UI.listPages,
 		exportPages: UI.exportPages,
-		importPages: function(userInterface, onImportComplete) {
-			UI.importPages(userInterface, () => onImportComplete(UI.arrange()));
-		},
+		importPages: UI.importPages,
 		
 		/**
 		 * API to control the chart refresh interval.
@@ -1447,12 +1425,13 @@ MonitoringConsole.Model = (function() {
 				return UI.arrange();
 			},
 			
-			erase: function() {
-				if (UI.deletePage()) {
+			erase: function(onSuccess) {
+				UI.deletePage(() => {
 					Charts.clear();
 					Interval.tick();
-				}
-				return UI.arrange();
+					if (typeof onSuccess === 'function')
+						onSuccess();
+				});
 			},
 			
 			reset: function() {

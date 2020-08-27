@@ -207,8 +207,8 @@ MonitoringConsole.View = (function() {
                     { available: pushAvailable, input: () => $('<button />', { text: 'Push All Local Pages...', title: 'Push local state of all know remote pages to server'}).click(showPagePushModalDialog) },
                     { available: pullAvailable, input: () => $('<button/>', { text: 'Manage Local Pages...', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
                 ]},
-                { label: 'Import', input: () => $('<button />', { text: 'Import Configuration...'}).click(() => $('#cfgImport').click()) },
-                { label: 'Export', input: () => $('<button />', { text: 'Export Configuration...'}).click(showExportPagesModalDialog) },
+                { label: 'Import', input: () => $('<button />', { text: 'Import Pages...'}).click(showImportPagesModalDialog) },
+                { label: 'Export', input: () => $('<button />', { text: 'Export Pages...'}).click(showExportPagesModalDialog) },
             ]},
         ];
     }
@@ -462,6 +462,52 @@ MonitoringConsole.View = (function() {
         }));
     }
 
+    function showImportPagesModalDialog() {
+        function readTextFile(file) {
+            return new Promise(function(resolve, reject) {
+                let reader = new FileReader();
+                reader.onload = function(evt){
+                  resolve(evt.target.result);
+                };
+                reader.onerror = function(err) {
+                  reject(err);
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        const btn = $('#cfgImport');
+        btn.on('input', async function() {
+            const files = this.files;
+            if (files instanceof FileList) {
+                let file = files[0];
+                if (file) {
+                    let json = await readTextFile(file);
+                    let pages = JSON.parse(json);
+                    if (!Array.isArray(pages)) {
+                        showFeedback({ type: 'error', message: 'File did not contain a list of pages.'});
+                    } else {
+                        showSelectPagesModalDialog({
+                            title: 'Import Pages',
+                            submit: 'Import',
+                            pages: pages,
+                            onExit: selected => {
+                                if (selected.length > 0) {
+                                    MonitoringConsole.Model.importPages(selected);
+                                    const names = selected.map(p => p.name).join(', ');
+                                    showFeedback({ type: 'success', message: 'Imported page(s) <em>'+names+'</em>.'});    
+                                    updatePageNavigation();
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+
+        });
+        btn.click();
+    }
+
     function showExportPagesModalDialog() {
         function download(text) {
             let pom = document.createElement('a');
@@ -478,6 +524,25 @@ MonitoringConsole.View = (function() {
         }
 
         const pages = MonitoringConsole.Model.exportPages();
+        showSelectPagesModalDialog({
+            title: 'Export Pages',
+            submit: 'Export',
+            pages: pages,
+            onExit: selected => {
+                if (selected.length > 0) {
+                    download(JSON.stringify(selected, null, 2));
+                    const names = selected.map(p => p.name).join(', ');
+                    showFeedback({ type: 'success', message: 'Exported page(s) <em>'+names+'</em>.'});
+                }
+            }
+        });
+    }
+    
+    /**
+     * Model: { title, submit, pages, onExit }
+     */
+    function showSelectPagesModalDialog(model) {
+        const pages = model.pages;
         const results = { empty: [], selected: [] };
         const content = $('<ul/>');
         const createInput = (id, page) => $('<input/>', { type: 'checkbox', id: id, checked: false })
@@ -505,21 +570,15 @@ MonitoringConsole.View = (function() {
             inputs.forEach(i => i.prop('checked', this.checked).change());
         })).append($('<label/>', { for: 'pages-all' }).append($('<i/>').text('All'))));
         showModalDialog({
-            title: 'Export Pages',
+            title: model.title,
             width: 400,
             content: content,
             buttons: [
                 { property: 'empty', label: 'Cancel', secondary: true },
-                { property: 'selected', label: 'Export' },
+                { property: 'selected', label: model.submit },
             ],
             results: results,
-            onExit: selected => {
-                if (selected.length > 0) {
-                    download(JSON.stringify(selected, null, 2));
-                    const names = selected.map(p => p.name).join(', ');
-                    showFeedback({ type: 'success', message: 'Exported pages <em>'+names+'</em>.'});
-                }
-            }
+            onExit: model.onExit,
         });
     }
 
@@ -1216,7 +1275,6 @@ MonitoringConsole.View = (function() {
         onPageChange: (layout) => onPageChange(layout),
         onPageUpdate: (layout) => onPageUpdate(layout),
         onPageReset: () => onPageChange(MonitoringConsole.Model.Page.reset()),
-        onPageImport: (src) => MonitoringConsole.Model.importPages(src, onPageChange),
         onPageMenu: function() { MonitoringConsole.Model.Settings.toggle(); updateSettings(); },
         onPageLayoutChange: (numberOfColumns) => onPageUpdate(MonitoringConsole.Model.Page.arrange(numberOfColumns)),
         onPageDelete: () => {
@@ -1227,9 +1285,11 @@ MonitoringConsole.View = (function() {
                 yes: 'Delete', 
                 no: 'Cancel', 
                 onYes: () => {
-                onPageUpdate(MonitoringConsole.Model.Page.erase());
-                updatePageNavigation();
-                showFeedback({ type: 'success', message: 'Your page <em>' + name + '</em> has been deleted.' });             
+                    MonitoringConsole.Model.Page.erase(() => {
+                        onPageUpdate(MonitoringConsole.Model.Page.arrange());    
+                        showFeedback({ type: 'success', message: 'Your page <em>' + name + '</em> has been deleted.' });             
+                        updatePageNavigation();                        
+                    });
                 }
             }));
         },
