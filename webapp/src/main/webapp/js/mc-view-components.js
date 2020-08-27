@@ -1671,7 +1671,7 @@ MonitoringConsole.View.Components = (function() {
         'class': 'btn-icon btn-rotation', 
         title: (model.rotationEnabled ? 'stop' : 'start') + ' page rotation'
       })
-        .html(model.rotationEnabled ? '&#9209;' : '&#10561;') // '&#9654;')
+        .html(model.rotationEnabled ? '&#9209;' : '&#128257;') // '&#9654;')
         .click(model.onRotationToggle);
     }
 

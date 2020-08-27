@@ -286,7 +286,7 @@ button.default:hover {
   border-radius: 3px;
 }
 .SettingsTabs.SettingsApp:after {
-  content: '🌍';
+  content: '\1F30D';
   position: absolute;
   top: 0;
   right: 0;
@@ -340,14 +340,14 @@ button.default:hover {
 }
 .SettingsList h4:before {
   position: absolute;
-  content: '⌃';
+  content: '\2303';
   pointer-events: none;
   left: 10px;
   font-size: 20px;
   
 }
 .SettingsList h4.state-collapsed:before {
-  content: '⌄';
+  content: '\2304';
   margin-top: -8px;
 }
 .Settings table td {
@@ -1163,13 +1163,11 @@ button.btn-toggle {
   right: 0;
   top: 5px;
   margin-right: 5px;
-  letter-spacing: -2px;
   font-size: 20px;
   line-height: 1em;
 }
 button.btn-selected {
-  background: rgba(240, 152, 27, 0.9);
-  box-shadow: 0 0 0 4px rgba(0, 150, 214, 0.7);
+  background: rgba(240, 200, 144, 0.9);
 }
 button.btn-add {
   position: absolute;
