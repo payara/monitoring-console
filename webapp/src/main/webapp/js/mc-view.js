@@ -490,7 +490,7 @@ MonitoringConsole.View = (function() {
                         showSelectPagesModalDialog({
                             title: 'Import Pages',
                             submit: 'Import',
-                            pages: pages,
+                            pages: pages.filter(p => p.name != "" && p.name !== undefined),
                             onExit: selected => {
                                 if (selected.length > 0) {
                                     MonitoringConsole.Model.importPages(selected);

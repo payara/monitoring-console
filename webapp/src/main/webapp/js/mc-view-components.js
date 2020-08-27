@@ -332,15 +332,16 @@ MonitoringConsole.View.Components = (function() {
           config['class'] = model.collapsed ? 'Settings SettingsCollapsed' : 'Settings SettingsExpanded';
         const sidebar = $('<div/>', config);
         if (hasToggle)
-          sidebar.append($('<button/>', { 'class': 'btn-icon btn-toggle default' })
-            .html(model.collapsed ? '&laquo;' : '&raquo;')
+          sidebar.append($('<button/>', { 
+              'class': 'btn-icon btn-toggle default',
+              title: model.collapsed ? 'Open Settings' : 'Hide Settings'
+            })
+            .html(model.collapsed ? '&#9881;' : '&raquo;')
             .click(model.onSidebarToggle));
         if (hasToggle && model.collapsed && model.onWidgetAdd)
           sidebar.append($('<button/>', { 'class': 'btn-icon btn-add', title: 'Add a widget to this page...' })
             .html('&plus;')
             .click(model.onWidgetAdd));
-        if (hasToggle)
-          sidebar.append($('<span/>').text('Settings').click(model.onSidebarToggle));
         if (hasToggle && model.collapsed) 
           return sidebar;
         const SyntheticId = (function() {
@@ -1574,7 +1575,7 @@ MonitoringConsole.View.Components = (function() {
 
       const sidebar = $('<div/>', config);
       sidebar.append($('<button/>', { 'class': 'btn-icon btn-toggle default' })
-        .html(model.collapsed ? '&raquo;' : '&laquo;')
+        .html(model.collapsed ? '&#9776;' : '&laquo;')
         .click(model.onSidebarToggle));
       if (model.logo !== undefined)
         sidebar.append($('<a/>', { 'class': 'NavLogo' }).click(model.onLogoClick).append($('<img/>', { src: model.logo })));      

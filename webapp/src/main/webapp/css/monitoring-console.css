@@ -261,7 +261,6 @@ button.default:hover {
   width: 40px;
   min-height: 100%;
   position: absolute;
-  background-color: var(--sidebar-bg-color);
   color: white;
   border-radius: 3px 0 0 3px;
 }
@@ -270,6 +269,9 @@ button.default:hover {
   padding: 40px;
   box-sizing: border-box;
   vertical-align: top;
+  background-color: var(--sidebar-bg-color);
+}
+.Settings.SettingsCollapsed {
 }
 .SettingsTabs, .SettingsList {
   position: relative;
@@ -285,10 +287,14 @@ button.default:hover {
   right: 0;
   margin: 5px;
 }
+.SettingsList.SettingsPage > * {
+  background-color: var(--app-bg-color);
+}
 
 .SettingsTabs h3 {
   margin: 0;
   padding: 5px 10px;
+  font-size: 14px;
 }
 .Settings .SettingsTabs h4 {
   background-color: var(--tabs-bg-color);
@@ -318,6 +324,7 @@ button.default:hover {
 .Settings tr {
 }
 .Settings h4 {
+  font-size: 14px;
   cursor: pointer;
   margin-bottom: 0;
   background-color: var(--group-bg-color);
@@ -998,6 +1005,7 @@ table.AnnotationTable {
 }
 .NavSidebar.NavCollapsed {
   width: 40px;
+  background-color: transparent;
 }
 .NavSidebar.NavCollapsed > span {
   transform: rotate(-90deg);
