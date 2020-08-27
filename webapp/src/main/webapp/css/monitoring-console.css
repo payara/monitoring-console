@@ -48,12 +48,13 @@
   --button-color-rgb-bg:       210, 216, 218; /* #D2D8DA */
 
   /* Variables used in style definitons */
+  --tabs-bg-color: #526066;
+  --app-bg-color: #3d484d;
+  --group-bg-color: #004766;
   --sidebar-bg-color: #00618A;
   --page-bg-color: #151515; /* #00354B; */
   --widget-bg-color: #151515; /* #000000; */
   --widget-part-bg-color: #151515; /* rgba(0, 0, 0, .75); */
-  --caption-bg-color: #0096D6;
-  --modal-bg-color: rgb(218, 224, 226);
 }
 
 body {
@@ -141,16 +142,11 @@ input[type="text"]:invalid {
   background-color: #ffdddd;
 }
 input[type="number"] {
-  width: 50px;
+  width: 37px;
+  margin-right: 3px;
 }
 input[type="checkbox"] {
   vertical-align: middle;
-}
-.state-on input[type="radio"] {
-  background-color: green;
-}
-.state-off input[type="radio"] {
-  background-color: #444;
 }
 input[readonly] {
   background-color: transparent;
@@ -275,38 +271,94 @@ button.default:hover {
   box-sizing: border-box;
   vertical-align: top;
 }
-.SettingsTabs h4 {
-  display: inline;
-  padding: 2px 5px;
+.SettingsTabs, .SettingsList {
+  position: relative;
+}
+.SettingsTabs.SettingsApp {
+  background-color: var(--app-bg-color);
+  border-radius: 3px;
+}
+.SettingsTabs.SettingsApp:after {
+  content: '🌍';
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 5px;
+}
+
+.SettingsTabs h3 {
+  margin: 0;
+  padding: 5px 10px;
+}
+.Settings .SettingsTabs h4 {
+  background-color: var(--tabs-bg-color);
+  display: inline-block;
+  opacity: 0.65;
+  margin-left: 5px;
+  margin-top: 0;
+  padding-left: 10px;
+}
+.SettingsTabs h4.state-active {
+  opacity: 1;
+}
+.SettingsGroup {
+  background-color: var(--group-bg-color);
+  padding: 5px;
+  border-radius: 3px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.SettingsTabs .SettingsGroup {
+  background-color: var(--tabs-bg-color);
 }
 .Settings table {
   width: 100%;
+  border-spacing: 0 3px;
+}
+.Settings tr {
 }
 .Settings h4 {
   cursor: pointer;
   margin-bottom: 0;
+  background-color: var(--group-bg-color);
+  padding: 5px 10px;
+  padding-left: 30px;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+}
+.SettingsList h4:before {
+  position: absolute;
+  content: '⌃';
+  pointer-events: none;
+  left: 10px;
+  font-size: 20px;
+  
+}
+.SettingsList h4.state-collapsed:before {
+  content: '⌄';
+  margin-top: -8px;
 }
 .Settings table td {
   max-width: 230px;
 }
 .Settings table td:first-child {
-  width: 120px;
+  width: 100px;
   vertical-align: top;
-  padding-top: 5px;
+  padding-left: 5px;
 }
 .Settings a, .Settings a:visited {
   color: white;
 }
 .Settings label {
-  padding-right: 1em;
-  padding-left: 3px;
+  padding-right: 0.5em;
   white-space: nowrap;
 }
 .Settings .x-input span {
   white-space: nowrap;
 }
 .Settings table div input[type=text] {
-  width: 50px;
+  width: 37px;
+  margin-right: 3px;
 }
 .Settings button.btn-toggle {
   position: absolute;
@@ -822,14 +874,22 @@ table.AnnotationTable {
   padding: 15px 20px;
 }
 
+.ModalDialog .btn-close:hover {
+  color: rgb(var(--primary-color-rgb-orange));
+}
+
 .ModalDialog .ModalDialogContent > h3 {
-  padding: 0 0 20px 0;
-  margin: 0;
+  margin: -40px -40px 20px -40px;
+  background-color: var(--group-bg-color);
+  padding: 15px 40px;
 }
 
 .ModalDialog > .ModalDialogContent {
-  position: relative;  
-  top: 0;
+  position: absolute;
+  float: left;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   margin: 0 auto;
   padding: 40px;
   padding-bottom: 0;

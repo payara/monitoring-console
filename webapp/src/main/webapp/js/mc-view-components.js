@@ -352,7 +352,7 @@ MonitoringConsole.View.Components = (function() {
         const pageGroups = groups.filter(g => g.type == 'page');
         const widgetGroups = groups.filter(g => g.type === undefined || g.type == 'widget');
         if (appGroups.length > 0)
-          sidebar.append(createGroupList(appGroups, SyntheticId, true));
+          sidebar.append(createGroupList(appGroups, SyntheticId, true, 'App Settings'));
         if (pageGroups.length > 0) 
           sidebar.append(createGroupList(pageGroups, SyntheticId));  
         if (widgetGroups.length > 0) 
@@ -360,15 +360,17 @@ MonitoringConsole.View.Components = (function() {
         return sidebar;
       }
 
-      function createGroupList(groups, idProvider, tabs = false) {
+      function createGroupList(groups, idProvider, tabs = false, name = "") {
         function upper(str) {
           return str.charAt(0).toUpperCase() + str.slice(1);      
         }
 
-        const list = $('<div/>', {'class': !tabs ? '' : 'SettingsTabs ' + ('Settings' + upper(groups[0].type || 'Widget'))});
+        const list = $('<div/>', {'class': 'Settings' + upper(groups[0].type || 'Widget') + (tabs ? ' SettingsTabs' : ' SettingsList')});
+        if (tabs && name != "")
+          list.append($('<h3/>').text(name));
         const containers = [];
         for (let group of groups) {          
-          const container = $('<div/>', { id: group.id, 'class': 'SettingsGroup' + (tabs ? '' : ' Settings' + upper(group.type || 'Widget')) });
+          const container = $('<div/>', { id: group.id, 'class': 'SettingsGroup' });
           if (!tabs && group.collapsed === true)
             container.css('display', 'none');
           const table = createGroup(group, idProvider);
@@ -395,7 +397,13 @@ MonitoringConsole.View.Components = (function() {
             }
             list.append(header);
           } else {
-            list.append(header.click(() => container.toggle()));
+            const group = groups[i];
+            if (group.collapsed)
+              header.addClass('state-collapsed');
+            list.append(header.click(() => {
+              container.toggle();
+              header.toggleClass('state-collapsed');
+            }));
             list.append(container);
           }
         }
@@ -1510,9 +1518,7 @@ MonitoringConsole.View.Components = (function() {
       const dialog = $('<div/>', config);
       const boxConfig = {'class': 'ModalDialogContent', style: ''};
       if (typeof model.width === 'number')
-        boxConfig.style += 'width: ' + model.width + 'px;';
-      if (typeof model.top === 'number')
-        boxConfig.style += 'margin-top: ' + model.top + 'px;';      
+        boxConfig.style += 'width: ' + model.width + 'px;'; 
       const box = $('<div/>', boxConfig);
       if (typeof model.closeProperty === 'string') {
         box.append($('<span/>', {'class': 'btn-close'})
@@ -1608,15 +1614,10 @@ MonitoringConsole.View.Components = (function() {
       item.append(label);
       if (page.selected) {
         const options = $('<div/>', { style: 'display: none;' });
-        let hasRename = typeof page.onRename === 'function';
         let hasDelete = typeof page.onDelete === 'function';
         let hasReset = typeof page.onReset === 'function';
 
         item.append($('<span/>', {'class': 'btn-edit', title: 'Edit'}).html('&#9998;').click(() => options.toggle()));
-        if (hasRename) {
-          const name = $('<input/>', { type: 'text', value: page.label });
-          options.append($('<div/>').append(name).append($('<button/>').text('Rename').click(() => page.onRename(name.val()))));
-        }
         if (hasDelete || hasReset) {
           let bar = $('<div/>');
           if (hasDelete)

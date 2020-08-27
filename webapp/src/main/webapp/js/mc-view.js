@@ -202,8 +202,8 @@ MonitoringConsole.View = (function() {
                 { label: 'Role', input: () => $('<button />').text(MonitoringConsole.Model.Role.name() + '...').click(showRoleSelectionModalDialog) },
                 { label: 'Watches', available: watchesAvailable, input: $('<button/>').text('Go to Watch Settings').click(showWatchConfigModalDialog) },
             ]},
-            { id: 'settings-share', available: pushAvailable || pullAvailable, type: 'app', caption: 'Page Sharing', entries: [
-                { label: 'Page Sync', input: [
+            { id: 'settings-pages', available: pushAvailable || pullAvailable, type: 'app', caption: 'Pages', entries: [
+                { label: 'Sync', input: [
                     { available: pushAvailable, input: () => $('<button />', { text: 'Push All Local Pages...', title: 'Push local state of all know remote pages to server'}).click(showPagePushModalDialog) },
                     { available: pullAvailable, input: () => $('<button/>', { text: 'Manage Local Pages...', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
                 ]},
@@ -260,10 +260,9 @@ MonitoringConsole.View = (function() {
         let unit = widget.unit;
         let thresholds = widget.decorations.thresholds;
         let settings = [];
-        let collapsed = $('#settings-widget').children('tr:visible').length <= 1;
         let typeOptions = { line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status' };
         let modeOptions = widget.type == 'annotation' ? { table: 'Table', list: 'List' } : { list: '(Default)' };
-        settings.push({ id: 'settings-widget', caption: 'Widget', collapsed: collapsed, entries: [
+        settings.push({ id: 'settings-widget', caption: 'Widget', collapsed: false, entries: [
             { label: 'Display Name', type: 'text', value: widget.displayName, onChange: (widget, value) => widget.displayName = value},
             { label: 'Type', type: 'dropdown', options: typeOptions, value: widget.type, onChange: (widget, selected) => widget.type = selected},
             { label: 'Mode', type: 'dropdown', options: modeOptions, value: widget.mode, onChange: (widget, selected) => widget.mode = selected},
@@ -314,7 +313,7 @@ MonitoringConsole.View = (function() {
                 description: 'Selection and order of annotation fields to display, empty for auto selection and default order' },
             {label: 'Annotations', type: 'checkbox', value: !options.noAnnotations, onChange: (widget, checked) => widget.options.noAnnotations = !checked}                
         ]});
-        settings.push({ id: 'settings-decorations', caption: 'Decorations', entries: [
+        settings.push({ id: 'settings-decorations', caption: 'Decorations', collapsed: true, entries: [
             { label: 'Waterline', input: [
                 { type: 'value', unit: unit, value: widget.decorations.waterline.value, onChange: (widget, value) => widget.decorations.waterline.value = value },
                 { type: 'color', value: widget.decorations.waterline.color, defaultValue: Theme.color('waterline'), onChange: (widget, value) => widget.decorations.waterline.color = value },
@@ -367,16 +366,29 @@ MonitoringConsole.View = (function() {
             return jQuery;
         }
 
+        const Page = MonitoringConsole.Model.Page;
+        const Role = MonitoringConsole.Model.Role;
         const addWidgetsInput = $('<button/>', { text: 'Select metric(s)...' }).click(showAddWidgetModalDialog);
-        let collapsed = $('#settings-page').children('tr:visible').length <= 1;
-        let pushAvailable = !MonitoringConsole.Model.Role.isGuest() && MonitoringConsole.Model.Page.Sync.isLocallyChanged() && MonitoringConsole.Model.Role.isAdmin();
-        let pullAvailable = !MonitoringConsole.Model.Role.isGuest();
-        let autoAvailable = MonitoringConsole.Model.Role.isAdmin();
-        let page = MonitoringConsole.Model.Page.current();
+        let collapsed = Page.Widgets.Selection.isSingle();
+        let pushAvailable = !Role.isGuest() && Page.Sync.isLocallyChanged() && Role.isAdmin();
+        let pullAvailable = !Role.isGuest();
+        let autoAvailable = Role.isAdmin();
+        let renameAvailable = !Page.hasPreset();
+        let page = Page.current();
         let queryAvailable = page.type === 'query';
-        const configure =  MonitoringConsole.Model.Page.configure;
-        return { id: 'settings-page', type: 'page', caption: 'Page', collapsed: collapsed, entries: [
-            { label: 'Include in Rotation', type: 'toggle', options: { false: 'No', true: 'Yes' }, value: MonitoringConsole.Model.Page.rotate(), onChange: (checked) => MonitoringConsole.Model.Page.rotate(checked) },
+        const configure =  Page.configure;
+        const name = $('<input/>', { type: 'text', value: Page.name() });
+        const rename = $('<button/>').text('Rename').click(() => {
+          Page.rename(name.val());  
+          updatePageNavigation();
+        } );
+
+        return { id: 'settings-page', type: 'page', caption: 'Page Settings', collapsed: collapsed, entries: [
+            { label: 'Name', input: [
+                { available: renameAvailable, input: [ name, rename ] },
+                { available: !renameAvailable, input: $('<span/>').text(Page.name()) },
+            ]},
+            { label: 'Include in Rotation', type: 'toggle', options: { false: 'No', true: 'Yes' }, value: Page.rotate(), onChange: (checked) => Page.rotate(checked) },
             { label: 'Type', type: 'dropdown', options: {manual: 'Manual', query: 'Query'}, value: page.type, onChange: (type) => { onPageUpdate(configure(page => page.type = type)); updateSettings(); } },            
             { label: 'Max Size', available: queryAvailable, type: 'value', min: 1, unit: 'count', value: page.content.maxSize,  onChange: (value) => configure(page => page.content.maxSize = value) },
             { label: 'Query Series', available: queryAvailable, type: 'text', value: page.content.series, onChange: (value) => configure(page => page.content.series = value) },
@@ -386,7 +398,7 @@ MonitoringConsole.View = (function() {
             ]},
             { label: 'Add Widgets', available: !queryAvailable, input: addWidgetsInput },
             { label: 'Sync', available: pushAvailable || pullAvailable, input: [
-                { available: autoAvailable, label: 'auto', type: 'checkbox', value: MonitoringConsole.Model.Page.Sync.auto(), onChange: (checked) => MonitoringConsole.Model.Page.Sync.auto(checked),
+                { available: autoAvailable, label: 'auto', type: 'checkbox', value: Page.Sync.auto(), onChange: (checked) => Page.Sync.auto(checked),
                     description: 'When checked changed to the page are automatically pushed to the remote server (shared with others)' },
                 { available: pushAvailable, input: () => $('<button />', { text: 'Push', title: 'Push local page to server (update remote)' }).click(onPagePush) },
                 { available: pullAvailable, input: () => showIfRemotePageExists($('<button />', { text: 'Pull', title: 'Pull remote page from server (update local)', style: 'display: none'}).click(onPagePull)) },
@@ -397,7 +409,6 @@ MonitoringConsole.View = (function() {
     function createConfirmModualDialog(question, labelYes, labelNo, onConfirmation) {
         return {
             width: 300,
-            top: 200,
             content: () => $('<p/>').html(question),
             buttons: [
                 { property: 'no', label: labelNo, secondary: true },
@@ -702,7 +713,6 @@ MonitoringConsole.View = (function() {
         showModalDialog({
             title: 'Add Page',
             width: 300,
-            top: 200,
             content: () => $('<form/>')
                 .append($('<label/>').text('Page Name')).append(' ')
                 .append(input),
@@ -765,10 +775,6 @@ MonitoringConsole.View = (function() {
                 selected: selected,
                 onSwitch: selected ? undefined : () => MonitoringConsole.View.onPageChange(Page.changeTo(page.id)),
                 onDelete: selected && !Page.hasPreset() ? () => MonitoringConsole.View.onPageDelete() : undefined,
-                onRename: selected && !Page.hasPreset() ? name => {
-                    Page.rename(name);
-                    updatePageNavigation();
-                } : undefined,
                 onReset: selected && Page.hasPreset() ? () => onPageRefresh(Page.reset()) : undefined,
             };
         }

@@ -623,7 +623,7 @@ filter           = string | fn (string) => boolean | fn (string, string) => bool
 ### ModalDialoge API
 
 ```
-MODAL_DIALOG     = { id, title, content, width, top, buttons, results, closeProperty, onExit }
+MODAL_DIALOG     = { id, title, content, width, buttons, results, closeProperty, onExit }
 title            = string
 content          = fn () => jQuery
 width            = number
@@ -658,7 +658,7 @@ refreshEnabled   = boolean
 refreshSpeed     = number
 layoutColumns    = number
 logo             = string
-PAGE_ITEM        = { id, label, selected, onSwitch, onDelete, onRename, onReset }
+PAGE_ITEM        = { id, label, selected, onSwitch, onDelete, onReset }
 label            = string
 selected         = boolean
 onLogoClick      = function () => ()
@@ -668,7 +668,6 @@ onRefreshToggle  = function () => ()
 onSwitch         = function () => ()
 onDelete         = function () => ()
 onReset          = function () => ()
-onRename         = function (string) => ()
 onPageAdd        = function (string) => ()
 onLayoutChange   = function (number) => ()
 onRefreshSpeedChange = function (number) => ()
