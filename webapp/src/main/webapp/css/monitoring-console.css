@@ -121,6 +121,11 @@ button.big-plus {
   font-size: 48px;
   color: white;
   box-shadow: none;
+  outline: none;
+}
+button.big-plus:hover {
+  background-color: transparent;
+  color: rgb(var(--primary-color-rgb-orange));
 }
 input[type="button"] {
   border-radius: 2px;
@@ -288,7 +293,7 @@ button.default:hover {
   margin: 5px;
 }
 .SettingsList.SettingsPage > * {
-  background-color: var(--app-bg-color);
+  background-color: var(--page-bg-color);
 }
 
 .SettingsTabs h3 {

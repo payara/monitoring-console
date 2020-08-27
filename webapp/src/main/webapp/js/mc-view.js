@@ -255,7 +255,12 @@ MonitoringConsole.View = (function() {
             seriesInput.append(widget.series).append(' ');
         }
         seriesInput.append($('<br/>')).append($('<button/>', { text: 'Change metric(s)...' })
-                .click(() => showModalDialog(createWizardModalDialogModel(widget.series, changeSeries))));
+                .click(() => showModalDialog(createWizardModalDialogModel({
+                    title: 'Edit Widget Metric Series', 
+                    submit: 'Apply',
+                    series: widget.series, 
+                    onExit: changeSeries
+                }))));
         let options = widget.options;
         let unit = widget.unit;
         let thresholds = widget.decorations.thresholds;
@@ -427,9 +432,14 @@ MonitoringConsole.View = (function() {
     }
 
     function showAddWidgetModalDialog() {
-        showModalDialog(createWizardModalDialogModel([], selectedSeries => {
+        showModalDialog(createWizardModalDialogModel({
+            title: 'Add Widget',
+            submit: 'Add',
+            series: [], 
+            onExit: selectedSeries => {
                 if (selectedSeries !== undefined && selectedSeries.length > 0)
                     onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries));
+            }
         }));
     }
 
@@ -936,7 +946,11 @@ MonitoringConsole.View = (function() {
         };
     }
 
-    function createWizardModalDialogModel(initiallySelectedSeries, onExit) {
+    /**
+      * Model: { title, submit, series, onExit }
+      */
+    function createWizardModalDialogModel(model) {
+        let initiallySelectedSeries = model.series;
         if (initiallySelectedSeries !== undefined && !Array.isArray(initiallySelectedSeries))
             initiallySelectedSeries = [ initiallySelectedSeries ];
         function objectToOptions(obj) {
@@ -1043,15 +1057,15 @@ MonitoringConsole.View = (function() {
         };
 
         return { id: 'ModalDialog', 
-            title: 'Select Metric Series...',
+            title: model.title,
             content: () => Components.createSelectionWizard(wizard),
             buttons: [
                 { property: 'cancel', label: 'Cancel', secondary: true },
-                { property: 'ok', label: 'OK' },
+                { property: 'ok', label: model.submit },
             ],
             results: results,
             closeProperty: 'cancel',
-            onExit: onExit,
+            onExit: model.onExit,
         };
     }
 
@@ -1150,9 +1164,14 @@ MonitoringConsole.View = (function() {
             }
         }
         function createPlusButton(row, col) {
-            return $('<button/>', { text: '+', 'class': 'big-plus' })
+            return $('<button/>', { text: '+', 'class': 'big-plus', title: 'Add a widget to the page...' })
                 .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(
-                    createWizardModalDialogModel([], selectedSeries => addWidgets(selectedSeries, row, col))))); 
+                    createWizardModalDialogModel({
+                        title: 'Add Widget',
+                        submit: 'Add',
+                        series: [], 
+                        onExit: selectedSeries => addWidgets(selectedSeries, row, col)
+                    })))); 
         }              
         let numberOfColumns = layout.length;
         let maxRows = layout[0].length;
