@@ -455,13 +455,6 @@ MonitoringConsole.Model = (function() {
 
       	async function doQueryPage() {
       		const page = pages[settings.home];
-      		function yAxisUnit(metadata) {
-      			if (Y_AXIS_UNIT[metadata.Unit] !== undefined)
-      				return Y_AXIS_UNIT[metadata.Unit];
-      			if (Y_AXIS_UNIT[metadata.BaseUnit] !== undefined)
-      				return Y_AXIS_UNIT[metadata.BaseUnit];
-      			return 'count';
-      		}
       		if (page.content === undefined)
       			return;
       		const content = new Promise(function(resolve, reject) {
@@ -484,53 +477,65 @@ MonitoringConsole.Model = (function() {
 			let column = 0;
 			for (let i = 0; i < matches.length; i++) {
 				let match = matches[i];
-				let metadata = match.annotations.filter(a => a.permanent)[0];
-				let attrs = {};
-				let type = 'line';
-				if (metadata) {
-					if (metadata.attrs)
-						attrs = metadata.attrs;
-				}
-				if (attrs.Unit === undefined && match.watches.length > 0) { // is there a watch we can used to get the unit from?
-					let watch = match.watches[0];
-					attrs.Unit = watch.unit;
-					let name = watch.name;
-					if (name.indexOf('RAG ') == 0)
-						name = name.substring(4);
-					attrs.DisplayName = name;
-					type = 'rag';
-				}
-				let data = match.data[0];
-				let scaleFactor;
-				if (attrs.ScaleToBaseUnit > 1) {
-					scaleFactor = Number(attrs.ScaleToBaseUnit);
-				}
-				let decimalMetric = attrs.Type == 'gauge';
-				let unit = yAxisUnit(attrs);
-				let max = decimalMetric ? 10000 : 1;
-				if (attrs.Unit == 'none' && data.observedMax <= max && data.observedMin >= 0) {
-					unit = 'percent';
-					scaleFactor = 100;
-				}
-				widgets.push({
-					id: match.series,
-					type: type,
-					series: match.series,
-					displayName: attrs.DisplayName,
-					description: attrs.Description,
-					grid: { column: column % numberOfColumns, item: column },
-					unit: unit,
-					options: { 
-						decimalMetric: decimalMetric,
-					},
-					scaleFactor: scaleFactor,
-				});
+				const widget = doInferWidget(match, { column: column % numberOfColumns, item: column });
+				widgets.push(widget);
 				column++;
 			}
 			page.widgets = sanityCheckWidgets(widgets);
 			page.content.expires = new Date().getTime() + ((page.content.ttl || (60 * 60 * 24 * 365)) * 1000);
 			doStore(true, page);
 			return page;
+      	}
+
+      	function doInferWidget(match, grid) {
+      		function yAxisUnit(metadata) {
+      			if (Y_AXIS_UNIT[metadata.Unit] !== undefined)
+      				return Y_AXIS_UNIT[metadata.Unit];
+      			if (Y_AXIS_UNIT[metadata.BaseUnit] !== undefined)
+      				return Y_AXIS_UNIT[metadata.BaseUnit];
+      			return 'count';
+      		}
+			let metadata = match.annotations.filter(a => a.permanent)[0];
+			let attrs = {};
+			let type = 'line';
+			if (metadata) {
+				if (metadata.attrs)
+					attrs = metadata.attrs;
+			}
+			if (attrs.Unit === undefined && match.watches.length > 0) { // is there a watch we can used to get the unit from?
+				let watch = match.watches[0];
+				attrs.Unit = watch.unit;
+				let name = watch.name;
+				if (name.indexOf('RAG ') == 0)
+					name = name.substring(4);
+				attrs.DisplayName = name;
+				type = 'rag';
+			}
+			let data = match.data[0];
+			let scaleFactor;
+			if (attrs.ScaleToBaseUnit > 1) {
+				scaleFactor = Number(attrs.ScaleToBaseUnit);
+			}
+			let decimalMetric = attrs.Type == 'gauge';
+			let unit = yAxisUnit(attrs);
+			let max = decimalMetric ? 10000 : 1;
+			if (attrs.Unit == 'none' && data.observedMax <= max && data.observedMin >= 0) {
+				unit = 'percent';
+				scaleFactor = 100;
+			}
+			return {
+				id: match.series,
+				type: type,
+				series: match.series,
+				displayName: attrs.DisplayName,
+				description: attrs.Description,
+				grid: grid,
+				unit: unit,
+				options: { 
+					decimalMetric: decimalMetric,
+				},
+				scaleFactor: scaleFactor,
+			};      		
       	}
 
 		return {
