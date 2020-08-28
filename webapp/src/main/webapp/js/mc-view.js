@@ -374,7 +374,6 @@ MonitoringConsole.View = (function() {
 
         const Page = MonitoringConsole.Model.Page;
         const Role = MonitoringConsole.Model.Role;
-        const addWidgetsInput = $('<button/>', { text: 'Select metric(s)...' }).click(showAddWidgetModalDialog);
         let collapsed = Page.Widgets.Selection.isSingle();
         let pushAvailable = !Role.isGuest() && Page.Sync.isLocallyChanged() && Role.isAdmin();
         let pullAvailable = !Role.isGuest();
@@ -403,13 +402,13 @@ MonitoringConsole.View = (function() {
                 { type: 'value', min: 1, unit: 'sec', value: page.content.ttl, onChange: (value) => configure(page => page.content.ttl = value) },
                 { input: $('<button/>', {text: 'Update'}).click(() => configure(page => page.content.expires = undefined)) },
             ]},
-            { label: 'Add Widgets', available: !queryAvailable, input: addWidgetsInput },
             { label: 'Sync', available: pushAvailable || pullAvailable, input: [
                 { available: autoAvailable, label: 'auto', type: 'checkbox', value: Page.Sync.auto(), onChange: (checked) => Page.Sync.auto(checked),
                     description: 'When checked changed to the page are automatically pushed to the remote server (shared with others)' },
                 { available: pushAvailable, input: () => $('<button />', { text: 'Push', title: 'Push local page to server (update remote)' }).click(onPagePush) },
                 { available: pullAvailable, input: () => showIfRemotePageExists($('<button />', { text: 'Pull', title: 'Pull remote page from server (update local)', style: 'display: none'}).click(onPagePull)) },
-            ]}
+            ]},
+            { label: 'Widgets', available: !queryAvailable, input: $('<button/>', { text: 'Add...' }).click(showAddWidgetModalDialog) },
         ]};
     }
 
