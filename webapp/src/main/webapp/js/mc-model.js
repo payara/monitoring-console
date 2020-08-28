@@ -474,16 +474,20 @@ MonitoringConsole.Model = (function() {
 				matches = matches.slice(0, page.content.maxSize);
 			const widgets = [];
 			const numberOfColumns = page.numberOfColumns;
+			const now = new Date().getTime();
 			let column = 0;
 			for (let i = 0; i < matches.length; i++) {
-				let match = matches[i];
-				const widget = doInferWidget(match);
-				widget.grid = { column: column % numberOfColumns, item: column };
-				widgets.push(widget);
-				column++;
+				const match = matches[i];
+				const points = match.data[0].points;
+				if (now - points[points.length-2] < 60000) { // only matches with data updates in last 60sec
+					const widget = doInferWidget(match);
+					widget.grid = { column: column % numberOfColumns, item: column };
+					widgets.push(widget);
+					column++;					
+				}
 			}
 			page.widgets = sanityCheckWidgets(widgets);
-			page.content.expires = new Date().getTime() + ((page.content.ttl || (60 * 60 * 24 * 365)) * 1000);
+			page.content.expires = now + ((page.content.ttl || (60 * 60 * 24 * 365)) * 1000);
 			doStore(true, page);
 			return page;
       	}

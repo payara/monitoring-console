@@ -400,7 +400,7 @@ MonitoringConsole.View = (function() {
             { label: 'Query Series', available: queryAvailable, type: 'text', value: page.content.series, onChange: (value) => configure(page => page.content.series = value) },
             { label: 'Query Interval', available: queryAvailable, input: [
                 { type: 'value', min: 1, unit: 'sec', value: page.content.ttl, onChange: (value) => configure(page => page.content.ttl = value) },
-                { input: $('<button/>', {text: 'Update'}).click(() => configure(page => page.content.expires = undefined)) },
+                { input: $('<button/>', {text: 'Update Now'}).click(() => configure(page => page.content.expires = undefined)) },
             ]},
             { label: 'Sync', available: pushAvailable || pullAvailable, input: [
                 { available: autoAvailable, label: 'auto', type: 'checkbox', value: Page.Sync.auto(), onChange: (checked) => Page.Sync.auto(checked),
