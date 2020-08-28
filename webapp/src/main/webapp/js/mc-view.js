@@ -1217,12 +1217,26 @@ MonitoringConsole.View = (function() {
         onPageRefresh();
     }
 
-    function showPageSyncModalDialog() {
+    function showPageSyncModalDialog(autosync) {
         MonitoringConsole.Model.Page.Sync.providePullRemoteModel(model => {
             // abses the object properties as a set of ids
+            const onExit = async function(pageIds) {
+                if (pageIds.length > 0) {
+                    await model.onUpdate(pageIds);
+                    let names = MonitoringConsole.Model.listPages().filter(e => pageIds.indexOf(e.id) >= 0).map(e => e.name).join(', ');
+                    showFeedback({type: 'success', message: 'Updated local pages <em>' + names + '</em> with remote configuration.'});
+                    onPageRefresh(); 
+                }
+            };
+            if (autosync === true) {
+                onExit(model.pages.map(p => p.id));
+                return;
+            }
+
             const results = { empty: {}, selected: {} };
             model.onSelection = pageId => results.selected[pageId] = true;
             model.onDeselection = pageId => delete results.selected[pageId];
+
             showModalDialog({
                 title: 'Manage Page Synchronisation',
                 content: () => Components.createPageManager(model),
@@ -1232,15 +1246,7 @@ MonitoringConsole.View = (function() {
                 ],
                 closeProperty: 'empty',
                 results: results,
-                onExit: async function(pageIdMap) {
-                    const pageIds = Object.keys(pageIdMap);
-                    if (pageIds.length > 0) {
-                        await model.onUpdate(pageIds);
-                        let names = MonitoringConsole.Model.listPages().filter(e => pageIds.indexOf(e.id) >= 0).map(e => e.name).join(', ');
-                        showFeedback({type: 'success', message: 'Updated local pages <em>' + names + '</em> with remote configuration.'});
-                        onPageRefresh(); 
-                    }
-                },
+                onExit: pageIdMap => onExit(Object.keys(pageIdMap)),
             });
         });
     }    
@@ -1284,10 +1290,11 @@ MonitoringConsole.View = (function() {
                     onPageChange(MonitoringConsole.Model.Page.changeTo(pageId));
                 }
             });
+            const pageSync = () => showPageSyncModalDialog(MonitoringConsole.Model.Role.isGuest());
             if (!MonitoringConsole.Model.Role.isDefined()) {
-                showRoleSelectionModalDialog(showPageSyncModalDialog);
+                showRoleSelectionModalDialog(pageSync);
             } else {
-                showPageSyncModalDialog();
+                pageSync();
             }
         },
         onPageChange: (layout) => onPageChange(layout),
