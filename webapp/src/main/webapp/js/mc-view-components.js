@@ -1274,7 +1274,7 @@ MonitoringConsole.View.Components = (function() {
               state.selection[key] = matchForKey(key, model.key, matches);
 
         } else {
-          model.onChange(Object.keys(state.selection));
+          model.onChange(Object.keys(state.selection), state.selection);
         }
         matches.forEach(match => match.filtered = false);
         filterBox.empty();

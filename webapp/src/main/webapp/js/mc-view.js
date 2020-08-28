@@ -243,10 +243,11 @@ MonitoringConsole.View = (function() {
     }
 
     function createWidgetSettings(widget) {
-        function changeSeries(selectedSeries) {
-            if (selectedSeries !== undefined && selectedSeries.length > 0)
+        function changeSeries(matches) {
+            const series = Object.keys(matches);
+            if (series !== undefined && series.length > 0)
                 onPageChange(MonitoringConsole.Model.Page.Widgets.configure(widget.id, 
-                    widget => widget.series = selectedSeries.length == 1 ? selectedSeries[0] : selectedSeries));
+                    widget => widget.series = series.length == 1 ? series[0] : series));
         }
         let seriesInput = $('<span/>');
         if (Array.isArray(widget.series)) {
@@ -431,15 +432,24 @@ MonitoringConsole.View = (function() {
         };
     }
 
-    function showAddWidgetModalDialog() {
+    function showAddWidgetModalDialog(grid) {
+        function addNewWidget(matches) {
+            const series = Object.keys(matches);
+            if (series.length > 0) {
+                const factory = series.length != 1 ? undefined : id => {
+                    const widget = MonitoringConsole.Model.Page.Widgets.infer(matches[series[0]]);
+                    widget.id = id;
+                    return widget;
+                };
+                onPageChange(MonitoringConsole.Model.Page.Widgets.add(series, grid, factory));
+            }
+        }
+
         showModalDialog(createWizardModalDialogModel({
             title: 'Add Widget',
             submit: 'Add',
             series: [], 
-            onExit: selectedSeries => {
-                if (selectedSeries !== undefined && selectedSeries.length > 0)
-                    onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries));
-            }
+            onExit: addNewWidget,
         }));
     }
 
@@ -966,7 +976,7 @@ MonitoringConsole.View = (function() {
                     widgetId: 'auto', 
                     series: '?:* *',
                     truncate: ['ALERTS', 'POINTS'],
-                    exclude: ['ALERTS', 'WATCHES']
+                    exclude: []
                 }]}, 
                 (response) => resolve(response.matches),
                 () => reject(undefined));
@@ -1053,7 +1063,7 @@ MonitoringConsole.View = (function() {
                 { label: 'Series', property: 'series', filter: matchesText },
             ],
             // what should happen if the selection made by the user changes
-            onChange: selectedSeries => results.ok = selectedSeries,
+            onChange: (selectedSeries, selectedMatches) => results.ok = selectedMatches,
         };
 
         return { id: 'ModalDialog', 
@@ -1157,21 +1167,10 @@ MonitoringConsole.View = (function() {
      * This function refleshes the page with the given layout.
      */
     function onPageUpdate(layout) {
-        function addWidgets(selectedSeries, row, col) {
-            if (selectedSeries !== undefined && selectedSeries.length > 0) {
-                const grid = { column: col, item: row };
-                onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries, grid));
-            }
-        }
+
         function createPlusButton(row, col) {
             return $('<button/>', { text: '+', 'class': 'big-plus', title: 'Add a widget to the page...' })
-                .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(
-                    createWizardModalDialogModel({
-                        title: 'Add Widget',
-                        submit: 'Add',
-                        series: [], 
-                        onExit: selectedSeries => addWidgets(selectedSeries, row, col)
-                    })))); 
+                .click(() => showAddWidgetModalDialog({ column: col, item: row })); 
         }              
         let numberOfColumns = layout.length;
         let maxRows = layout[0].length;

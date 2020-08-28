@@ -477,7 +477,8 @@ MonitoringConsole.Model = (function() {
 			let column = 0;
 			for (let i = 0; i < matches.length; i++) {
 				let match = matches[i];
-				const widget = doInferWidget(match, { column: column % numberOfColumns, item: column });
+				const widget = doInferWidget(match);
+				widget.grid = { column: column % numberOfColumns, item: column };
 				widgets.push(widget);
 				column++;
 			}
@@ -487,7 +488,7 @@ MonitoringConsole.Model = (function() {
 			return page;
       	}
 
-      	function doInferWidget(match, grid) {
+      	function doInferWidget(match) {
       		function yAxisUnit(metadata) {
       			if (Y_AXIS_UNIT[metadata.Unit] !== undefined)
       				return Y_AXIS_UNIT[metadata.Unit];
@@ -529,13 +530,50 @@ MonitoringConsole.Model = (function() {
 				series: match.series,
 				displayName: attrs.DisplayName,
 				description: attrs.Description,
-				grid: grid,
 				unit: unit,
 				options: { 
 					decimalMetric: decimalMetric,
 				},
 				scaleFactor: scaleFactor,
 			};      		
+      	}
+
+      	function doAddWidget(series, grid, factory) {
+			if (!(typeof series === 'string' || Array.isArray(series) && series.length > 0 && typeof series[0] === 'string'))
+				throw 'configuration object requires string property `series`';
+			if (factory === undefined || typeof factory !== 'function')
+				factory = function(id) { return { id: id, series: series }; };			
+			doDeselect();
+			let layout = doLayout();
+			let page = pages[settings.home];
+			let widgets = page.widgets;
+			let id = (Object.values(widgets)
+				.filter(widget => widget.series == series)
+				.reduce((acc, widget) => Math.max(acc, widget.id.substr(0, widget.id.indexOf(' '))), 0) + 1) + ' ' + series;				
+			
+			let widget = sanityCheckWidget(factory(id));
+			widgets[widget.id] = widget;
+			widget.selected = true;
+			if (grid !== undefined) {
+				widget.grid = grid;
+			} else {
+				// automatically fill most empty column
+				let usedCells = new Array(layout.length);
+				for (let i = 0; i < usedCells.length; i++) {
+					usedCells[i] = 0;
+					for (let j = 0; j < layout[i].length; j++) {
+						let cell = layout[i][j];
+						if (cell === undefined || cell !== null && typeof cell === 'object')
+							usedCells[i]++;
+					}
+				}
+				let indexOfLeastUsedCells = usedCells.reduce((iMin, x, i, arr) => x < arr[iMin] ? i : iMin, 0);
+				widget.grid.column = indexOfLeastUsedCells;
+				widget.grid.item = Object.values(widgets)
+					.filter(widget => widget.grid.column == indexOfLeastUsedCells)
+					.reduce((acc, widget) => widget.grid.item ? Math.max(acc, widget.grid.item) : acc, 0) + 1;
+			}
+			doStore(true);      		
       	}
 
 		return {
@@ -576,7 +614,7 @@ MonitoringConsole.Model = (function() {
 			},
 
 			queryPage: () => doQueryPage(),
-			
+
 			/**
 			 * Loads and returns the userInterface from the local storage
 			 */
@@ -628,7 +666,7 @@ MonitoringConsole.Model = (function() {
 					return;
 				let pageIds = Object.keys(pages);
 				if (pageIds.length <= 1)
-					return;;
+					return;
 				let deletion = () => {
 					delete pages[settings.home];
 					settings.home = pageIds[0];
@@ -691,39 +729,10 @@ MonitoringConsole.Model = (function() {
 				doStore(true);
 			},
 			
-			addWidget: function(series, grid) {
-				if (!(typeof series === 'string' || Array.isArray(series) && series.length > 0 && typeof series[0] === 'string'))
-					throw 'configuration object requires string property `series`';
-				doDeselect();
-				let layout = doLayout();
-				let page = pages[settings.home];
-				let widgets = page.widgets;
-				let id = (Object.values(widgets)
-					.filter(widget => widget.series == series)
-					.reduce((acc, widget) => Math.max(acc, widget.id.substr(0, widget.id.indexOf(' '))), 0) + 1) + ' ' + series;				
-				let widget = sanityCheckWidget({ id: id, series: series });
-				widgets[widget.id] = widget;
-				widget.selected = true;
-				if (grid !== undefined) {
-					widget.grid = grid;
-				} else {
-					// automatically fill most empty column
-					let usedCells = new Array(layout.length);
-					for (let i = 0; i < usedCells.length; i++) {
-						usedCells[i] = 0;
-						for (let j = 0; j < layout[i].length; j++) {
-							let cell = layout[i][j];
-							if (cell === undefined || cell !== null && typeof cell === 'object')
-								usedCells[i]++;
-						}
-					}
-					let indexOfLeastUsedCells = usedCells.reduce((iMin, x, i, arr) => x < arr[iMin] ? i : iMin, 0);
-					widget.grid.column = indexOfLeastUsedCells;
-					widget.grid.item = Object.values(widgets)
-						.filter(widget => widget.grid.column == indexOfLeastUsedCells)
-						.reduce((acc, widget) => widget.grid.item ? Math.max(acc, widget.grid.item) : acc, 0) + 1;
-				}
-				doStore(true);
+			addWidget: doAddWidget,
+
+			inferWidget: function(match) {
+				return doInferWidget(match);
 			},
 			
 			configureWidget: function(widgetUpdate, widgetId) {
@@ -1465,15 +1474,17 @@ MonitoringConsole.Model = (function() {
 			
 			Widgets: {
 				
-				add: function(series, grid) {
+				add: function(series, grid, factory) {
 					if (Array.isArray(series) && series.length == 1)
 						series = series[0];
 					if (Array.isArray(series) || series.trim()) {
-						UI.addWidget(series, grid);
+						UI.addWidget(series, grid, factory);
 						Interval.tick();
 					}
 					return UI.arrange();
 				},
+
+				infer: UI.inferWidget,
 				
 				remove: function(widgetId) {
 					Charts.destroy(widgetId);
