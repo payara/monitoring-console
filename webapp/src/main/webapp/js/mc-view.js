@@ -1242,7 +1242,8 @@ MonitoringConsole.View = (function() {
             model.onDeselection = pageId => delete results.selected[pageId];
 
             showModalDialog({
-                title: 'Manage Page Synchronisation',
+                style: 'ModalDialogPageSync',
+                title: 'Page Synchronisation',
                 content: () => Components.createPageManager(model),
                 buttons: [
                     { property: 'empty', label: 'Cancel', secondary: true },

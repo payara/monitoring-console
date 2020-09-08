@@ -56,7 +56,7 @@ MonitoringConsole.View.Units = (function() {
       h: 60 * 60, hours: 60 * 60,
       m: 60, min: 60, mins: 60,
       s: 1, sec: 1, secs: 1,
-      _: [['h', 'm'], ['h', 'm', 's'], ['m', 's']]
+      _: [['d', 'h'], ['d', 'h', 'm'], ['d', 'h', 'm', 's'], ['h', 'm'], ['h', 'm', 's'], ['m', 's']]
    };
 
    /**
@@ -70,7 +70,7 @@ MonitoringConsole.View.Units = (function() {
       ms: 1,
       us: 1/1000, μs: 1/1000,
       ns: 1/1000000,
-      _: [['d', 'h', 'm'], ['d', 'h', 'm', 's'], ['h', 'm'], ['h', 'm', 's'], ['h', 'm', 's', 'ms'], ['m', 's'], ['m', 's', 'ms'], ['s', 'ms']]
+      _: [['d', 'h'], ['d', 'h', 'm'], ['d', 'h', 'm', 's'], ['h', 'm'], ['h', 'm', 's'], ['h', 'm', 's', 'ms'], ['m', 's'], ['m', 's', 'ms'], ['s', 'ms']]
    };
 
    /**
@@ -174,7 +174,7 @@ MonitoringConsole.View.Units = (function() {
       return text.endsWith('.0') ? Math.round(valueAsNumber).toString() : text;
    }
 
-   function formatNumber(valueAsNumber, factors, useDecimals) {
+   function formatNumber(valueAsNumber, factors, useDecimals = false, separator = '') {
       if (valueAsNumber === undefined)
          return undefined;
       if (valueAsNumber === 0)
@@ -205,7 +205,7 @@ MonitoringConsole.View.Units = (function() {
          for (let i = 0; i < factors._.length; i++) {
             let combination = factors._[i];
             let rest = valueAsNumber;
-            let text = '';
+            let text = [];
             if (combination[combination.length - 1] == largestFactorUnit) {
                for (let j = 0; j < combination.length; j++) {
                   let unit = combination[j];
@@ -214,16 +214,14 @@ MonitoringConsole.View.Units = (function() {
                   if (times === 0)
                      break;
                   rest -= times * factor;
-                  text += times + unit;                      
+                  text.push(times + unit);                      
                }
             }
             if (rest === 0) {
-               return text;
+               return text.join(separator);
             }
          }
       }
-      // TODO look for a combination that has the found unit as its last member
-      // try if value can eben be expressed as the combination, otherwise try next that might fulfil firs condition
       return valueInUnit + largestFactorUnit;
    }
 
@@ -262,7 +260,13 @@ MonitoringConsole.View.Units = (function() {
       // now dateOrTimestamp should be a Date object
       let diffMs = new Date() - dateOrTimestamp;
       diffMs = Math.round(diffMs / 1000) * 1000; // truncate ms
-      return formatNumber(diffMs, MS_FACTORS) + ' ago, ' + formatTime(Math.round(dateOrTimestamp.getTime() / 1000) * 1000);
+      if (diffMs > 120000) // 2 mins
+         diffMs = Math.round(diffMs / 60000) * 60000; // truncate sec
+      if (diffMs > 7200000) // 2h
+         diffMs = Math.round(diffMs / 3600000) * 3600000; // truncate min
+      const time = formatTime(Math.round(dateOrTimestamp.getTime() / 60000) * 60000); // nothing below h
+      const date = dateOrTimestamp.toLocaleDateString();
+      return time + ', ' + date + ' (' + formatNumber(diffMs, MS_FACTORS, false, ', ') + ' ago)';
    }
 
    function as2digits(number) {
