@@ -191,6 +191,8 @@ button.default:hover {
   transform: translateY(1px);
 }
 
+
+
 #panel-trace {
   position: absolute;
   top: 32px;
@@ -874,6 +876,17 @@ table.AnnotationTable {
   overflow: auto; 
   background-color: rgb(0,0,0); 
   background-color: rgba(0,0,0,0.4); 
+}
+
+.ModalDialog .ModalDialogContent.danger-zone {
+  border: 5px solid #e6194B;
+}
+.ModalDialog .ModalDialogContent.danger-zone:before {
+  content: 'Danger Zone (TM)';
+  position: absolute;
+  margin-top: -65px;
+  color: #e6194B;
+  right: 0;
 }
 
 

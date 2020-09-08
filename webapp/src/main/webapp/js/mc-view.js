@@ -405,8 +405,8 @@ MonitoringConsole.View = (function() {
             { label: 'Sync', available: pushAvailable || pullAvailable, input: [
                 { available: autoAvailable, label: 'auto', type: 'checkbox', value: Page.Sync.auto(), onChange: (checked) => Page.Sync.auto(checked),
                     description: 'When checked changed to the page are automatically pushed to the remote server (shared with others)' },
-                { available: pushAvailable, input: () => $('<button />', { text: 'Push', title: 'Push local page to server (update remote)' }).click(onPagePush) },
-                { available: pullAvailable, input: () => showIfRemotePageExists($('<button />', { text: 'Pull', title: 'Pull remote page from server (update local)', style: 'display: none'}).click(onPagePull)) },
+                { available: pushAvailable, input: () => $('<button />', { text: 'Push', title: 'Push local page to server (update remote)' }).click(showPushPageConfirmModalDialog) },
+                { available: pullAvailable, input: () => showIfRemotePageExists($('<button />', { text: 'Pull', title: 'Pull remote page from server (update local)', style: 'display: none'}).click(showPullPageConfirmModalDialog)) },
             ]},
             { label: 'Widgets', available: !queryAvailable, input: $('<button/>', { text: 'Add...' }).click(showAddWidgetModalDialog) },
         ]};
@@ -417,9 +417,10 @@ MonitoringConsole.View = (function() {
      */
     function createYesNoModualDialog(model) {
         return {
+            style: model.dangerzone ? 'danger-zone' : undefined,
             title: model.title,
-            width: 300,
-            content: () => $('<p/>').html(model.question),
+            width: 400,
+            content: () => model.question.split('\n').map(par => $('<p/>').html(par)),
             buttons: [
                 { property: 'no', label: model.no, secondary: true },
                 { property: 'yes', label: model.yes },
@@ -1212,13 +1213,40 @@ MonitoringConsole.View = (function() {
         $('#chart-container').append(table);
     }
 
-    function onPagePush() {
-        MonitoringConsole.Model.Page.Sync.pushLocal(onPageRefresh);
+    function showPushPageConfirmModalDialog() {
+        showModalDialog(createYesNoModualDialog({
+            dangerzone: true,
+            title: 'Share Local Page', 
+            question: 'Are you sure you want update the server configuration of this page with the local configuration?\n<b>Warning:</b> Current server configuration will be overridden.', 
+            yes: 'Update Server Configuration', 
+            no: 'Cancel', 
+            onYes: () => {
+                MonitoringConsole.Model.Page.Sync.pushLocal(
+                    page => {
+                        showFeedback({ type: 'success', message: 'Successfully updated server page <em>' +  page.name + '</em> with local configuration.'});
+                        onPageRefresh();
+                    },
+                    page => showFeedback({ type: 'error', message: 'Failed to update server page <em>' + page.name + '</em>.'}));
+            }
+        }));
     }
 
-    async function onPagePull() {
-        await MonitoringConsole.Model.Page.Sync.pullRemote();
-        onPageRefresh();
+    function showPullPageConfirmModalDialog() {
+        showModalDialog(createYesNoModualDialog({
+            dangerzone: true,
+            title: 'Update Local Page', 
+            question: 'Are you sure you want to update this page with the server configuration?\n<b>Warning:</b> Current local configuration will be overridden.', 
+            yes: 'Update Local Configuration', 
+            no: 'Cancel', 
+            onYes: async () => {
+                await MonitoringConsole.Model.Page.Sync.pullRemote(undefined,
+                    page => {
+                        showFeedback({ type: 'success', message: 'Successfully updated local page <em>' +  page.name + '</em> with server configuration.'});
+                        onPageRefresh();
+                    },
+                    page => showFeedback({ type: 'error', message: 'Failed to update local page <em>' + page.name + '</em>.'}));
+            }
+        }));
     }
 
     function showPageSyncModalDialog(autosync) {
@@ -1248,7 +1276,7 @@ MonitoringConsole.View = (function() {
                 content: () => Components.createPageManager(model),
                 buttons: [
                     { property: 'empty', label: 'Cancel', secondary: true },
-                    { property: 'selected', label: 'Update', tooltip: 'Updates checked pages locally with the remote configuration for these pages' },
+                    { property: 'selected', label: 'Update Selected', tooltip: 'Updates checked pages locally with the remote configuration for these pages' },
                 ],
                 closeProperty: 'empty',
                 results: results,
