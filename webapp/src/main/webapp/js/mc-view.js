@@ -1226,9 +1226,10 @@ MonitoringConsole.View = (function() {
             // abses the object properties as a set of ids
             const onExit = async function(pageIds) {
                 if (pageIds.length > 0) {
-                    await model.onUpdate(pageIds);
-                    let names = MonitoringConsole.Model.listPages().filter(e => pageIds.indexOf(e.id) >= 0).map(e => e.name).join(', ');
-                    showFeedback({type: 'success', message: 'Updated local pages <em>' + names + '</em> with remote configuration.'});
+                    await model.onUpdate(pageIds, 
+                        page => showFeedback({type: 'success', message: 'Updated local page <em>' + page.name + '</em> with server configuration.'}),
+                        page => showFeedback({type: 'error', message: 'Failed to update local page <em>' + page.name + '</em> with server configuration.'})
+                    );
                     onPageRefresh(); 
                 }
             };

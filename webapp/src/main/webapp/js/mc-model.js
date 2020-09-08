@@ -223,7 +223,7 @@ MonitoringConsole.Model = (function() {
 			});
 		}
 
-		function doPullRemote(pageId) {
+		function doPullRemote(pageId, onSuccess, onError) {
 			if (pageId === undefined)
 				pageId = settings.home;
 			return new Promise(function(resolve, reject) {
@@ -231,7 +231,13 @@ MonitoringConsole.Model = (function() {
 					pages[page.id] = page;
 					doStore(false, page);
 					resolve(page);
-				}, () => reject(undefined));
+					if (typeof onSuccess === 'function')
+						onSuccess(page);
+				}, () => {
+					reject(undefined);
+					if (typeof onError === 'function')
+						onError(page);
+				});
 			});
 		}
 
@@ -257,13 +263,13 @@ MonitoringConsole.Model = (function() {
 			Controller.requestListOfRemotePages(remotePages => {
 				consumer({ 
 					pages: Object.values(remotePages).map(remotePage => createPullRemoteModelItem(pages[remotePage.id], remotePage)), 
-					onUpdate: async function (pageIds) {
+					onUpdate: async function (pageIds, onSuccess, onError) {
 						for (let remotePageId of Object.keys(remotePages)) {
 							if (!pageIds.includes(remotePageId)) {
 								pages[remotePageId].sync.preferredOverRemoteLastModified = remotePages[remotePageId].sync.basedOnRemoteLastModified;
 							}
 						}
-						await Promise.all(pageIds.map(pageId => doPullRemote(pageId)));
+						await Promise.all(pageIds.map(pageId => doPullRemote(pageId, onSuccess, onError)));
 					}
 				});
 			});
