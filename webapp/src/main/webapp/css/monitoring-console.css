@@ -913,8 +913,11 @@ table.AnnotationTable {
 
 .ModalDialog .ModalDialogButtons {
   padding: 10px 0;
-  text-align: right;
+  text-align: center;
   clear: both;
+}
+.ModalDialog .ModalDialogButtons button {
+  margin: 0 10px;
 }
 .ModalDialog em {
   font-style: normal;
@@ -982,32 +985,35 @@ table.AnnotationTable {
 
 
 /* Page Manager Component */
-.PageManager button {
-  float: right;
-  margin: 1em 0 1em 1em;
-}
 .PageManager table {
-  border-spacing: 0;
-  border-collapse: collapse;
-  background-color: white;
+  border-spacing: 10px 0;
+  border-collapse: separate;
   color: black;
-  border-radius: 3px;
-  width: 100%;
+  width: calc(100% + 20px);
+  margin-left: -10px;
+  clear: both;
+  padding-top: 1em;
 }
 .PageManager table th {
   text-align: left;
 }
-.PageManager table td:first-child {
-  width: 30px;
-}
 .PageManager table td, .PageManager table th {
   padding: 2px 0.5em;
+  background-color: white;
 }
-.PageManager table td {
-  text-align: right;
+.PageManager span {
+  padding-left: 20px;
+  display: inline-block;
 }
-.PageManager table td.recent {
-  background-color: #3cb44b;
+.PageManager > span {
+  float: right;
+}
+.PageManager span.recent:before {
+  content: '\00002a';
+  font-size: 20px;
+  font-weight: bold;
+  position: absolute;
+  margin-left: -15px;
 }
 .PageManager table tr {
   border-top: 1px solid rgba(var(--primary-color-rgb-orange));
@@ -1017,6 +1023,13 @@ table.AnnotationTable {
 }
 .PageManager table th + td, .PageManager table th + td + td, .PageManager table th + td + td + td {
   width: 20%;
+}
+.PageManager table tr:nth-child(even) td {
+  background-color: #ddd;
+}
+.PageManager table div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
 }
 
 /* NavSidebar Component */

@@ -1195,22 +1195,22 @@ MonitoringConsole.View.Components = (function() {
         config.id = model.id;
       const manager = $('<div/>', config);
       const list = $('<table/>').append($('<tr/>')
-        .append($('<th/>'))
         .append($('<th/>').text('Page'))
-        .append($('<th/>').text('Local Version'))
-        .append($('<th/>').text('Based on Server Version'))
+        .append($('<th/>').append($('<div/>').append($('<span/>').text('Local Version')).append($('<span/>').text('Based on Server Version'))))
         .append($('<th/>').text('Latest Server Version'))
       );
       model.pages.forEach(page => list.append(createItem(model, page)));
       return manager
-        .append($('<p/>').text('Please select the pages that should be updated with their server configuration:'))
+        .append($('<p/>').text('Please select the pages that should be updated with their server configuration.'))
+        .append($('<span/>', {'class': 'recent'}).text('Newest Version'))
         .append(list);
     }
 
     function createItem(model, page) {
       if (page.checked)
         model.onSelection(page.id);
-      const checkbox = $('<input/>', { type: 'checkbox', checked: page.checked })
+      const id = 'select-' + page.id;
+      const checkbox = $('<input/>', { id: id, type: 'checkbox', checked: page.checked })
         .on('change', function() {
           if (this.checked) {
             model.onSelection(page.id);
@@ -1218,16 +1218,18 @@ MonitoringConsole.View.Components = (function() {
             model.onDeselection(page.id);
           }
         });
-      const localAttrs = page.lastLocalChange >= page.lastRemoteChange ? {'class': 'recent'} : {};
-      const remoteAttrs = page.lastLocalChange == undefined || page.lastLocalChange <= page.lastRemoteChange ? {'class': 'recent'} : {};
-      const baseAttrs = page.lastRemoteUpdate != undefined && page.lastRemoteUpdate == page.lastRemoteChange ? {'class': 'recent'} : {};
-      const localText = page.lastLocalChange === undefined && page.lastRemoteUpdate !== undefined ? '(not modified locally)' : Units.formatDateTime(page.lastLocalChange);
+      const localIsMostRecent = page.lastLocalChange > page.lastRemoteChange;
+      const remoteIsMostRecent = page.lastLocalChange === undefined || page.lastLocalChange <= page.lastRemoteChange;
+      const baseIsMostRecent = remoteIsMostRecent && page.lastRemoteUpdate !== undefined && page.lastRemoteUpdate == page.lastRemoteChange;
+      const remoteNotModified = page.lastRemoteUpdate !== undefined && page.lastLocalChange === undefined;
+      const localAttrs = localIsMostRecent ? {'class': 'recent'} : {};
+      const remoteAttrs = remoteIsMostRecent ? {'class': 'recent'} : {};
+      const baseAttrs =  baseIsMostRecent ? {'class': 'recent'} : {};
+      const localText =  remoteNotModified ? '(unmodified server version)' : Units.formatDateTime(page.lastLocalChange);
       return $('<tr/>')
-        .append($('<td/>').append(checkbox))
-        .append($('<th/>').text(page.name))
-        .append($('<td/>', localAttrs).text(localText))
-        .append($('<td/>', baseAttrs).text(Units.formatDateTime(page.lastRemoteUpdate)))
-        .append($('<td/>', remoteAttrs).text(Units.formatDateTime(page.lastRemoteChange)));
+        .append($('<td/>').append(checkbox).append(' ').append($('<label/>', { for: id }).text(page.name)))
+        .append($('<td/>').append($('<div/>').append($('<span/>', localAttrs).text(localText)).append($('<span/>', baseAttrs).text(Units.formatDateTime(page.lastRemoteUpdate)))))
+        .append($('<td/>').append($('<span/>', remoteAttrs).text(Units.formatDateTime(page.lastRemoteChange))));
     }
 
     return { createComponent: createComponent };
