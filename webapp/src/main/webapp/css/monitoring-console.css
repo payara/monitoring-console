@@ -928,6 +928,28 @@ table.AnnotationTable {
   cursor: pointer;
 }
 
+/* Modal Dialog Customisation */
+.ModalDialog .ModalDialogUserRole dl {
+  display: grid;
+  grid-template-rows: auto auto;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-auto-flow: column;
+  grid-gap: 5px 40px;
+}
+.ModalDialog .ModalDialogUserRole dd {
+  margin: 0;
+}
+.ModalDialog .ModalDialogUserRole .ModalDialogButtons {
+  display: grid;
+  grid-template-rows: auto;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-auto-flow: column;
+  grid-gap: 0 40px;
+}
+.ModalDialog .ModalDialogUserRole .ModalDialogButtons button {
+  justify-self: center;
+}
+
 /* SelectionWizard Component */
 
 .SelectionWizard .Filter label {

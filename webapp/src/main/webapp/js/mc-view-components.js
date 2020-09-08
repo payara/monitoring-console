@@ -1517,14 +1517,17 @@ MonitoringConsole.View.Components = (function() {
         'class' : 'ModalDialog' 
       };
       const dialog = $('<div/>', config);
-      const boxConfig = {'class': 'ModalDialogContent', style: ''};
+      const boxConfig = {
+        'class': 'ModalDialogContent' + (model.style ? ' ' +  model.style : ''), 
+        style: ''
+      };
       if (typeof model.width === 'number')
         boxConfig.style += 'width: ' + model.width + 'px;'; 
       const box = $('<div/>', boxConfig);
       if (typeof model.closeProperty === 'string') {
         box.append($('<span/>', {'class': 'btn-close'})
           .html('&times;')
-          .click(createClickHandler(model, model.closeProperty)))
+          .click(createClickHandler(model, model.closeProperty)));
       }
       if (model.title !== undefined && model.title != '')
         box.append($('<h3/>').html(model.title));

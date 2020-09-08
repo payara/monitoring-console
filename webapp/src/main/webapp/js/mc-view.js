@@ -869,8 +869,8 @@ MonitoringConsole.View = (function() {
         const Role = MonitoringConsole.Model.Role;
         const currentRole = Role.isDefined() ? Role.get() : 'guest';
         showModalDialog({
+            style: 'ModalDialogUserRole',
             title: 'User Role Selection',
-            width: 400,
             content: () => $('<dl/>')
                 .append($('<dt/>').append($('<b/>').text('Guest')))
                 .append($('<dd/>').text('Automatically uses latest server page configuration. Existing local changes are overridden. Local changes during the session do not affect the remote configuration.'))
@@ -881,14 +881,18 @@ MonitoringConsole.View = (function() {
             buttons: [
                 { property: 'admin', label: 'Administrator', secondary: true },
                 { property: 'user', label: 'User' },
-                { property: 'guest', label: 'Guest' },
+                { property: 'guest', label: 'Guest', secondary: true },
             ],
             results: { admin: 'admin' , user: 'user', guest: 'guest', current: currentRole },
             closeProperty: 'current',
             onExit: role =>  {
+                let confirm = !Role.isDefined() || Role.get() != role;
                 Role.set(role);
                 updateSettings();
-                showFeedback({ type: 'success', message: 'User Role changed to <em>' + Role.name() + '</em>' });
+                if (Role.get() != role) {
+                    showFeedback({ type: 'error', message: 'Failed to update user role. Please report an issue.'});
+                } else if (confirm)
+                    showFeedback({ type: 'success', message: 'User Role changed to <em>' + Role.name() + '</em>' });
                 if (typeof onExitCall === 'function')
                     onExitCall();
             }

@@ -623,7 +623,8 @@ filter           = string | fn (string) => boolean | fn (string, string) => bool
 ### ModalDialoge API
 
 ```
-MODAL_DIALOG     = { id, title, content, width, buttons, results, closeProperty, onExit }
+MODAL_DIALOG     = { id, style, title, content, width, buttons, results, closeProperty, onExit }
+style            = string
 title            = string
 content          = fn () => jQuery | jQuery
 width            = number
@@ -637,6 +638,7 @@ results          = { *:* }
 closeProperty    = string
 onExit           = fn(*) => ()
 ```
+* `style` is an optional parameter to pass a custom CSS class name that is added to the modal so custom CSS styling can be applied using that class selector
 * when a particular button is clicked the named `property` of that button is extracted from `results` and passed to `onExit` function. This value can be of any type and change while the dialog is open.
 * `width` is optional to force a certain (smaller) width
 * `top` is optional to force top position other than 0
@@ -673,7 +675,6 @@ onLayoutChange   = function (number) => ()
 onRefreshSpeedChange = function (number) => ()
 ```
 *`onSidebarToggle` has no argument since a sidebar created with `collapsed` being `true` should expand, likewise for `false` is should collapse
-
 
 
 ### FeedbackBanner API
