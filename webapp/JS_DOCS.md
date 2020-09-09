@@ -521,21 +521,26 @@ WATCH_LIST      = { id, items, colors, actions  }
 WATCH_BUILDER   = { id, colors, actions }
 WATCH_MANAGER	= { id, items, colors, actions }
 items           = [ WATCH ]
-actions         = { onCreate, onDelete, onDisable, onEnable }
+actions         = { onCreate, onDelete, onDisable, onEnable, onSelect }
 onEdit          = fn (WATCH) => ()
 onCreate        = fn (WATCH, onSuccess, onFailure) => ()
 onDelete        = fn (name, onSuccess, onFailure) => ()
 onDisable       = fn (name, onSuccess, onFailure) => ()
 onEnable        = fn (name, onSuccess, onFailure) => ()
+onSelect        = fn (id, series, onSelection) => ()
+onSelection     = fn (series) => ()
 colors          = { red, amber, green }
 red             = string
 amber           = string
 green           = string
+id              = string
+series          = string
 ```
 * `WATCH` refers to an object as described for update data structures
 * `onDelete` is a function to call to delete the watch by its `name` (a `string`)
 * `onCreate` is a function to create new watches
 * `onEdit` is created by the `WatchManager` for the `WATCH_LIST` to use when an list entry should be edited.
+* `onSelect` is a fuction that is given an DOM `id`, a `series` and a callback that accepts the series that was selected
 
 
 ## Data Driven Chart Plugins
@@ -625,7 +630,8 @@ filter           = string | fn (string) => boolean | fn (string, string) => bool
 ### ModalDialoge API
 
 ```
-MODAL_DIALOG     = { id, style, title, content, width, buttons, results, closeProperty, onExit }
+MODAL_DIALOG     = { id, style, fixed, title, content, width, buttons, results, closeProperty, onExit }
+fixed            = boolean
 style            = string
 title            = string
 content          = fn () => jQuery | jQuery

@@ -251,8 +251,7 @@ MonitoringConsole.View = (function() {
     }
 
     function createWidgetSettings(widget) {
-        function changeSeries(matches) {
-            const series = Object.keys(matches);
+        function changeSeries(series) {
             if (series !== undefined && series.length > 0)
                 onPageChange(MonitoringConsole.Model.Page.Widgets.configure(widget.id, 
                     widget => widget.series = series.length == 1 ? series[0] : series));
@@ -443,8 +442,7 @@ MonitoringConsole.View = (function() {
     }
 
     function showAddWidgetModalDialog(grid) {
-        function addNewWidget(matches) {
-            const series = Object.keys(matches);
+        function addNewWidget(series, matches) {
             if (series.length > 0) {
                 const factory = series.length != 1 ? undefined : id => {
                     const widget = MonitoringConsole.Model.Page.Widgets.infer(matches[series[0]]);
@@ -464,7 +462,8 @@ MonitoringConsole.View = (function() {
     }
 
     function showModalDialog(model) {
-        $('#ModalDialog').replaceWith(Components.createModalDialog(model));
+        const id = model.id || 'ModalDialog';
+        $('#' + id).replaceWith(Components.createModalDialog(model));
     }
 
     function showFeedback(model) {
@@ -980,7 +979,7 @@ MonitoringConsole.View = (function() {
     }
 
     /**
-      * Model: { title, submit, series, onExit }
+      * Model: { id, title, submit, series, onExit }
       */
     function createWizardModalDialogModel(model) {
         let initiallySelectedSeries = model.series;
@@ -1089,7 +1088,9 @@ MonitoringConsole.View = (function() {
             onChange: (selectedSeries, selectedMatches) => results.ok = selectedMatches,
         };
 
-        return { id: 'ModalDialog', 
+        return {
+            id: model.id,
+            fixed: true,
             title: model.title,
             content: () => Components.createSelectionWizard(wizard),
             buttons: [
@@ -1098,7 +1099,13 @@ MonitoringConsole.View = (function() {
             ],
             results: results,
             closeProperty: 'cancel',
-            onExit: model.onExit,
+            onExit: seriesOrMatches => {
+                if (Array.isArray(seriesOrMatches)) {
+                    model.onExit(seriesOrMatches); 
+                } else if (typeof seriesOrMatches === 'object') {
+                    model.onExit(Object.keys(seriesOrMatches), seriesOrMatches);
+                }
+            },
         };
     }
 
@@ -1138,9 +1145,17 @@ MonitoringConsole.View = (function() {
                     onDelete: (name, onSuccess, onFailure) => Controller.requestDeleteWatch(name, wrapOnSuccess(onSuccess), onFailure),
                     onDisable: (name, onSuccess, onFailure) => Controller.requestDisableWatch(name, wrapOnSuccess(onSuccess), onFailure),
                     onEnable: (name, onSuccess, onFailure) => Controller.requestEnableWatch(name, wrapOnSuccess(onSuccess), onFailure),
+                    onSelect: (id, series, onSelection) => showModalDialog(createWizardModalDialogModel({
+                        id: id,
+                        title: 'Select Watch Metric Series', 
+                        submit: 'Select',
+                        series: series, 
+                        onExit: series => onSelection(series[0]),
+                    })),
                 },
             };
             showModalDialog({
+                fixed: true,
                 title: 'Manage Watches',
                 content: () => Components.createWatchManager(manager),
                 buttons: [{ property: 'close', label: 'Close', secondary: true }],

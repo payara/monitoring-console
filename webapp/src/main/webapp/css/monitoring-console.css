@@ -778,11 +778,26 @@ table.AnnotationTable {
   grid-template-columns: 2fr 2fr 1fr 1fr 1fr;
   grid-gap: 5px;
 }
+.WatchList dt:before {
+  position: absolute;
+  content: '\2303';
+  pointer-events: none;
+  font-size: 20px;
+}
+.WatchList dt.state-collapsed:before {
+  content: '\2304';
+  margin-top: -8px;
+}
+
 .WatchList dt b {
   cursor: pointer;
+  padding-left: 20px;
 }
 .WatchList dt.state-disabled b {
   text-decoration: line-through;
+}
+.WatchManager .WatchCondition em {
+  color: black;
 }
 .WatchCondition {
   padding: 0 0.5em;
@@ -791,7 +806,8 @@ table.AnnotationTable {
 .WatchCondition em {
   font-style: normal;
 }
-.WatchCondition select, .WatchCondition input {
+.WatchCondition select, 
+.WatchCondition input {
   width: auto;
   max-width: auto;
   color: inherit;
@@ -799,7 +815,8 @@ table.AnnotationTable {
 }
 .WatchCondition input {
 }
-.WatchCondition input.input-value, .WatchCondition span span span input.input-text {
+.WatchCondition input.input-value, 
+.WatchCondition span span span input.input-text {
   width: 50px;
 }
 .WatchCondition input.input-text {
@@ -810,14 +827,23 @@ table.AnnotationTable {
   position: relative;
   padding-bottom: 2.5em;
 }
-.WatchBuilder button {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-}
 .WatchBuilder h3 input {
   width: 200px;
   max-width: 200px;
+}
+.WatchBuilder .WatchBuilderForm > div {
+  padding: 3px 0;
+}
+.WatchBuilder .WatchBuilderForm label {
+  min-width: 150px;
+  text-align: right;
+  display: inline-block;
+}
+.WatchBuilder .WatchBuilderForm input[type=text], 
+.WatchBuilder .WatchBuilderForm select {
+  width: 300px;
+  max-width: 300px;
+  margin: 0 1em;
 }
 
 
@@ -910,12 +936,8 @@ table.AnnotationTable {
   padding: 15px 40px;
 }
 
-.ModalDialog > .ModalDialogContent {
-  position: absolute;
-  float: left;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+.ModalDialog .ModalDialogContent {
+  position: relative;
   margin: 0 auto;
   padding: 40px;
   padding-bottom: 0;
@@ -924,6 +946,13 @@ table.AnnotationTable {
   background-color: var(--sidebar-bg-color);
   border-radius: 3px;
 }
+
+.ModalDialog .ModalDialogContent.centered {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}  
 
 .ModalDialog .ModalDialogButtons {
   padding: 10px 0;

@@ -980,12 +980,15 @@ MonitoringConsole.View.Components = (function() {
 
     function createItem(list, item, colors, actions) {
       const label = $('<b/>').text(item.name + (item.stopped ? ' (stopped)' : ''));
-      const dt = $('<dt/>', { 'class': 'state-' + (item.disabled || item.stopped ? 'disabled' : 'enabled') })
+      const dt = $('<dt/>', { 'class': 'state-collapsed state-' + (item.disabled || item.stopped ? 'disabled' : 'enabled') })
         .append(label)
         .append($('<code/>').text(item.series))
         .append($('<button/>').text(item.programmatic ? 'Duplicate' : 'Edit').click(() => actions.onEdit(item)))
         ;
-      label.click(() => dt.nextUntil('dt').toggle());
+      label.click(() =>  {
+        dt.nextUntil('dt').toggle();
+        dt.toggleClass('state-collapsed');
+      });
       if (!item.programmatic) {
         dt.append($('<button/>').text('Delete').click(() => actions.onDelete(item.name)));
       } else {
@@ -1038,19 +1041,33 @@ MonitoringConsole.View.Components = (function() {
       }
       const builder = $('<div/>', config);
       const nameInput = Settings.createInput({ type: 'text', value: editedWatch.name, onChange: (name) => editedWatch.name = name });
-      builder
-        .append($('<label/>').text('Name'))
-        .append(nameInput);
-      const unitDropdowns = [];
-      const seriesInputs = [];
+      const unitDropdown = Settings.createInput({ type: 'dropdown', value: editedWatch.unit, options: Units.names(), onChange: (selected) => editedWatch.unit = selected });
+      const seriesInput = Settings.createInput({ type: 'text', value: editedWatch.series, onChange: (series) => editedWatch.series = series});
+      const popupId = 'popup-popup';
+
+      const form = $('<div/>', {'class': 'WatchBuilderForm'})
+        .append($('<div/>')
+          .append($('<label/>').text('Name'))
+          .append(nameInput))
+        .append($('<div/>')
+          .append($('<label/>').text('Series'))
+          .append(seriesInput)
+          .append($('<button/>').text('Select...').click(() => model.actions.onSelect(popupId, editedWatch.series, 
+            (series) => seriesInput.val(series).change()))))
+        .append($('<div/>')
+          .append($('<label/>').text('Unit'))
+          .append(unitDropdown))
+        .append($('<div/>', { id: popupId }));
+
+      builder.append(form);
       for (let level of ['red', 'amber', 'green']) {
-        builder.append(createLevelBuilder(level, editedWatch, model.colors[level], unitDropdowns, seriesInputs));
+        builder.append(createLevelBuilder(level, editedWatch, model.colors[level]));
       }
       builder.append($('<button/>').text('Save or Update').click(() => model.actions.onCreate(editedWatch)));
       return builder;
     }
 
-    function createLevelBuilder(level, editedWatch, color, unitDropdowns, seriesInputs) {
+    function createLevelBuilder(level, editedWatch, color) {
       const editedCircumstance = editedWatch[level] || { level: level };
       const editedStartCondition = editedCircumstance.start || { operator: '>', forTimes: 1 };
       const editedStopCondition = editedCircumstance.stop || { operator: '<', forTimes: 1 };
@@ -1066,16 +1083,6 @@ MonitoringConsole.View.Components = (function() {
           editedWatch[level] = undefined;
         }
       }});
-      const unitDropdown = Settings.createInput({ type: 'dropdown', value: editedWatch.unit, options: Units.names(), onChange: (selected) => {
-        editedWatch.unit = selected;
-        unitDropdowns.forEach(dropdown => dropdown.val(selected));
-      }});
-      unitDropdowns.push(unitDropdown);
-      const seriesInput = Settings.createInput({ type: 'text', value: editedWatch.series, onChange: (series) => {
-        editedWatch.series = series;
-        seriesInputs.forEach(input => input.val(series));
-      }});
-      seriesInputs.push(seriesInput);
       const isUntilDefined = editedCircumstance.stop !== undefined;
       const untilBox = $('<span/>', isUntilDefined ? {} : { style: 'display: none;'})
         .append(createConditionBuilder(editedWatch, editedCircumstance, editedStopCondition));      
@@ -1089,8 +1096,6 @@ MonitoringConsole.View.Components = (function() {
         }
       }});
       levelBox
-        .append(' <em>If</em> ').append(seriesInput)
-        .append(' <em>in</em> ').append(unitDropdown)
         .append(' <em>is<em/> ').append(createConditionBuilder(editedWatch, editedCircumstance, editedStartCondition))
         .append(' <em>until</em> ').append(untilCheckbox).append(untilBox);
       return $('<div/>', {'class': 'WatchCondition', style: 'color: ' + color + ';' })
@@ -1275,8 +1280,11 @@ MonitoringConsole.View.Components = (function() {
           matches = (await model.onSearch(state.properties))
             .sort((a, b) => a[model.key].localeCompare(b[model.key]));
           if (model.selection)
-            for (let key of model.selection)
-              state.selection[key] = matchForKey(key, model.key, matches);
+            for (let key of model.selection) {
+              const match = matchForKey(key, model.key, matches);
+              if (match !== undefined)
+                state.selection[key] = match;
+            }
 
         } else {
           model.onChange(Object.keys(state.selection), state.selection);
@@ -1523,14 +1531,20 @@ MonitoringConsole.View.Components = (function() {
       };
       const dialog = $('<div/>', config);
       const boxConfig = {
-        'class': 'ModalDialogContent' + (model.style ? ' ' +  model.style : ''), 
+        'class': 'ModalDialogContent' 
+          + (model.style ? ' ' +  model.style : '')
+          + (!model.fixed ? ' centered' : ''), 
         style: ''
       };
       if (typeof model.width === 'number')
         boxConfig.style += 'width: ' + model.width + 'px;'; 
       const box = $('<div/>', boxConfig);
       if (typeof model.closeProperty === 'string') {
-        box.append($('<span/>', {'class': 'btn-close'})
+        const button = model.buttons.find(button => button.property == model.closeProperty);
+        box.append($('<span/>', {
+          'class': 'btn-close', 
+          title: button === undefined ? 'Cancel' : button.label 
+        })
           .html('&times;')
           .click(createClickHandler(model, model.closeProperty)));
       }
