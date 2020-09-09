@@ -882,11 +882,12 @@ table.AnnotationTable {
   border: 5px solid #e6194B;
 }
 .ModalDialog .ModalDialogContent.danger-zone:before {
-  content: 'Danger Zone (TM)';
+  content: 'Danger Zone \002122';
   position: absolute;
   margin-top: -65px;
   color: #e6194B;
   right: 0;
+  font-weight: bold;
 }
 
 

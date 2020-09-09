@@ -199,16 +199,21 @@ MonitoringConsole.View = (function() {
                     { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Settings.Rotation.interval(), onChange: (val) => MonitoringConsole.Model.Settings.Rotation.interval(val) },
                     { type: 'toggle', options: { false: 'Off', true: 'On' }, value: MonitoringConsole.Model.Settings.Rotation.isEnabled(), onChange: (checked) => MonitoringConsole.Model.Settings.Rotation.enabled(checked) },
                 ]},
-                { label: 'Role', input: () => $('<button />').text(MonitoringConsole.Model.Role.name() + '...').click(showRoleSelectionModalDialog) },
+                { label: 'Role', input: [
+                    { label: MonitoringConsole.Model.Role.name() },
+                    { input: () => $('<button />').text('Change...').click(showRoleSelectionModalDialog) },
+                ]},
                 { label: 'Watches', available: watchesAvailable, input: $('<button/>').text('Go to Watch Settings').click(showWatchConfigModalDialog) },
             ]},
             { id: 'settings-pages', available: pushAvailable || pullAvailable, type: 'app', caption: 'Pages', entries: [
-                { label: 'Sync', input: [
-                    { available: pushAvailable, input: () => $('<button />', { text: 'Push All Local Pages...', title: 'Push local state of all know remote pages to server'}).click(showPagePushModalDialog) },
-                    { available: pullAvailable, input: () => $('<button/>', { text: 'Manage Local Pages...', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
+                { label: 'Server Sync', input: [
+                    { available: pushAvailable, input: () => $('<button />', { text: 'Update Server...', title: 'Push local state of all know remote pages to server'}).click(showPagePushModalDialog) },
+                    { available: pullAvailable, input: () => $('<button/>', { text: 'Update Local...', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
                 ]},
-                { label: 'Import', input: () => $('<button />', { text: 'Import Pages...'}).click(showImportPagesModalDialog) },
-                { label: 'Export', input: () => $('<button />', { text: 'Export Pages...'}).click(showExportPagesModalDialog) },
+                { label: 'Manual Sync', input: [
+                    { input: () => $('<button />', { text: 'Import...'}).click(showImportPagesModalDialog) },
+                    { input: () => $('<button />', { text: 'Export...'}).click(showExportPagesModalDialog) },
+                ]},
             ]},
         ];
     }
@@ -413,7 +418,7 @@ MonitoringConsole.View = (function() {
     }
 
     /**
-     * Model: { title, question, yes, no, onYes }
+     * Model: { title, question, yes, no, onYes, dangerzone }
      */
     function createYesNoModualDialog(model) {
         return {
@@ -509,14 +514,17 @@ MonitoringConsole.View = (function() {
                         showFeedback({ type: 'error', message: 'File did not contain a list of pages.'});
                     } else {
                         showSelectPagesModalDialog({
+                            dangerzone: true,
                             title: 'Import Pages',
+                            description: 'Please select the pages to import. Note that existing pages with same name are overridden.',
                             submit: 'Import',
                             pages: pages.filter(p => p.name != "" && p.name !== undefined),
                             onExit: selected => {
                                 if (selected.length > 0) {
-                                    MonitoringConsole.Model.importPages(selected);
-                                    const names = selected.map(p => p.name).join(', ');
-                                    showFeedback({ type: 'success', message: 'Imported page(s) <em>'+names+'</em>.'});    
+                                    MonitoringConsole.Model.importPages(selected,
+                                        page => showFeedback({ type: 'success', message: 'Successfully imported page <em>' + page.name + '</em>.'}),
+                                        page => showFeedback({ type: 'error', message: 'Failed to import page <em>' + page.name + '</em>.'}),
+                                    );
                                     updatePageNavigation();
                                 }
                             }
@@ -547,6 +555,7 @@ MonitoringConsole.View = (function() {
         const pages = MonitoringConsole.Model.exportPages();
         showSelectPagesModalDialog({
             title: 'Export Pages',
+            description: 'Please select the pages that should be exported.',
             submit: 'Export',
             pages: pages,
             onExit: selected => {
@@ -560,12 +569,12 @@ MonitoringConsole.View = (function() {
     }
     
     /**
-     * Model: { title, submit, pages, onExit }
+     * Model: { title, description, submit, pages, onExit, dangerzone }
      */
     function showSelectPagesModalDialog(model) {
         const pages = model.pages;
         const results = { empty: [], selected: [] };
-        const content = $('<ul/>');
+        const list = $('<ul/>');
         const createInput = (id, page) => $('<input/>', { type: 'checkbox', id: id, checked: false })
             .change(function() {
                 const include = this.checked;
@@ -581,16 +590,21 @@ MonitoringConsole.View = (function() {
             const id = 'page-' + page.name;
             const input = createInput(id, page);
             inputs.push(input);
-            content.append($('<li/>')
+            list.append($('<li/>')
                 .append(input)
                 .append(' ')
                 .append($('<label/>', { for: id }).text(page.name))
                 );
         }
-        content.prepend($('<li/>').html('&nbsp;')).prepend($('<li/>').append($('<input/>', { type: 'checkbox', id: 'pages-all', checked: false }).change(function() {
+        list.prepend($('<li/>').html('&nbsp;')).prepend($('<li/>').append($('<input/>', { type: 'checkbox', id: 'pages-all', checked: false }).change(function() {
             inputs.forEach(i => i.prop('checked', this.checked).change());
         })).append($('<label/>', { for: 'pages-all' }).append($('<i/>').text('All'))));
+        const content = [];
+        if (model.description)
+            content.push($('<p/>').text(model.description));
+        content.push(list);
         showModalDialog({
+            style: model.dangerzone ? 'danger-zone' : undefined,
             title: model.title,
             width: 400,
             content: content,
@@ -1086,6 +1100,7 @@ MonitoringConsole.View = (function() {
 
     function showPagePushModalDialog() {
         showModalDialog(createYesNoModualDialog({
+            dangerzone: true,
             title: 'Push Local to Remote',
             question: 'Are you sure you want to override all <b>shared</b> pages with the current local state?',
             yes: 'Push All',

@@ -293,7 +293,7 @@ MonitoringConsole.Model = (function() {
 		}
 
 		
-		function doImport(userInterface, replaceExisting) {
+		function doImport(userInterface, replaceExisting, onSuccess, onError) {
 			if (!userInterface) {
 				return false;
 			}
@@ -303,12 +303,17 @@ MonitoringConsole.Model = (function() {
 			// override or add the entry in pages from userInterface
 			if (Array.isArray(importedPages)) {
 				for (let i = 0; i < importedPages.length; i++) {
+					let page = importedPages[i];
 					try {
-						let page = sanityCheckPage(importedPages[i]);
+						page = sanityCheckPage(page);
 						if (replaceExisting || pages[page.id] === undefined) {
 							pages[page.id] = page;
+							if (typeof onSuccess === 'function')
+								onSuccess(page);
 						}
 					} catch (ex) {
+						if (typeof onError === 'function')
+							onError(page, ex);
 					}
 				}
 			} else {
@@ -317,8 +322,12 @@ MonitoringConsole.Model = (function() {
 						if (replaceExisting || pages[id] === undefined) {
 							page.id = id;
 							pages[id] = sanityCheckPage(page); 
+							if (typeof onSuccess === 'function')
+								onSuccess(page);							
 						}
 					} catch (ex) {
+						if (typeof onError === 'function')
+							onError(page, ex);
 					}
 				}
 			}
@@ -619,8 +628,8 @@ MonitoringConsole.Model = (function() {
 				return JSON.parse(JSON.stringify(Object.values(pages)));
 			},
 			
-			importPages: function(pages) {
-				doImport(pages, true);
+			importPages: function(pages, onSuccess, onError) {
+				doImport(pages, true, onSuccess, onError);
 			},
 
 			queryPage: () => doQueryPage(),
