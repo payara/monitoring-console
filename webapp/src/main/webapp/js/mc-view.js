@@ -51,6 +51,9 @@ MonitoringConsole.View = (function() {
     const Colors = MonitoringConsole.View.Colors;
     const Theme = MonitoringConsole.Model.Theme;
 
+    const WIDGET_TYPE_OPTIONS = { line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status' };
+    const WIDGET_TYPE_FILTER_OPTIONS = { _: '(Any)', line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status' };
+
     /**
      * Updates the DOM with the page navigation tabs so it reflects current model state
      */ 
@@ -271,11 +274,11 @@ MonitoringConsole.View = (function() {
         let unit = widget.unit;
         let thresholds = widget.decorations.thresholds;
         let settings = [];
-        let typeOptions = { line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status' };
+        
         let modeOptions = widget.type == 'annotation' ? { table: 'Table', list: 'List' } : { list: '(Default)' };
         settings.push({ id: 'settings-widget', caption: 'Widget', collapsed: false, entries: [
             { label: 'Display Name', type: 'text', value: widget.displayName, onChange: (widget, value) => widget.displayName = value},
-            { label: 'Type', type: 'dropdown', options: typeOptions, value: widget.type, onChange: (widget, selected) => widget.type = selected},
+            { label: 'Type', type: 'dropdown', options: WIDGET_TYPE_OPTIONS, value: widget.type, onChange: (widget, selected) => widget.type = selected},
             { label: 'Mode', type: 'dropdown', options: modeOptions, value: widget.mode, onChange: (widget, selected) => widget.mode = selected},
             { label: 'Column / Item', input: [
                 { type: 'range', min: 1, max: 4, value: 1 + (widget.grid.column || 0), onChange: (widget, value) => widget.grid.column = value - 1},
@@ -407,7 +410,8 @@ MonitoringConsole.View = (function() {
                 { type: 'value', min: 1, unit: 'sec', value: page.content.ttl, onChange: (value) => configure(page => page.content.ttl = value) },
                 { input: $('<button/>', {text: 'Update Now'}).click(() => configure(page => page.content.expires = undefined)) },
             ]},
-            { label: 'Sync', available: pushAvailable || pullAvailable, input: [
+            { label: 'Filter Type', available: queryAvailable, type: 'dropdown', options: WIDGET_TYPE_FILTER_OPTIONS, value: page.content.filter, onChange: filter => onPageUpdate(configure(page => page.content.filter = filter)) },
+            { label: 'Server Sync', available: pushAvailable || pullAvailable, input: [
                 { available: autoAvailable, label: 'auto', type: 'checkbox', value: Page.Sync.auto(), onChange: (checked) => Page.Sync.auto(checked),
                     description: 'When checked changed to the page are automatically pushed to the remote server (shared with others)' },
                 { available: pushAvailable, input: () => $('<button />', { text: 'Push', title: 'Push local page to server (update remote)' }).click(showPushPageConfirmModalDialog) },

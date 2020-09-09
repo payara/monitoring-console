@@ -496,9 +496,11 @@ MonitoringConsole.Model = (function() {
 				const points = match.data[0].points;
 				if (now - points[points.length-2] < 60000) { // only matches with data updates in last 60sec
 					const widget = doInferWidget(match);
-					widget.grid = { column: column % numberOfColumns, item: column };
-					widgets.push(widget);
-					column++;					
+					if (page.content.filter === undefined || widget.type == page.content.filter) {
+						widget.grid = { column: column % numberOfColumns, item: column };
+						widgets.push(widget);
+						column++;											
+					}
 				}
 			}
 			page.widgets = sanityCheckWidgets(widgets);

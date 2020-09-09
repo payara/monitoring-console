@@ -53,11 +53,12 @@ autosync        = boolean
 lastModifiedLocally             = number
 basedOnRemoteLastModified       = number
 preferredOverRemoteLastModified = number
-content         = { series, maxSize, expires, ttl }
+content         = { series, maxSize, expires, ttl, filter }
 series          = string
 maxSize         = number
 expires         = number
 ttl             = number
+filter          = 'line' | 'bar' | 'alert' | 'annotation' | 'rag' | undefined
 ```
 * `id` is derived from `name` and used as attribute name in `pages` object
 * `widgets` can be omitted for an empty page
@@ -69,6 +70,7 @@ ttl             = number
 * when a page has a `content` object it is considered a _arranged_ page (not strictly `widgets` based content)
 * `expires` is a timestamp when the content is expired and should be updated
 * `ttl` number of seconds the page is valid
+* `filter` filters query pages by the widget type if set
 
 
 ### Widget Model
@@ -80,7 +82,7 @@ series     = string | [string]
 target     = string
 displayName= string
 description= string
-type       = 'line' | 'bar' | 'alert' | 'annotation'
+type       = 'line' | 'bar' | 'alert' | 'annotation' | 'rag'
 unit       = UNIT
 UNIT       = 'count' | 'ms' | 'ns' | 'bytes' | 'percent'
 coloring   = 'instance' | 'series' | 'index' | 'instance-series'
