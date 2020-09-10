@@ -54,6 +54,10 @@ MonitoringConsole.View = (function() {
     const WIDGET_TYPE_OPTIONS = { line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status' };
     const WIDGET_TYPE_FILTER_OPTIONS = { _: '(Any)', line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status' };
 
+    function isFunction(obj) {
+        return typeof obj === 'function';
+    }
+
     /**
      * Updates the DOM with the page navigation tabs so it reflects current model state
      */ 
@@ -911,7 +915,7 @@ MonitoringConsole.View = (function() {
                     showFeedback({ type: 'error', message: 'Failed to update user role. Please report an issue.'});
                 } else if (confirm)
                     showFeedback({ type: 'success', message: 'User Role changed to <em>' + Role.name() + '</em>' });
-                if (typeof onExitCall === 'function')
+                if (isFunction(onExitCall))
                     onExitCall();
             }
         });
@@ -1128,10 +1132,21 @@ MonitoringConsole.View = (function() {
      * This function is called when the watch details settings should be opened
      */
     function showWatchConfigModalDialog() {
-        function wrapOnSuccess(onSuccess) {
+        function wrapOnSuccess(name, onSuccess, message) {
             return () => {
-                if (typeof onSuccess === 'function')
+                if (isFunction(onSuccess))
                     onSuccess();
+                if (message)
+                    showFeedback({ type: 'success', message: message});
+                showWatchConfigModalDialog();
+            };
+        }
+        function wrapOnError(name, onError, message) {
+            return () => {
+                if (isFunction(onError))
+                    onError();
+                if (message)
+                    showFeedback({ type: 'error', message: message});
                 showWatchConfigModalDialog();
             };
         }
@@ -1146,12 +1161,29 @@ MonitoringConsole.View = (function() {
             })),
         };
         if (Role.isAdmin()) {
-            actions.onDelete = (name, onSuccess, onFailure) => Controller.requestDeleteWatch(name, wrapOnSuccess(onSuccess), onFailure);
-            actions.onDisable = (name, onSuccess, onFailure) => Controller.requestDisableWatch(name, wrapOnSuccess(onSuccess), onFailure);
-            actions.onEnable = (name, onSuccess, onFailure) => Controller.requestEnableWatch(name, wrapOnSuccess(onSuccess), onFailure);            
+            actions.onDelete = (name, onSuccess, onFailure) => {
+                showModalDialog(createYesNoModualDialog({
+                    dangerzone: true,
+                    title: 'Delete Watch',
+                    question: `Are you sure you want to delete watch <em>${name}</em>?`,
+                    yes: 'Delete',
+                    no: 'Cancel',
+                    onYes: () => Controller.requestDeleteWatch(name, 
+                        wrapOnSuccess(name, onSuccess, `Successfully delete watch <em>${name}</em>.`), 
+                        wrapOnError(name, onFailure, `Failed to delete watch <em>${name}</em>.`))
+                }));
+            };
+            actions.onDisable = (name, onSuccess, onFailure) => Controller.requestDisableWatch(name, 
+                wrapOnSuccess(name, onSuccess, `Successfully disabled watch ${name}.`), 
+                wrapOnError(name, onFailure), `Failed to disable watch ${name}.`);
+            actions.onEnable = (name, onSuccess, onFailure) => Controller.requestEnableWatch(name, 
+                wrapOnSuccess(name, onSuccess, `Successfully enabled watch ${name}.`), 
+                wrapOnError(name, onFailure, `Failed to enable watch ${name}.`));            
         }
         if (!Role.isGuest()) {
-            actions.onCreate = (watch, onSuccess, onFailure) => Controller.requestCreateWatch(watch, wrapOnSuccess(onSuccess), onFailure);
+            actions.onCreate = (watch, onSuccess, onFailure) => Controller.requestCreateWatch(watch, 
+                wrapOnSuccess(watch.name, onSuccess, `Successfully updated watch ${watch.name}.`), 
+                wrapOnError(watch.name, onFailure), `Failed to update watch ${watch.name}.`);
         }
         Controller.requestListOfWatches((watches) => {
             const manager = { 
@@ -1161,6 +1193,7 @@ MonitoringConsole.View = (function() {
                 actions: actions,
             };
             showModalDialog({
+                id: 'WatchSettingsModalDialog',
                 fixed: true,
                 title: 'Manage Watches',
                 content: () => Components.createWatchManager(manager),
