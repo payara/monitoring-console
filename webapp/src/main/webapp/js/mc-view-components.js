@@ -141,7 +141,7 @@ MonitoringConsole.View.Components = (function() {
       }
 
       function createToggleInput(model) {
-        const toggle = $('<span/>', {'class': 'toggle'});
+        const toggle = $('<span/>', { class: 'toggle' });
         const onChange = enhancedOnChange(model.onChange);
         const input = $('<input/>', { id: model.id, type: 'checkbox', checked: model.value });
         input.change(function() {
@@ -183,7 +183,7 @@ MonitoringConsole.View.Components = (function() {
           id: model.id,
           type: 'text', 
           value: converter.format(model.value), 
-          'class': 'input-' + model.type,
+          class: `input-${model.type}`,
         };
         if (model.description && !model.label)
           config.title = description;
@@ -265,7 +265,7 @@ MonitoringConsole.View.Components = (function() {
               val = undefined;
             onChange(val);
           });
-        let wrapper = $('<span/>', {'class': 'color-picker'}).append(input);
+        let wrapper = $('<span/>', {class: 'color-picker'}).append(input);
         if (model.defaultValue === undefined)
           return wrapper;
         return $('<span/>').append(wrapper).append($('<input/>', { 
@@ -273,7 +273,7 @@ MonitoringConsole.View.Components = (function() {
           value: ' ',
           title: 'Reset to default color', 
           style: 'background-color: ' + model.defaultValue,
-          'class': 'color-reset',
+          class: 'color-reset',
         }).click(() => {
           onChange(undefined);
           input.val(model.defaultValue);
@@ -293,13 +293,13 @@ MonitoringConsole.View.Components = (function() {
         for (let i = 0; i < value.length; i++) {
           list.append(createMultiColorItemInput(colors, i, onChange));
         }
-        let add = $('<button/>', {text: '+', 'class': 'color-list'});
+        let add = $('<button/>', {text: '+', class: 'color-list'});
         add.click(() => {
           colors.push(Colors.random(colors));
           createMultiColorItemInput(colors, colors.length-1, onChange).insertBefore(add);
           onChange(colors);
         });
-        let remove = $('<button/>', {text: '-', 'class': 'color-list'});
+        let remove = $('<button/>', {text: '-', class: 'color-list'});
         remove.click(() => {
           if (colors.length > 1) {
             colors.length -= 1;
@@ -340,13 +340,13 @@ MonitoringConsole.View.Components = (function() {
         const sidebar = $('<div/>', config);
         if (hasToggle)
           sidebar.append($('<button/>', { 
-              'class': 'btn-icon btn-toggle default',
+              class: 'btn-icon btn-toggle default',
               title: model.collapsed ? 'Open Settings' : 'Hide Settings'
             })
             .html(model.collapsed ? '&#9881;' : '&raquo;')
             .click(model.onSidebarToggle));
         if (hasToggle && model.collapsed && model.onWidgetAdd)
-          sidebar.append($('<button/>', { 'class': 'btn-icon btn-add', title: 'Add a widget to this page...' })
+          sidebar.append($('<button/>', { class: 'btn-icon btn-add', title: 'Add a widget to this page...' })
             .html('&plus;')
             .click(model.onWidgetAdd));
         if (hasToggle && model.collapsed) 
@@ -373,12 +373,12 @@ MonitoringConsole.View.Components = (function() {
           return str.charAt(0).toUpperCase() + str.slice(1);      
         }
 
-        const list = $('<div/>', {'class': 'Settings' + upper(groups[0].type || 'Widget') + (tabs ? ' SettingsTabs' : ' SettingsList')});
+        const list = $('<div/>', {class: 'Settings' + upper(groups[0].type || 'Widget') + (tabs ? ' SettingsTabs' : ' SettingsList')});
         if (tabs && name != "")
           list.append($('<h3/>').text(name));
         const containers = [];
         for (let group of groups) {          
-          const container = $('<div/>', { id: group.id, 'class': 'SettingsGroup' });
+          const container = $('<div/>', { id: group.id, class: 'SettingsGroup' });
           if (!tabs && group.collapsed === true)
             container.css('display', 'none');
           const table = createGroup(group, idProvider);
@@ -451,7 +451,7 @@ MonitoringConsole.View.Components = (function() {
       }
 
       function createMultiInput(inputs, idProvider, css) {
-        let box = $('<div/>', {'class': css});
+        let box = $('<div/>', {class: css});
         for (let i = 0; i < inputs.length; i++) {
           let entry = inputs[i];
           if (Array.isArray(entry)) {
@@ -520,7 +520,7 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createComponent(model) {
-      let legend = $('<ol/>',  {'class': 'Legend'});
+      let legend = $('<ol/>',  {class: 'Legend'});
       for (let item of model) {
         legend.append(createItem(item));
       }
@@ -537,14 +537,14 @@ MonitoringConsole.View.Components = (function() {
 
     function createComponent(model) {
       if (!model.text) {
-        return $('<div/>', {'class': 'Indicator', style: 'display: none;'});
+        return $('<div/>', {class: 'Indicator', style: 'display: none;'});
       }
       let title;
       if (model.status == 'missing') {
         title = model.text.replace(/\*([^*]+)\*/g, '$1').replace(/_([^_]+)_/g, '$1');
       }
       const indicator = $('<div/>', { 
-        'class': 'Indicator status-' + model.status, 
+        class: 'Indicator status-' + model.status, 
         style: 'color: ' + model.color + ';',
         title: title,
       });
@@ -564,7 +564,7 @@ MonitoringConsole.View.Components = (function() {
   const RAGIndicator = (function() {
 
     function createComponent(model) {
-      const indicator = $('<div/>', { 'class': 'RAGIndicator' });
+      const indicator = $('<div/>', { class: 'RAGIndicator' });
       const itemHeight = Math.floor(100 / model.items.length);
       for (let item of model.items) {
         let text = item.label;
@@ -572,8 +572,8 @@ MonitoringConsole.View.Components = (function() {
           text = 'DAS';
         indicator.append($('<div/>', { 
           title: item.state, 
-          'class': 'Item', 
-          style: 'background-color: '+item.background+ '; height: '+itemHeight+'%; border-left-color: '+item.color+';' })
+          class: 'Item', 
+          style: `background-color: ${item.background}; height: ${itemHeight}%; border-left-color: ${item.color};` })
         .append($('<span/>').text(text)));
       }
       return indicator;
@@ -589,7 +589,7 @@ MonitoringConsole.View.Components = (function() {
   const Menu = (function() {
 
     function createComponent(model) {
-      let attrs = { 'class': 'Menu' };
+      let attrs = { class: 'Menu' };
       if (model.id)
         attrs.id = model.id;
       let menu = $('<span/>', attrs);
@@ -655,7 +655,7 @@ MonitoringConsole.View.Components = (function() {
 
     function createComponent(model) {
       let items = model.items === undefined ? [] : model.items.sort(sortMostUrgetFirst);
-      config = { 'class': 'AlertTable' };
+      config = { class: 'AlertTable' };
       if (model.id)
         config.id = model.id;
       if (items.length == 0)
@@ -673,7 +673,7 @@ MonitoringConsole.View.Components = (function() {
       let ongoing = endFrame.until === undefined;
       let level = endFrame.level;
       let color = ongoing ? endFrame.color : Colors.hex2rgba(endFrame.color, 0.6);
-      let box = $('<div/>', { style: 'border-color:' + color + ';' });
+      let box = $('<div/>', { style: `border-color: ${color};` });
       box.append($('<input/>', { type: 'checkbox', checked: item.acknowledged, disabled: item.acknowledged })
         .change(() => acknowledge(item)));
       box.append(createGeneralGroup(item, verbose));
@@ -682,7 +682,7 @@ MonitoringConsole.View.Components = (function() {
         box.append(createConditionGroup(item));
       if (verbose && Array.isArray(item.annotations) && item.annotations.length > 0)
         box.append(createAnnotationGroup(item));
-      let row = $('<div/>', { id: 'Alert-' + item.serial, class: 'Item ' + level, style: 'border-color:'+item.color+';' });
+      let row = $('<div/>', { id: `Alert-${item.serial}` , class: `Item ${level}` , style: `border-color: ${item.color};` });
       row.append(box);
       return row;
     }
@@ -692,7 +692,7 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createAnnotationGroup(item) {
-      let id = 'Alert-' + item.serial + '-Annotations';
+      let id = `Alert-${item.serial}-Annotations`;
       let element = $('#' + id); 
       let display = element.length == 0 || element.is(":visible") ? 'block' : 'none';
       let groups = $('<div/>', { id: id, style: 'display: ' + display + ';' });
@@ -718,7 +718,7 @@ MonitoringConsole.View.Components = (function() {
     function createConditionGroup(item) {
       let endFrame = item.frames[0];
       let circumstance = item.watch[endFrame.level];
-      let group = $('<div/>', { 'class': 'Group' });
+      let group = $('<div/>', { class: 'Group' });
       appendProperty(group, 'Start', formatCondition(circumstance.start, item.unit));
       if (circumstance.stop) {
         appendProperty(group, 'Stop', formatCondition(circumstance.stop, item.unit));
@@ -732,7 +732,7 @@ MonitoringConsole.View.Components = (function() {
         let duration = durationMs(startFrame, endFrame);
         let amberStats = computeStatistics(item, 'amber');
         let redStats = computeStatistics(item, 'red');
-        let group = $('<div/>', { 'class': 'Group' });
+        let group = $('<div/>', { class: 'Group' });
         appendProperty(group, 'Since', Units.formatTime(startFrame.since));
         appendProperty(group, 'For', formatDuration(duration));
         if (redStats.count > 0 && verbose)
@@ -743,7 +743,7 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createGeneralGroup(item, verbose) {
-      let group = $('<div/>', { 'class': 'Group' });
+      let group = $('<div/>', { class: 'Group' });
       appendProperty(group, 'Alert', item.serial);
       appendProperty(group, 'Watch', item.name);
       if (item.series)
@@ -858,7 +858,7 @@ MonitoringConsole.View.Components = (function() {
 
     function createComponent(model) {
       let items = model.items || [];
-      config = { 'class': 'AnnotationTable' };
+      config = { class: 'AnnotationTable' };
       if (model.id)
         config.id = model.id;
       if (items.length == 0)
@@ -888,7 +888,7 @@ MonitoringConsole.View.Components = (function() {
 
     function createListEntry(item) {      
       let attrs = createAttributesModel(item);
-      let group = $('<div/>', { 'class': 'Group Annotation', style: 'border-color:' + item.color + ';' });
+      let group = $('<div/>', { class: 'Group Annotation', style: `border-color: ${item.color};` });
       for (let [key, entry] of Object.entries(attrs)) {
         appendProperty(group, key, entry.value, entry.type);
       }      
@@ -897,8 +897,8 @@ MonitoringConsole.View.Components = (function() {
 
     function createTableEntry(item) {
       let attrs = createAttributesModel(item);
-      let row = $('<tr/>', { 'class': 'Annotation' });
-      let style = { 'style': 'border-left-color: ' + item.color + ';' };
+      let row = $('<tr/>', { class: 'Annotation' });
+      let style = { 'style': `border-left-color: ${item.color};` };
       for (let entry of Object.values(attrs)) {
         let td = $('<td/>', style);
         style = {}; // clear after 1. column
@@ -958,7 +958,7 @@ MonitoringConsole.View.Components = (function() {
   const WatchList = (function() {
 
     function createComponent(model) {
-      const config = { 'class': 'WatchListContainer' };
+      const config = { class: 'WatchListContainer' };
       if (model.id)
         config.id = model.id;
       const container = $('<div/>', config);
@@ -976,7 +976,7 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createList(items, model) {
-        const list = $('<dl/>', { 'class': 'WatchList' });
+        const list = $('<dl/>', { class: 'WatchList' });
         for (let item of items)
           createItem(list, item, model.colors, model.actions);
         return list;
@@ -984,7 +984,7 @@ MonitoringConsole.View.Components = (function() {
 
     function createItem(list, item, colors, actions) {
       const label = $('<b/>').text(item.name + (item.stopped ? ' (stopped)' : ''));
-      const dt = $('<dt/>', { 'class': 'state-collapsed state-' + (item.disabled || item.stopped ? 'disabled' : 'enabled') })
+      const dt = $('<dt/>', { class: 'state-collapsed state-' + (item.disabled || item.stopped ? 'disabled' : 'enabled') })
         .append(label)
         .append($('<code/>').text(item.series));
       label.click(() =>  {
@@ -1004,7 +1004,7 @@ MonitoringConsole.View.Components = (function() {
       if (item.disabled && isFunction(actions.onEnable)) {
         dt.append($('<button/>').text('Enable').click(() => actions.onEnable(item.name)));        
       } else if (!item.disabled && isFunction(actions.onDisable)) {
-        dt.append($('<button/>', {'class': 'default'}).text('Disable').click(() => actions.onDisable(item.name)));        
+        dt.append($('<button/>', { class: 'default' }).text('Disable').click(() => actions.onDisable(item.name)));        
       } else {
         dt.append($('<span/>')); 
       }
@@ -1019,14 +1019,14 @@ MonitoringConsole.View.Components = (function() {
         let text = condition.text();
         return text.substring(text.indexOf('value') + 5);
       }
-      const circumstance = $('<dd/>', { 'class': 'WatchCondition', style: 'color: '+ color +'; display: none;'});
+      const circumstance = $('<dd/>', { class: 'WatchCondition', style: `color: ${color}; display: none;`});
       let levelText = paddedLeftWith('&nbsp;', Units.Alerts.name(level), 'Unhealthy'.length);
-      let text = '<b>' + levelText + ':</b> <em>If</em> ' + series + ' <em>in</em> ' + Units.names()[unit] + ' <em>is</em> ';
+      let text = `<b>${levelText}:</b> <em>If</em> ${series} <em>in</em> ${Units.names()[unit]} <em>is</em> `;
       text += plainText(formatCondition(model.start, unit));
       if (model.suppress)
-        text += ' <em>unless</em> ' + model.surpressingSeries + ' ' + plainText(formatCondition(model.suppress, model.surpressingUnit));
+        text += ` <em>unless</em> ${model.surpressingSeries} ${plainText(formatCondition(model.suppress, model.surpressingUnit))}`;
       if (model.stop)
-        text += ' <em>until</em> ' + plainText(formatCondition(model.stop, unit));
+        text += ` <em>until</em> ${plainText(formatCondition(model.stop, unit))}`;
       return circumstance.html(text);
     }
 
@@ -1039,7 +1039,7 @@ MonitoringConsole.View.Components = (function() {
   const WatchBuilder = (function() {
     
     function createComponent(model, watch) {
-      const config = { 'class': 'WatchBuilder WatchItem' };
+      const config = { class: 'WatchBuilder WatchItem' };
       if (model.id)
         config.id = model.id;
       let editedWatch = watch || { unit: 'count', name: 'New Watch' };
@@ -1057,7 +1057,7 @@ MonitoringConsole.View.Components = (function() {
       const seriesInput = Settings.createInput({ type: 'text', value: editedWatch.series, onChange: (series) => { editedWatch.series = series; updateText(); }});
       const popupId = 'popup-popup';
 
-      const form = $('<div/>', {'class': 'WatchBuilderForm'})
+      const form = $('<div/>', {class: 'WatchBuilderForm'})
         .append($('<div/>')
           .append($('<label/>').text('Name'))
           .append(nameInput))
@@ -1113,8 +1113,8 @@ MonitoringConsole.View.Components = (function() {
       levelBox
         .append(' <em>is<em/> ').append(createConditionBuilder(editedWatch, editedCircumstance, editedStartCondition))
         .append(' <em>until</em> ').append(untilCheckbox).append(untilBox);
-      return $('<div/>', {'class': 'WatchCondition', style: 'color: ' + color + ';' })
-        .append(enableCheckbox).append('<b>' + paddedLeftWith('&nbsp;', Units.Alerts.name(level), 'Unhealthy'.length) + ':</b>')
+      return $('<div/>', { class: 'WatchCondition', style: `color: ${color};` })
+        .append(enableCheckbox).append(`<b>${paddedLeftWith('&nbsp;', Units.Alerts.name(level), 'Unhealthy'.length)}</b>`)
         .append(levelBox);
     }
 
@@ -1185,7 +1185,7 @@ MonitoringConsole.View.Components = (function() {
   const WatchManager = (function() {
 
     function createComponent(model) {
-      const config = { 'class': 'WatchManager' };
+      const config = { class: 'WatchManager' };
       if (model.id)
         config.id = model.id;
       const manager = $('<div/>', config);
@@ -1213,7 +1213,7 @@ MonitoringConsole.View.Components = (function() {
   const PageManager = (function() {
 
     function createComponent(model) {
-      const config = { 'class': 'PageManager' };
+      const config = { class: 'PageManager' };
       if (model.id)
         config.id = model.id;
       const manager = $('<div/>', config);
@@ -1225,14 +1225,14 @@ MonitoringConsole.View.Components = (function() {
       model.pages.forEach(page => list.append(createItem(model, page)));
       return manager
         .append($('<p/>').text('Please select the pages that should be updated with their server configuration.'))
-        .append($('<span/>', {'class': 'recent'}).text('Newest Version'))
+        .append($('<span/>', { class: 'recent' }).text('Newest Version'))
         .append(list);
     }
 
     function createItem(model, page) {
       if (page.checked)
         model.onSelection(page.id);
-      const id = 'select-' + page.id;
+      const id = `select-${page.id}`;
       const checkbox = $('<input/>', { id: id, type: 'checkbox', checked: page.checked })
         .on('change', function() {
           if (this.checked) {
@@ -1245,9 +1245,9 @@ MonitoringConsole.View.Components = (function() {
       const remoteIsMostRecent = page.lastLocalChange === undefined || page.lastLocalChange <= page.lastRemoteChange;
       const baseIsMostRecent = remoteIsMostRecent && page.lastRemoteUpdate !== undefined && page.lastRemoteUpdate == page.lastRemoteChange;
       const remoteNotModified = page.lastRemoteUpdate !== undefined && page.lastLocalChange === undefined;
-      const localAttrs = localIsMostRecent ? {'class': 'recent'} : {};
-      const remoteAttrs = remoteIsMostRecent ? {'class': 'recent'} : {};
-      const baseAttrs =  baseIsMostRecent ? {'class': 'recent'} : {};
+      const localAttrs = localIsMostRecent ? {class: 'recent'} : {};
+      const remoteAttrs = remoteIsMostRecent ? {class: 'recent'} : {};
+      const baseAttrs =  baseIsMostRecent ? {class: 'recent'} : {};
       const localText =  remoteNotModified ? '(unmodified server version)' : Units.formatDateTime(page.lastLocalChange);
       return $('<tr/>')
         .append($('<td/>').append(checkbox).append(' ').append($('<label/>', { for: id }).text(page.name)))
@@ -1266,7 +1266,7 @@ MonitoringConsole.View.Components = (function() {
   const SelectionWizard = (function() {
 
     function createComponent(model) {
-      const config = { 'class': 'SelectionWizard'};
+      const config = { class: 'SelectionWizard'};
       if (model.id)
         config.id = model.id;
       const wizard = $('<div/>', config);
@@ -1283,9 +1283,9 @@ MonitoringConsole.View.Components = (function() {
         model.filters[i].id = i;
 
       // fixed UI state
-      const searchBox = $('<div/>', { 'class': 'Search' });
-      const filterBox = $('<div/>', { 'class': 'Filters' });
-      const matchList = $('<div/>', { 'class': 'Matches'});
+      const searchBox = $('<div/>', { class: 'Search' });
+      const filterBox = $('<div/>', { class: 'Filters' });
+      const matchList = $('<div/>', { class: 'Matches'});
       
       // applying the state to the UI
       let matches;
@@ -1325,7 +1325,7 @@ MonitoringConsole.View.Components = (function() {
 
       const selectionCount = Object.keys(state.selection).length;
       if (selectionCount > 0) {
-        const selection = $('<div/>', { 'class': 'Selection' });
+        const selection = $('<div/>', { class: 'Selection' });
         selection.append($('<b/>').text(selectionCount + ' Selected'));
         for (let match of Object.values(state.selection))
           selection.append(createMatchEntry(model, state, match, true));
@@ -1342,7 +1342,7 @@ MonitoringConsole.View.Components = (function() {
         return;
       }
 
-      list.append($('<b/>').text(c + ' matches')).append($('<span/>').text(' for total of ' + matches.length + ' metrics'));
+      list.append($('<b/>').text(c + ' matches')).append($('<span/>').text(` for total of ${matches.length} metrics`));
       for (let match of matches)
         if (!match.filtered)
           list.append(createMatchEntry(model, state, match, false));
@@ -1376,7 +1376,7 @@ MonitoringConsole.View.Components = (function() {
       }
       filter.type = computeFilterType(filter);
       
-      const label = $('<label/>', { for: 'filter-' + filter.id, text: filter.label });
+      const label = $('<label/>', { for: `filter-${filter.id}`, text: filter.label });
       const filterInput = createFilterInput(model, filter, state, matches);
 
       const filterState = state.filters[filter.id];
@@ -1384,7 +1384,7 @@ MonitoringConsole.View.Components = (function() {
       if (active) {
         applyFilter(model, filter, state, matches);
       }
-      return $('<div/>', { 'class': 'Filter' })
+      return $('<div/>', { class: 'Filter' })
         .append(label)
         .append(filterInput);
     }
@@ -1423,7 +1423,7 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function computeFilterType(filter) {
-      if (typeof filter.filter === "function")
+      if (isFunction(filter.filter))
         return 'text';
       if (filter.options !== undefined)
         return 'list';
@@ -1542,13 +1542,11 @@ MonitoringConsole.View.Components = (function() {
         model.id = 'ModalDialog';
       const config = { 
         id: model.id,
-        'class' : 'ModalDialog' 
+        class: 'ModalDialog' 
       };
       const dialog = $('<div/>', config);
       const boxConfig = {
-        'class': 'ModalDialogContent' 
-          + (model.style ? ' ' +  model.style : '')
-          + (!model.fixed ? ' centered' : ''), 
+        class: `ModalDialogContent${(model.style ? ' ' +  model.style : '')}${(!model.fixed ? ' centered' : '')}`,
         style: ''
       };
       if (typeof model.width === 'number')
@@ -1557,7 +1555,7 @@ MonitoringConsole.View.Components = (function() {
       if (typeof model.closeProperty === 'string') {
         const button = model.buttons.find(button => button.property == model.closeProperty);
         box.append($('<span/>', {
-          'class': 'btn-close', 
+          class: 'btn-close', 
           title: button === undefined ? 'Cancel' : button.label 
         })
           .html('&times;')
@@ -1572,7 +1570,7 @@ MonitoringConsole.View.Components = (function() {
         box.append(content);
       }
       if (model.buttons) {
-        const bar = $('<div/>', { 'class': 'ModalDialogButtons' });
+        const bar = $('<div/>', { class: 'ModalDialogButtons' });
         for (let button of model.buttons)
           bar.append(createButton(model, button));        
         box.append(bar);
@@ -1610,17 +1608,17 @@ MonitoringConsole.View.Components = (function() {
 
     function createComponent(model) {
       const collapsed = model.collapsed === true; // false is default
-      const config = { 'class': 'NavSidebar' + (collapsed ? ' NavCollapsed' : ' NavExpanded') };
+      const config = { class: 'NavSidebar' + (collapsed ? ' NavCollapsed' : ' NavExpanded') };
       if (model.id)
         config.id = model.id;
 
       const sidebar = $('<div/>', config);
-      sidebar.append($('<button/>', { 'class': 'btn-icon btn-toggle default' })
+      sidebar.append($('<button/>', { class: 'btn-icon btn-toggle default' })
         .html(model.collapsed ? '&#9776;' : '&laquo;')
         .click(model.onSidebarToggle));
       if (model.logo !== undefined)
-        sidebar.append($('<a/>', { 'class': 'NavLogo' }).click(model.onLogoClick).append($('<img/>', { src: model.logo })));      
-      const controls = $('<dl/>', {'class': 'NavControls'});
+        sidebar.append($('<a/>', { class: 'NavLogo' }).click(model.onLogoClick).append($('<img/>', { src: model.logo })));      
+      const controls = $('<dl/>', {class: 'NavControls'});
       if (collapsed) {
         const page = model.pages.filter(page => page.selected)[0];
         sidebar.append($('<span/>').text(page.label).click(model.onSidebarToggle));
@@ -1647,19 +1645,19 @@ MonitoringConsole.View.Components = (function() {
       const list = $('<ul/>');
       for (let page of model.pages)
         list.append(createPageItem(page));
-      return $('<nav/>', { 'class': 'NavPages'}).append(list);
+      return $('<nav/>', { class: 'NavPages'}).append(list);
     }
 
     function createPageItem(page) {      
       const label = $('<span/>').text(page.label);
-      const item = $('<li/>', {'class': 'NavItem' + (page.selected ? ' selected' : '')});
+      const item = $('<li/>', { class: 'NavItem' + (page.selected ? ' selected' : '')});
       item.append(label);
       if (page.selected) {
         const options = $('<div/>', { style: 'display: none;' });
         let hasDelete = isFunction(page.onDelete);
         let hasReset = isFunction(page.onReset);
 
-        item.append($('<span/>', {'class': 'btn-edit', title: 'Edit'}).html('&#9998;').click(() => options.toggle()));
+        item.append($('<span/>', { class: 'btn-edit', title: 'Edit'}).html('&#9998;').click(() => options.toggle()));
         if (hasDelete || hasReset) {
           let bar = $('<div/>');
           if (hasDelete)
@@ -1678,7 +1676,7 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createAddPagePanel(model) {
-      return $('<div/>', {'class': 'NavAdd'})
+      return $('<div/>', { class: 'NavAdd'})
         .append($('<button/>').text('Add Page').click(model.onPageAdd));
     }
 
@@ -1700,7 +1698,7 @@ MonitoringConsole.View.Components = (function() {
 
     function createLayoutButton(model, numberOfColumns) {
       return $('<button/>', {
-          'class': 'btn-icon btn-layout' + (model.layoutColumns == numberOfColumns ? ' btn-selected' : ''), 
+          class: 'btn-icon btn-layout' + (model.layoutColumns == numberOfColumns ? ' btn-selected' : ''), 
           title: 'Use '+numberOfColumns+' column layout' 
       })
         .text(numberOfColumns)
@@ -1709,7 +1707,7 @@ MonitoringConsole.View.Components = (function() {
 
     function createRotationButton(model) {
       return $('<button/>', {
-        'class': 'btn-icon btn-rotation', 
+        class: 'btn-icon btn-rotation', 
         title: (model.rotationEnabled ? 'stop' : 'start') + ' page rotation'
       })
         .html(model.rotationEnabled ? '&#9209;' : '&#128257;') // '&#9654;')
@@ -1718,7 +1716,7 @@ MonitoringConsole.View.Components = (function() {
 
     function createRefreshButton(model) {
       return $('<button/>', {
-        'class': 'btn-icon',
+        class: 'btn-icon',
         title: (model.refreshEnabled ? 'pause' : 'unpause') + ' data updates'
       })
         .html(model.refreshEnabled ? '&#9208;' : '&#9654;')
@@ -1742,16 +1740,16 @@ MonitoringConsole.View.Components = (function() {
         typeClass = 'FeedbackBannerSuccess';
       if (isError)
         typeClass = 'FeedbackBannerError';
-      const config = { 'class': 'FeedbackBanner' +  ' ' + typeClass };
+      const config = { class: `FeedbackBanner  ${typeClass}`  };
       if (model.id === undefined)
         model.id = 'FeedbackBanner';
       config.id = model.id;      
       const banner = $('<div/>', config);
-      banner.append($('<button/>', {'class': 'btn-close'}).text('x').click(() => banner.remove()));
+      banner.append($('<button/>', { class: 'btn-close'}).text('x').click(() => banner.remove()));
       if (isSuccess)
-        banner.append($('<span/>', {'class': 'FeedbackBannerIcon'}).html('&check;'));
+        banner.append($('<span/>', { class: 'FeedbackBannerIcon'}).html('&check;'));
       if (isError)
-        banner.append($('<span/>', {'class': 'FeedbackBannerIcon'}).html('&cross;'));
+        banner.append($('<span/>', { class: 'FeedbackBannerIcon'}).html('&cross;'));
       banner.append($('<p/>').append(model.message));
       return banner;
     }
@@ -1766,12 +1764,12 @@ MonitoringConsole.View.Components = (function() {
   const WidgetHeader = (function() {
 
     function createComponent(model) {
-      const config = { 'class': 'WidgetHeader' + (model.selected() ? ' WidgetHeaderSelected' : '')};
+      const config = { class: 'WidgetHeader' + (model.selected() ? ' WidgetHeaderSelected' : '')};
       if (model.id)
         config.id = model.id;
       const header = $('<div/>', config);
       return header
-        .append($('<span/>', {'class':'btn-edit'}).html('&#9998;').click(model.onClick))
+        .append($('<span/>', { class: 'btn-edit'}).html('&#9998;').click(model.onClick))
         .append($('<h3/>', { title: model.description })
           .text(model.title)
           .click(() => {            

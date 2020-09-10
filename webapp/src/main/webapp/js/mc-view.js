@@ -485,12 +485,12 @@ MonitoringConsole.View = (function() {
             : widget.series;
         showModalDialog(createYesNoModualDialog({ 
             title: 'Remove Widget?',
-            question: 'Do you really want to remove the widget with metric series <code>'+ description + '</code> from the page?',
+            question: `Do you really want to remove the widget with metric series <code>${description}</code> from the page?`,
             yes: 'Remove', 
             no: 'Cancel', 
             onYes: () =>  {
                 onPageChange(MonitoringConsole.Model.Page.Widgets.remove(widget.id));
-                showFeedback({ type: 'success', message: 'Widget ' + description + ' removed.'});
+                showFeedback({ type: 'success', message: `Widget ${description} removed.`});
             }
         }));
     }
@@ -529,8 +529,8 @@ MonitoringConsole.View = (function() {
                             onExit: selected => {
                                 if (selected.length > 0) {
                                     MonitoringConsole.Model.importPages(selected,
-                                        page => showFeedback({ type: 'success', message: 'Successfully imported page <em>' + page.name + '</em>.'}),
-                                        page => showFeedback({ type: 'error', message: 'Failed to import page <em>' + page.name + '</em>.'}),
+                                        page => showFeedback({ type: 'success', message: `Successfully imported page <em>${page.name}</em>.`}),
+                                        page => showFeedback({ type: 'error', message: `Failed to import page <em>${page.name}</em>.`}),
                                     );
                                     updatePageNavigation();
                                 }
@@ -569,7 +569,7 @@ MonitoringConsole.View = (function() {
                 if (selected.length > 0) {
                     download(JSON.stringify(selected, null, 2));
                     const names = selected.map(p => p.name).join(', ');
-                    showFeedback({ type: 'success', message: 'Exported page(s) <em>'+names+'</em>.'});
+                    showFeedback({ type: 'success', message: `Exported page(s) <em>${names}</em>.`});
                 }
             }
         });
@@ -881,7 +881,7 @@ MonitoringConsole.View = (function() {
             onExit: name => {
                 if (name != '' && name !== undefined) {
                     MonitoringConsole.View.onPageChange(MonitoringConsole.Model.Page.create(name));
-                    showFeedback({ type: 'success', message: 'Your page <em>' + name + '</em> has been added.'});
+                    showFeedback({ type: 'success', message: `Your page <em>${name}</em> has been added.`});
                 }
             }
         });
@@ -914,7 +914,7 @@ MonitoringConsole.View = (function() {
                 if (Role.get() != role) {
                     showFeedback({ type: 'error', message: 'Failed to update user role. Please report an issue.'});
                 } else if (confirm)
-                    showFeedback({ type: 'success', message: 'User Role changed to <em>' + Role.name() + '</em>' });
+                    showFeedback({ type: 'success', message: `User Role changed to <em>${Role.name()}</em>` });
                 if (isFunction(onExitCall))
                     onExitCall();
             }
@@ -1122,8 +1122,8 @@ MonitoringConsole.View = (function() {
             no: 'Cancel',
             onYes: () => {
                 MonitoringConsole.Model.Page.Sync.pushAllLocal(
-                    page => showFeedback({ type: 'success', message: 'Remote page <em>'+ page.name +'</em> updated successfully.' }),
-                    page => showFeedback({ type: 'error', message: 'Failed to update remote page <em>'+ page.name +'</em>.' }));
+                    page => showFeedback({ type: 'success', message: `Remote page <em>${page.name}</em> updated successfully.` }),
+                    page => showFeedback({ type: 'error', message: `Failed to update remote page <em>${page.name}</em>.` }));
             } 
         }));
     }
@@ -1296,10 +1296,10 @@ MonitoringConsole.View = (function() {
             onYes: () => {
                 MonitoringConsole.Model.Page.Sync.pushLocal(
                     page => {
-                        showFeedback({ type: 'success', message: 'Successfully updated server page <em>' +  page.name + '</em> with local configuration.'});
+                        showFeedback({ type: 'success', message: `Successfully updated server page <em>${page.name}</em> with local configuration.`});
                         onPageRefresh();
                     },
-                    page => showFeedback({ type: 'error', message: 'Failed to update server page <em>' + page.name + '</em>.'}));
+                    page => showFeedback({ type: 'error', message: `Failed to update server page <em>${page.name}</em>.`}));
             }
         }));
     }
@@ -1314,10 +1314,10 @@ MonitoringConsole.View = (function() {
             onYes: async () => {
                 await MonitoringConsole.Model.Page.Sync.pullRemote(undefined,
                     page => {
-                        showFeedback({ type: 'success', message: 'Successfully updated local page <em>' +  page.name + '</em> with server configuration.'});
+                        showFeedback({ type: 'success', message: `Successfully updated local page <em>${page.name}</em> with server configuration.`});
                         onPageRefresh();
                     },
-                    page => showFeedback({ type: 'error', message: 'Failed to update local page <em>' + page.name + '</em>.'}));
+                    page => showFeedback({ type: 'error', message: `Failed to update local page <em>${page.name}</em>.`}));
             }
         }));
     }
@@ -1328,8 +1328,8 @@ MonitoringConsole.View = (function() {
             const onExit = async function(pageIds) {
                 if (pageIds.length > 0) {
                     await model.onUpdate(pageIds, 
-                        page => showFeedback({type: 'success', message: 'Updated local page <em>' + page.name + '</em> with server configuration.'}),
-                        page => showFeedback({type: 'error', message: 'Failed to update local page <em>' + page.name + '</em> with server configuration.'})
+                        page => showFeedback({type: 'success', message: `Updated local page <em>${page.name}</em> with server configuration.`}),
+                        page => showFeedback({type: 'error', message: `Failed to update local page <em>${page.name}</em> with server configuration.`})
                     );
                     onPageRefresh(); 
                 }
@@ -1413,13 +1413,13 @@ MonitoringConsole.View = (function() {
             const name = MonitoringConsole.Model.Page.name();
             showModalDialog(createYesNoModualDialog({
                 title: 'Delete Page?',
-                question: 'Are you sure you want to delete the page <em>'+name+'</em>?', 
+                question: `Are you sure you want to delete the page <em>${name}</em>?`, 
                 yes: 'Delete', 
                 no: 'Cancel', 
                 onYes: () => {
                     MonitoringConsole.Model.Page.erase(() => {
                         onPageUpdate(MonitoringConsole.Model.Page.arrange());    
-                        showFeedback({ type: 'success', message: 'Your page <em>' + name + '</em> has been deleted.' });             
+                        showFeedback({ type: 'success', message: `Your page <em>${name}</em> has been deleted.` });             
                         updatePageNavigation();                        
                     });
                 }
