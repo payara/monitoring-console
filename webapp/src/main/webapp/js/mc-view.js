@@ -1135,24 +1135,30 @@ MonitoringConsole.View = (function() {
                 showWatchConfigModalDialog();
             };
         }
+        const Role = MonitoringConsole.Model.Role;
+        const actions = { 
+            onSelect: (id, series, onSelection) => showModalDialog(createWizardModalDialogModel({
+                id: id,
+                title: 'Select Watch Metric Series', 
+                submit: 'Select',
+                series: series, 
+                onExit: series => onSelection(series[0]),
+            })),
+        };
+        if (Role.isAdmin()) {
+            actions.onDelete = (name, onSuccess, onFailure) => Controller.requestDeleteWatch(name, wrapOnSuccess(onSuccess), onFailure);
+            actions.onDisable = (name, onSuccess, onFailure) => Controller.requestDisableWatch(name, wrapOnSuccess(onSuccess), onFailure);
+            actions.onEnable = (name, onSuccess, onFailure) => Controller.requestEnableWatch(name, wrapOnSuccess(onSuccess), onFailure);            
+        }
+        if (!Role.isGuest()) {
+            actions.onCreate = (watch, onSuccess, onFailure) => Controller.requestCreateWatch(watch, wrapOnSuccess(onSuccess), onFailure);
+        }
         Controller.requestListOfWatches((watches) => {
             const manager = { 
                 id: 'WatchManager', 
                 items: watches, 
                 colors: { red: Theme.color('red'), amber: Theme.color('amber'), green: Theme.color('green') },
-                actions: { 
-                    onCreate: (watch, onSuccess, onFailure) => Controller.requestCreateWatch(watch, wrapOnSuccess(onSuccess), onFailure),
-                    onDelete: (name, onSuccess, onFailure) => Controller.requestDeleteWatch(name, wrapOnSuccess(onSuccess), onFailure),
-                    onDisable: (name, onSuccess, onFailure) => Controller.requestDisableWatch(name, wrapOnSuccess(onSuccess), onFailure),
-                    onEnable: (name, onSuccess, onFailure) => Controller.requestEnableWatch(name, wrapOnSuccess(onSuccess), onFailure),
-                    onSelect: (id, series, onSelection) => showModalDialog(createWizardModalDialogModel({
-                        id: id,
-                        title: 'Select Watch Metric Series', 
-                        submit: 'Select',
-                        series: series, 
-                        onExit: series => onSelection(series[0]),
-                    })),
-                },
+                actions: actions,
             };
             showModalDialog({
                 fixed: true,

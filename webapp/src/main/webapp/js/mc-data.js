@@ -113,7 +113,7 @@ MonitoringConsole.Data = (function() {
 			]
 		},
 		rag: {
-			name: 'RAG Status',
+			name: 'Traffic Light Status',
 			numberOfColumns: 4,
 			type: 'query',
 			content: { series: 'ns:health ?:* *', maxSize: 32, ttl: 60, filter: 'rag' },

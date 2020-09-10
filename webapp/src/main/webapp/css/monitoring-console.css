@@ -831,12 +831,17 @@ table.AnnotationTable {
   width: 200px;
   max-width: 200px;
 }
+.WatchBuilder .WatchCondition {
+  margin: 5px 0;
+  background-color: white;
+  border-radius: 3px;
+  padding: 3px 1em;
+}
 .WatchBuilder .WatchBuilderForm > div {
   padding: 3px 0;
 }
 .WatchBuilder .WatchBuilderForm label {
-  min-width: 150px;
-  text-align: right;
+  min-width: 75px;
   display: inline-block;
 }
 .WatchBuilder .WatchBuilderForm input[type=text], 
@@ -844,6 +849,10 @@ table.AnnotationTable {
   width: 300px;
   max-width: 300px;
   margin: 0 1em;
+}
+.WatchBuilder .WatchBuilderForm > div > span {
+  display: inline-block;
+  margin: 0 1em;  
 }
 
 

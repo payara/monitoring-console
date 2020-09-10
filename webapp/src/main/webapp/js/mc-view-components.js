@@ -57,6 +57,10 @@ MonitoringConsole.View.Components = (function() {
   const Colors = MonitoringConsole.View.Colors;
   const Selection = MonitoringConsole.Model.Page.Widgets.Selection;
 
+  function isFunction(obj) {
+    return typeof obj === 'function';
+  }
+
    /**
     * This is the side panel showing the details and settings of widgets
     */
@@ -167,7 +171,7 @@ MonitoringConsole.View.Components = (function() {
         function getConverter() {
           if (model.unit === undefined)
             return { format: (str) => str, parse: (str) => str };
-          if (typeof model.unit === 'function')
+          if (isFunction(model.unit))
             return Units.converter(model.unit());
           return Units.converter(model.unit);
         }
@@ -330,7 +334,7 @@ MonitoringConsole.View.Components = (function() {
 
       function createComponent(model) {
         const config = { id: model.id };
-        const hasToggle = typeof model.onSidebarToggle === 'function';
+        const hasToggle = isFunction(model.onSidebarToggle);
         if (hasToggle)
           config['class'] = model.collapsed ? 'Settings SettingsCollapsed' : 'Settings SettingsExpanded';
         const sidebar = $('<div/>', config);
@@ -982,22 +986,27 @@ MonitoringConsole.View.Components = (function() {
       const label = $('<b/>').text(item.name + (item.stopped ? ' (stopped)' : ''));
       const dt = $('<dt/>', { 'class': 'state-collapsed state-' + (item.disabled || item.stopped ? 'disabled' : 'enabled') })
         .append(label)
-        .append($('<code/>').text(item.series))
-        .append($('<button/>').text(item.programmatic ? 'Duplicate' : 'Edit').click(() => actions.onEdit(item)))
-        ;
+        .append($('<code/>').text(item.series));
       label.click(() =>  {
         dt.nextUntil('dt').toggle();
         dt.toggleClass('state-collapsed');
       });
-      if (!item.programmatic) {
+      if (isFunction(actions.onCreate)) {
+        dt.append($('<button/>').text(item.programmatic ? 'Duplicate' : 'Edit').click(() => actions.onEdit(item)));
+      } else {
+        dt.append($('<span/>'));
+      }
+      if (!item.programmatic && isFunction(actions.onDelete)) {
         dt.append($('<button/>').text('Delete').click(() => actions.onDelete(item.name)));
       } else {
         dt.append($('<span/>'));
       }
-      if (item.disabled) {
+      if (item.disabled && isFunction(actions.onEnable)) {
         dt.append($('<button/>').text('Enable').click(() => actions.onEnable(item.name)));        
-      } else {
+      } else if (!item.disabled && isFunction(actions.onDisable)) {
         dt.append($('<button/>', {'class': 'default'}).text('Disable').click(() => actions.onDisable(item.name)));        
+      } else {
+        dt.append($('<span/>')); 
       }
       list.append(dt);
       for (let level of ['red', 'amber', 'green'])
@@ -1040,9 +1049,12 @@ MonitoringConsole.View.Components = (function() {
         editedWatch.programmatic = false;
       }
       const builder = $('<div/>', config);
-      const nameInput = Settings.createInput({ type: 'text', value: editedWatch.name, onChange: (name) => editedWatch.name = name });
-      const unitDropdown = Settings.createInput({ type: 'dropdown', value: editedWatch.unit, options: Units.names(), onChange: (selected) => editedWatch.unit = selected });
-      const seriesInput = Settings.createInput({ type: 'text', value: editedWatch.series, onChange: (series) => editedWatch.series = series});
+      const conditionText = $('<span/>');
+      const updateText = () => conditionText.html('If <b>' + (editedWatch.series === undefined ? '?' : editedWatch.series) + '</b> in <b>' + (editedWatch.unit === undefined ? '?' : Units.names()[editedWatch.unit]) + '</b>...');
+      updateText();
+      const nameInput = Settings.createInput({ type: 'text', value: editedWatch.name, onChange: (name) => editedWatch.name = name});
+      const unitDropdown = Settings.createInput({ type: 'dropdown', value: editedWatch.unit, options: Units.names(), onChange: (selected) => { editedWatch.unit = selected; updateText(); }});
+      const seriesInput = Settings.createInput({ type: 'text', value: editedWatch.series, onChange: (series) => { editedWatch.series = series; updateText(); }});
       const popupId = 'popup-popup';
 
       const form = $('<div/>', {'class': 'WatchBuilderForm'})
@@ -1057,6 +1069,9 @@ MonitoringConsole.View.Components = (function() {
         .append($('<div/>')
           .append($('<label/>').text('Unit'))
           .append(unitDropdown))
+        .append($('<div/>')
+          .append($('<label/>').text('Condition'))
+          .append(conditionText))
         .append($('<div/>', { id: popupId }));
 
       builder.append(form);
@@ -1394,7 +1409,7 @@ MonitoringConsole.View.Components = (function() {
       // type 'list' and 'auto' below
       if (typeof optionFilter === 'string') // option uses a constant value
         return propertyValue == optionFilter;
-      if (typeof optionFilter === 'function') // option uses a predicate function              
+      if (isFunction(optionFilter)) // option uses a predicate function              
         return optionFilter(propertyValue);
       return true;
     }
@@ -1442,7 +1457,7 @@ MonitoringConsole.View.Components = (function() {
 
     function createFilterWithListInput(model, filter, state, matches) {
       const filterState = state.filters[filter.id];
-      const options = typeof filter.options === 'function' ? filter.options() : filter.options;
+      const options = isFunction(filter.options) ? filter.options() : filter.options;
       const selectField = $('<select/>');
       selectField.change(() => {
         let index = selectField.val();
@@ -1504,7 +1519,7 @@ MonitoringConsole.View.Components = (function() {
         if (typeof required === 'string') {
           if (bound != required)
             return false;          
-        } else if (typeof required === 'function') {
+        } else if (isFunction(required)) {
           if (!required(bound))
             return false;
         }
@@ -1550,7 +1565,7 @@ MonitoringConsole.View.Components = (function() {
       }
       if (model.title !== undefined && model.title != '')
         box.append($('<h3/>').html(model.title));
-      const content = typeof model.context === 'function' ? model.content() : model.content;
+      const content = isFunction(model.context) ? model.content() : model.content;
       if (Array.isArray(content)) {
         content.forEach(e => box.append(e));
       } else {
@@ -1575,7 +1590,7 @@ MonitoringConsole.View.Components = (function() {
     function createClickHandler(model, property) {
       return () => {
         $('#' + model.id).hide();
-        if (typeof model.onExit === 'function')
+        if (isFunction(model.onExit))
           model.onExit(model.results[property], property);
       };
     }
@@ -1641,8 +1656,8 @@ MonitoringConsole.View.Components = (function() {
       item.append(label);
       if (page.selected) {
         const options = $('<div/>', { style: 'display: none;' });
-        let hasDelete = typeof page.onDelete === 'function';
-        let hasReset = typeof page.onReset === 'function';
+        let hasDelete = isFunction(page.onDelete);
+        let hasReset = isFunction(page.onReset);
 
         item.append($('<span/>', {'class': 'btn-edit', title: 'Edit'}).html('&#9998;').click(() => options.toggle()));
         if (hasDelete || hasReset) {
@@ -1656,7 +1671,7 @@ MonitoringConsole.View.Components = (function() {
         label.click(() => options.toggle());
         item.append(options);
       } else {
-        if (typeof page.onSwitch === 'function')
+        if (isFunction(page.onSwitch))
           item.click(page.onSwitch);
       }
       return item;
