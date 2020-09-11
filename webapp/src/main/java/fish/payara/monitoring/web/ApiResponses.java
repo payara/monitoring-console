@@ -178,7 +178,10 @@ public final class ApiResponses {
         public CircumstanceData red;
         public CircumstanceData amber;
         public CircumstanceData green;
-        public final Map<String, Map<String, String>> states = new HashMap<>();
+        /**
+         * by series and instance
+         */
+        public final Map<String, Map<String, WatchState>> states = new HashMap<>();
 
         public WatchData() {
             // from JSON
@@ -196,8 +199,19 @@ public final class ApiResponses {
             this.green = watch.green.isUnspecified() ? null : new CircumstanceData(watch.green);
             for (Watch.State state : watch) {
                 states.computeIfAbsent(state.getSeries().toString(), key -> new HashMap<>())
-                    .put(state.getInstance(), state.getLevel().name().toLowerCase());
+                    .put(state.getInstance(), new WatchState(state));
             }
+        }
+    }
+
+    public static final class WatchState {
+
+        public final String level;
+        public final Long since;
+
+        public WatchState(Watch.State state) {
+            this.level = state.getLevel().name().toLowerCase();
+            this.since = state.getSince();
         }
     }
 

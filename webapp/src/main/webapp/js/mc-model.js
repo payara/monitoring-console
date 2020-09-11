@@ -1150,15 +1150,32 @@ MonitoringConsole.Model = (function() {
 		}
 
 		function addAssessment(widget, data, alerts, watches) {
+			function unifyWatch(watch) {
+				for (let seriesState of Object.values(watch.states))
+					for (let [instance, state] of Object.entries(seriesState))
+						if (typeof state === 'string') {
+							seriesState[instance] = { level: state, since: undefined };
+						}
+			}
+			function defined(e) {
+				return e !== undefined;
+			}
 			data.forEach(function(seriesData) {
 				let instance = seriesData.instance;
 				let series = seriesData.series;
 				let status = 'normal';
+				let since;
 				if (Array.isArray(watches) && watches.length > 0) {
-					let states = watches
+					// unify watch state as it was just a string and become an object later
+					for (let watch of watches)
+						unifyWatch(watch);
+					// evaluate state
+					const watchStatus = watches
 						.filter(watch => !watch.disabled && !watch.stopped)
-						.map(watch => watch.states[series]).filter(e => e != undefined)
-						.map(states => states[instance]).filter(e => e != undefined);
+						.map(watch => watch.states[series]).filter(defined)
+						.map(states => states[instance]).filter(defined);
+					let states = watchStatus 
+						.map(state => state.level).filter(defined);
 					if (states.includes('red')) {
 						status = 'red';
 					} else if (states.includes('amber')) {
@@ -1168,6 +1185,7 @@ MonitoringConsole.Model = (function() {
 					} else if (states.length > 0) {
 						status = 'white';
 					}
+					since = Math.max( ... watchStatus.map(state => state.since).filter(defined));
 				}
 				let thresholds = widget.decorations.thresholds;
 				if (thresholds.reference && thresholds.reference !== 'off') {
@@ -1194,7 +1212,7 @@ MonitoringConsole.Model = (function() {
 						status = 'amber';
 					}
 				}
-				seriesData.assessments = { status: status };
+				seriesData.assessments = { status: status, since: since };
 			});
 		}
 

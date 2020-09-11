@@ -256,7 +256,9 @@ surpressingSeries    = string
 surpressingUnit      = string
 states               = SERIES_STATES
 SERIES_STATES        = { *:INSTANCE_STATES }
-INSTANCE_STATES      = { *:string }
+INSTANCE_STATES      = { *:INSTANCE_STATE }
+INSTANCE_STATE       = { level, since }
+since                = number 
 ```
 
 
@@ -290,9 +292,10 @@ value    = number
 Assessments are evaluations made by the client to classify the data based on a widgets configuration.
 
 ```
-ASSESSMENTS = { status }
+ASSESSMENTS = { status, since }
 status      = Status
 Status      = 'normal' | 'alarming' | 'critical' | 'error' | 'missing' | 'white' | 'green' | 'amber' | 'red'
+since       = number
 ```
 
 
@@ -377,6 +380,7 @@ value           = string | number
 color           = string
 background      = string | [ string ]
 status          = Status
+since           = number
 highlight       = string
 
 ```
@@ -406,13 +410,16 @@ This component gives a simple Red-Amber-Green status indication on the state of 
 ```
 RAG_INDICATOR = { items }
 items         = [ RAG_ITEM ]
-RAG_ITEM      = { label, status, color, background }
+RAG_ITEM      = { label, value, since, status, color, background }
 label         = string
-state         = string
+value         = string
 status        = Status
+since         = number
 color         = string
 background    = string
 ```
+* `value` is the state as value, e.g. _UP_ or _100%_
+* `status` is the state as `Status`: RAGW
 
 
 ### Menu API

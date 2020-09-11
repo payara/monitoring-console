@@ -258,14 +258,17 @@ MonitoringConsole.View.Units = (function() {
       if (typeof dateOrTimestamp === 'number')
          dateOrTimestamp = new Date(dateOrTimestamp);
       // now dateOrTimestamp should be a Date object
-      let diffMs = new Date() - dateOrTimestamp;
+      let now = new Date();
+      let diffMs = now - dateOrTimestamp;
       diffMs = Math.round(diffMs / 1000) * 1000; // truncate ms
       if (diffMs > 120000) // 2 mins
          diffMs = Math.round(diffMs / 60000) * 60000; // truncate sec
       if (diffMs > 7200000) // 2h
          diffMs = Math.round(diffMs / 3600000) * 3600000; // truncate min
       const time = formatTime(Math.round(dateOrTimestamp.getTime() / 60000) * 60000); // nothing below h
-      const date = dateOrTimestamp.toLocaleDateString();
+      let date = dateOrTimestamp.toLocaleDateString();
+      if (date == now.toLocaleDateString())
+         date = '';
       return time + ', ' + date + ' (' + formatNumber(diffMs, MS_FACTORS, false, ', ') + ' ago)';
    }
 

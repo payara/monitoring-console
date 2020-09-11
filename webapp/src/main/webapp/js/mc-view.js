@@ -680,6 +680,7 @@ MonitoringConsole.View = (function() {
                 color: color,
                 background: background,
                 status: status,
+                since: seriesData.assessments.since,
                 highlight: highlight,
             };
             legend.push(item);
@@ -770,7 +771,8 @@ MonitoringConsole.View = (function() {
             items.push({
                 label: item.label,
                 status: item.status,
-                state: item.value,
+                since: item.since,
+                value: item.value,
                 color: item.color,
                 background: item.highlight,
             });

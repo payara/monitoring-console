@@ -61,6 +61,10 @@ MonitoringConsole.View.Components = (function() {
     return typeof obj === 'function';
   }
 
+  function isString(obj) {
+    return typeof obj === 'string';
+  }
+
    /**
     * This is the side panel showing the details and settings of widgets
     */
@@ -68,7 +72,7 @@ MonitoringConsole.View.Components = (function() {
 
       function createRow(model, inputs) {
         let components = $.isFunction(inputs) ? inputs() : inputs;
-        if (typeof components === 'string')
+        if (isString(components))
             components = document.createTextNode(components);
         let config = {};
         if (model.description)
@@ -158,7 +162,7 @@ MonitoringConsole.View.Components = (function() {
 
       function createValueInput(model) {
         let unit = model.unit;
-        if (typeof unit === 'string') {
+        if (isString(unit)) {
           if (unit === 'percent')
             return createRangeInput({id: model.id, min: 0, max: 100, value: model.value, onChange: model.onChange });
           if (unit === 'count')
@@ -188,7 +192,7 @@ MonitoringConsole.View.Components = (function() {
         if (model.description && !model.label)
           config.title = description;
         let readonly = model.onChange === undefined;
-        if (!readonly && typeof model.unit === 'string') {
+        if (!readonly && isString(model.unit)) {
           if (converter.pattern !== undefined)
             config.pattern = converter.pattern();
           if (converter.patternHint !== undefined)
@@ -490,7 +494,7 @@ MonitoringConsole.View.Components = (function() {
       let color = item.color;
       let strong = value;
       let normal = '';
-      if (typeof value === 'string' && value.indexOf(' ') > 0) {
+      if (isString(value) && value.indexOf(' ') > 0) {
         strong = value.substring(0, value.indexOf(' '));
         normal = value.substring(value.indexOf(' '));
       }
@@ -567,14 +571,24 @@ MonitoringConsole.View.Components = (function() {
       const indicator = $('<div/>', { class: 'RAGIndicator' });
       const itemHeight = Math.floor(100 / model.items.length);
       for (let item of model.items) {
+        const diffMs = item.since === undefined ? undefined : new Date() - item.since;
         let text = item.label;
         if (text == 'server')
           text = 'DAS';
         indicator.append($('<div/>', { 
-          title: item.state, 
-          class: 'Item', 
-          style: `background-color: ${item.background}; height: ${itemHeight}%; border-left-color: ${item.color};` })
-        .append($('<span/>').text(text)));
+          class: 'Item',
+          style: `border-left-color: ${item.color};`,
+        })
+        .append($('<span/>', { 
+          class: `RAGIndicatorLight ${diffMs === undefined || diffMs > 60000 ? '' : 'RAGIndicatorRecent'}`,
+          style: `background-color: ${item.background};`,
+        }))
+
+        .append($('<div/>')
+          .append($('<strong/>').text(item.value))
+          .append($('<span/>').text(text))
+          .append($('<span/>').text(item.since === undefined || item.since <= 0 ? '' : `Since ${Units.formatDateTime(item.since)}`))
+        ));
       }
       return indicator;
     }
@@ -1407,7 +1421,7 @@ MonitoringConsole.View.Components = (function() {
       }
       const optionFilter = option === undefined ? filterState.filter : option.filter;                 
       // type 'list' and 'auto' below
-      if (typeof optionFilter === 'string') // option uses a constant value
+      if (isString(optionFilter)) // option uses a constant value
         return propertyValue == optionFilter;
       if (isFunction(optionFilter)) // option uses a predicate function              
         return optionFilter(propertyValue);
@@ -1465,7 +1479,7 @@ MonitoringConsole.View.Components = (function() {
           let f = options[index].filter;
           state.filters[filter.id].filter = f;
           state.filters[filter.id].selected = index;
-          state.properties[filter.property] = typeof f === 'string' ? f : undefined;          
+          state.properties[filter.property] = isString(f) ? f : undefined;          
         } else {
           state.filters[filter.id] = {};
           state.properties[filter.property] = undefined;
@@ -1516,7 +1530,7 @@ MonitoringConsole.View.Components = (function() {
         return true;
       for (let [property, required] of Object.entries(requires)) {
         let bound = state.properties[property];
-        if (typeof required === 'string') {
+        if (isString(required)) {
           if (bound != required)
             return false;          
         } else if (isFunction(required)) {
@@ -1552,7 +1566,7 @@ MonitoringConsole.View.Components = (function() {
       if (typeof model.width === 'number')
         boxConfig.style += 'width: ' + model.width + 'px;'; 
       const box = $('<div/>', boxConfig);
-      if (typeof model.closeProperty === 'string') {
+      if (isString(model.closeProperty)) {
         const button = model.buttons.find(button => button.property == model.closeProperty);
         box.append($('<span/>', {
           class: 'btn-close', 
