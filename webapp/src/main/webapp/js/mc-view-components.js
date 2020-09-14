@@ -349,9 +349,11 @@ MonitoringConsole.View.Components = (function() {
             })
             .html(model.collapsed ? '&#9881;' : '&raquo;')
             .click(model.onSidebarToggle));
-        if (hasToggle && model.collapsed && model.onWidgetAdd)
-          sidebar.append($('<button/>', { class: 'btn-icon btn-add', title: 'Add a widget to this page...' })
-            .html('&plus;')
+        if (hasToggle && model.onWidgetAdd)
+          sidebar.append($('<button/>', { 
+            class: model.collapsed ? 'btn-icon btn-add' : 'btn-add', 
+            title: 'Add a widget to this page...' })
+            .html(model.collapsed ? '&plus;' : 'Add Widget')
             .click(model.onWidgetAdd));
         if (hasToggle && model.collapsed) 
           return sidebar;
@@ -363,13 +365,14 @@ MonitoringConsole.View.Components = (function() {
         const appGroups = groups.filter(g => g.type == 'app');
         const pageGroups = groups.filter(g => g.type == 'page');
         const widgetGroups = groups.filter(g => g.type === undefined || g.type == 'widget');
+        const groupPanels = $('<div/>', { class: 'SettingsGroups'});
         if (appGroups.length > 0)
-          sidebar.append(createGroupList(appGroups, SyntheticId, true, 'App Settings'));
+          groupPanels.append(createGroupList(appGroups, SyntheticId, true, 'App Settings'));
         if (pageGroups.length > 0) 
-          sidebar.append(createGroupList(pageGroups, SyntheticId));  
+          groupPanels.append(createGroupList(pageGroups, SyntheticId));  
         if (widgetGroups.length > 0) 
-          sidebar.append(createGroupList(widgetGroups, SyntheticId));  
-        return sidebar;
+          groupPanels.append(createGroupList(widgetGroups, SyntheticId));  
+        return sidebar.append(groupPanels);
       }
 
       function createGroupList(groups, idProvider, tabs = false, name = "") {

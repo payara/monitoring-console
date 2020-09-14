@@ -267,18 +267,63 @@ button.default:hover {
   right: 0;
   width: 40px;
   min-height: 100%;
+  max-height: 100%;
+  height: 100%;
   position: absolute;
   color: white;
   border-radius: 3px 0 0 3px;
+  box-sizing: border-box;
 }
 #Settings.SettingsExpanded {
   width: 380px;
   padding: 40px;
-  box-sizing: border-box;
+  padding-right: 0;
   vertical-align: top;
   background-color: var(--sidebar-bg-color);
 }
-.Settings.SettingsCollapsed {
+#Settings.SettingsCollapsed {
+}
+.Settings button.btn-toggle {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  margin-left: 5px;
+  letter-spacing: -2px;
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  text-align: center;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1em;
+}
+.Settings > span {
+  transform: rotate(-90deg);
+  white-space: nowrap;
+  font-size: 20px;
+  font-weight: bold;
+  display: block;
+  margin-top: 400px;
+  cursor: pointer;
+  position: absolute;
+  left: -20px;
+}
+.Settings.SettingsExpanded button.btn-add {
+  position: absolute;
+  bottom: 45px;
+  left: 40px;
+}
+.Settings.SettingsCollapsed button.btn-add {  
+  position: absolute;
+  bottom: 45px;
+  left: 5px;
+}
+
+.Settings .SettingsGroups {
+  max-height: calc(100% - 60px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding-right: 40px;
 }
 .SettingsTabs, .SettingsList {
   position: relative;
@@ -373,31 +418,6 @@ button.default:hover {
 .Settings table div input[type=text] {
   width: 37px;
   margin-right: 3px;
-}
-.Settings button.btn-toggle {
-  position: absolute;
-  left: 0;
-  top: 5px;
-  margin-left: 5px;
-  letter-spacing: -2px;
-  display: inline-block;
-  width: 30px;
-  height: 30px;
-  text-align: center;
-  padding: 0;
-  font-size: 20px;
-  line-height: 1em;
-}
-.Settings > span {
-  transform: rotate(-90deg);
-  white-space: nowrap;
-  font-size: 20px;
-  font-weight: bold;
-  display: block;
-  margin-top: 400px;
-  cursor: pointer;
-  position: absolute;
-  left: -20px;
 }
 
 #panel-grid,
@@ -1283,9 +1303,4 @@ button.btn-toggle {
 }
 button.btn-selected {
   background: rgba(240, 200, 144, 0.9);
-}
-button.btn-add {
-  position: absolute;
-  bottom: 45px;
-  left: 5px;
 }

@@ -468,7 +468,34 @@ MonitoringConsole.Model = (function() {
 	      updown: 'updown',
    		};
 
+   		const QUERY_ORDER = ['Overall', 'Health', 'Liveness', 'Readiness'];
+
       	async function doQueryPage() {
+      		function sortByGroup(matches) {
+	  			function compareByOrder(a, b) {
+	  				function indexOf(e) {
+	  					let i = 0;
+	  					while (i < QUERY_ORDER.length && !e.series.includes(QUERY_ORDER[i]))
+	  						i++;
+	  					return i;
+	  				}
+	  				return indexOf(b) - indexOf(a);
+	  			}      			
+				const byGroup = {};
+				for (let match of matches) {
+					let group = 'none';
+					let groupIndex = match.series.indexOf('@');
+					if (groupIndex > 0)
+						group = match.series.substring(groupIndex, match.series.indexOf(' ', groupIndex));
+					if (byGroup[group] === undefined)
+						byGroup[group] = [];
+					byGroup[group].push(match);
+				}
+				for (let group of Object.values(byGroup))
+					group.sort(compareByOrder);
+				return byGroup;
+      		}
+
       		const page = pages[settings.home];
       		if (page.content === undefined)
       			return;
@@ -487,19 +514,21 @@ MonitoringConsole.Model = (function() {
 			matches.sort((a, b) => a.data[0].stableCount - b.data[0].stableCount);
 			if (matches.length > page.content.maxSize)
 				matches = matches.slice(0, page.content.maxSize);
+			const matchesByGroup = sortByGroup(matches);
 			const widgets = [];
 			const numberOfColumns = page.numberOfColumns;
 			const now = new Date().getTime();
 			let column = 0;
-			for (let i = 0; i < matches.length; i++) {
-				const match = matches[i];
-				const points = match.data[0].points;
-				if (now - points[points.length-2] < 60000) { // only matches with data updates in last 60sec
-					const widget = doInferWidget(match);
-					if (page.content.filter === undefined || widget.type == page.content.filter) {
-						widget.grid = { column: column % numberOfColumns, item: column };
-						widgets.push(widget);
-						column++;											
+			for (let group of Object.values(matchesByGroup)) {
+				for (let match of group) {
+					const points = match.data[0].points;
+					if (now - points[points.length-2] < 60000) { // only matches with data updates in last 60sec
+						const widget = doInferWidget(match);
+						if (page.content.filter === undefined || widget.type == page.content.filter) {
+							widget.grid = { column: column % numberOfColumns, item: column };
+							widgets.push(widget);
+							column++;											
+						}
 					}
 				}
 			}
