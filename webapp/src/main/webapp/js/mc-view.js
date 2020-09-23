@@ -870,7 +870,7 @@ MonitoringConsole.View = (function() {
         input.change(() => results.input = input.val());
         showModalDialog({
             title: 'Add Page',
-            width: 300,
+            width: 400,
             content: () => $('<form/>')
                 .append($('<label/>').text('Page Name')).append(' ')
                 .append(input),
@@ -951,7 +951,7 @@ MonitoringConsole.View = (function() {
             refreshEnabled: !Refresh.isPaused(),
             refreshSpeed: Refresh.interval(),
             layoutColumns: Page.numberOfColumns(),
-            logo: collapsed ? undefined : 'payara-logo.png',
+            logo: collapsed ? 'images/fish.svg' : 'images/logo.svg',
             pages: pages,
             onLogoClick: () => MonitoringConsole.View.onPageChange(Page.changeTo('core')),
             onSidebarToggle: () => {
@@ -1256,7 +1256,7 @@ MonitoringConsole.View = (function() {
         let maxRows = layout[0].length;
         let table = $("<table/>", { id: 'chart-grid', 'class': 'columns-'+numberOfColumns + ' rows-'+maxRows });
         let padding = 32;
-        let headerHeight = 0;
+        let headerHeight = 48;
         let minRowHeight = 160;
         let rowsPerScreen = maxRows;
         let windowHeight = $(window).height();

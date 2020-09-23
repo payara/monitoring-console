@@ -341,16 +341,18 @@ MonitoringConsole.View.Components = (function() {
         const hasToggle = isFunction(model.onSidebarToggle);
         if (hasToggle)
           config['class'] = model.collapsed ? 'Settings SettingsCollapsed' : 'Settings SettingsExpanded';
-        const sidebar = $('<div/>', config);
+        const sidebar = $('<aside/>', config);
+        const header = $('<header/>');
+        sidebar.append(header);
         if (hasToggle)
-          sidebar.append($('<button/>', { 
-              class: 'btn-icon btn-toggle default',
+          header.append($('<button/>', { 
+              class: 'btn-icon btn-toggle',
               title: model.collapsed ? 'Open Settings' : 'Hide Settings'
             })
             .html(model.collapsed ? '&#9881;' : '&raquo;')
             .click(model.onSidebarToggle));
         if (hasToggle && model.onWidgetAdd)
-          sidebar.append($('<button/>', { 
+          header.append($('<button/>', { 
             class: model.collapsed ? 'btn-icon btn-add' : 'btn-add', 
             title: 'Add a widget to this page...' })
             .html(model.collapsed ? '&plus;' : 'Add Widget')
@@ -382,7 +384,7 @@ MonitoringConsole.View.Components = (function() {
 
         const list = $('<div/>', {class: 'Settings' + upper(groups[0].type || 'Widget') + (tabs ? ' SettingsTabs' : ' SettingsList')});
         if (tabs && name != "")
-          list.append($('<h3/>').text(name));
+          list.append($('<h4/>').text(name));
         const containers = [];
         for (let group of groups) {          
           const container = $('<div/>', { id: group.id, class: 'SettingsGroup' });
@@ -393,7 +395,7 @@ MonitoringConsole.View.Components = (function() {
         }
         const headers = [];
         for (let group of groups) {
-          headers.push(createHeader(group));
+          headers.push(createHeader(group, tabs));
         }
         for (let i = 0; i < groups.length; i++) {
           const container = containers[i];
@@ -428,11 +430,11 @@ MonitoringConsole.View.Components = (function() {
         return list;
       }
 
-      function createHeader(group) {
+      function createHeader(group, tabs) {
         const config = {};
         if (group.description)
           config.title = group.description;
-        return $('<h4/>', config).text(group.caption);
+        return $(tabs ? '<button/>' : '<h4/>', config).text(group.caption);
       }
 
       function createGroup(group, idProvider) {
@@ -1021,7 +1023,7 @@ MonitoringConsole.View.Components = (function() {
       if (item.disabled && isFunction(actions.onEnable)) {
         dt.append($('<button/>').text('Enable').click(() => actions.onEnable(item.name)));        
       } else if (!item.disabled && isFunction(actions.onDisable)) {
-        dt.append($('<button/>', { class: 'default' }).text('Disable').click(() => actions.onDisable(item.name)));        
+        dt.append($('<button/>').text('Disable').click(() => actions.onDisable(item.name)));        
       } else {
         dt.append($('<span/>')); 
       }
@@ -1597,8 +1599,8 @@ MonitoringConsole.View.Components = (function() {
 
     function createButton(model, button) {
       const config = { text: button.label };
-      if (button.secondary)
-        config['class'] = 'default';
+      if (!button.secondary)
+        config['class'] = 'primary';
       return $('<button/>', config).click(createClickHandler(model, button.property));
     }
 
@@ -1629,19 +1631,21 @@ MonitoringConsole.View.Components = (function() {
       if (model.id)
         config.id = model.id;
 
-      const sidebar = $('<div/>', config);
-      sidebar.append($('<button/>', { class: 'btn-icon btn-toggle default' })
+      const sidebar = $('<aside/>', config);
+      const header = $('<header/>');
+      sidebar.append(header);
+      header.append($('<button/>', { class: 'btn-icon btn-toggle default' })
         .html(model.collapsed ? '&#9776;' : '&laquo;')
         .click(model.onSidebarToggle));
       if (model.logo !== undefined)
-        sidebar.append($('<a/>', { class: 'NavLogo' }).click(model.onLogoClick).append($('<img/>', { src: model.logo })));      
+        header.append($('<a/>', { class: 'NavLogo' }).click(model.onLogoClick).append($('<img/>', { src: model.logo, alt: 'Payara' })));      
       const controls = $('<dl/>', {class: 'NavControls'});
       if (collapsed) {
         const page = model.pages.filter(page => page.selected)[0];
-        sidebar.append($('<span/>').text(page.label).click(model.onSidebarToggle));
+        sidebar.append($('<div/>', {class: 'NavTitle'}).append($('<h1/>').text(page.label).click(model.onSidebarToggle)));
         for (let i = 1; i <= 4; i++)
           controls.append($('<dd/>').append(createLayoutButton(model, i)));
-        controls.append($('<dd/>', { style: 'margin: 15px 5px' }).append(createRefreshButton(model)));
+        controls.append($('<dd/>').append(createRefreshButton(model)));
         controls.append($('<dd/>').append(createRotationButton(model)));
       } else {
         sidebar.append(createPageList(model));
@@ -1666,7 +1670,7 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createPageItem(page) {      
-      const label = $('<span/>').text(page.label);
+      const label = $('<a/>', { href: '#'}).text(page.label);
       const item = $('<li/>', { class: 'NavItem' + (page.selected ? ' selected' : '')});
       item.append(label);
       if (page.selected) {
@@ -1687,7 +1691,7 @@ MonitoringConsole.View.Components = (function() {
         item.append(options);
       } else {
         if (isFunction(page.onSwitch))
-          item.click(page.onSwitch);
+          label.click(page.onSwitch);
       }
       return item;
     }

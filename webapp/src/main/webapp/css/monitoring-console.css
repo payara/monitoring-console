@@ -38,31 +38,168 @@
    holder.
 */
 :root {
+  /* -----------------[Copied from colours and spacing CSS]----------------- */
+
+    --tango: 240,152,27;
+    --midnight: 0,44,62;
+    --smurf: 0,150,214;
+    --basalt: 50,68,74;
+    --concrete: 218,224,226;
+    --cherry: 155,18,0;   /* Error */
+    --slate: 78,90,94;    /* Neutral */
+    --frog: 0,103,41;   /* Success */
+    --coal: 23,24,24; /* Primarily used for dark mode background. */
+    --onyx: 11,11,11; /* Header and button text. */
+
+    --button-radius: 3px;
+    --block-radius: 6px;
+
+    --gutter-tight: 0.8rem;
+    --gutter-medium: 1.6rem;
+    --gutter-loose: 3.2rem;
+    --gutter: var(--gutter-tight);
+
+    --padding-tight: 1.2rem;
+    --padding-medium: 1.6rem;
+    --padding-loose: 2rem;
+    --padding: var(--padding-tight);
+
+  /* -------------[End of: Copied from colours and spacing CSS]------------- */
+
   /* Colour RGB values to be used in other variable definitions */
   --primary-color-rgb-orange:  240, 152,  27; /* #F0981B */
-  --primary-color-rgb-blue:      0,  44,  62; /* #002C3E */
-  --secondary-color-rgb-blue:    0, 150, 214; /* #0096D6 */
-  --secondary-color-rgb-dark:   67,  68,  69; /* #434445 */
-  --secondary-color-rgb-light: 218, 224, 226; /* #DAE0E2 */
-  --button-color-rgb-text:      16,  16,  18; /* #101012 */
-  --button-color-rgb-bg:       210, 216, 218; /* #D2D8DA */
 
   /* Variables used in style definitons */
+  --page-bg-color: rgb(var(--coal));
+  --sidebar-bg-color: rgb(var(--midnight));
+  --element-bg-color: rgba(var(--smurf), 0.15);
+  --widget-bg-color: var(--page-bg-color);
+  --widget-part-bg-color: var(--page-bg-color);
+
   --tabs-bg-color: #526066;
-  --app-bg-color: #3d484d;
   --group-bg-color: #004766;
-  --sidebar-bg-color: #00618A;
-  --page-bg-color: #151515; /* #00354B; */
-  --widget-bg-color: #151515; /* #000000; */
-  --widget-part-bg-color: #151515; /* rgba(0, 0, 0, .75); */
+
 }
+
+/* -----------------[Copied from scrollbar CSS]----------------- */
+:root {  
+  /* Page Scrollbar */
+  --scrollbar-track: rgba(11,11,11, 0.5);
+  --scrollbar-thumb: rgba(255,255,255, 0.17);
+  --scrollbar-shadow: rgba(11,11,11, 0.75);
+}
+/* -------------[End of: Copied from scrollbar CSS]------------- */ 
+
+
+.NavPages,
+#page-main {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb) ;
+  border-radius: 10px;
+}
+
+
+/* Fonts */
+
+  /* Normal */
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 400;
+    /* Uses the visitor's locally installed copy if available. */
+    src: local('IBM Plex Sans'), local('IBMPlexSans'),
+      /* Super Modern Browsers */
+      url('../fonts/ibm-plex-sans-v2-latin-regular.woff2') format('woff2'), 
+      /* Modern Browsers */
+      url('../fonts/ibm-plex-sans-v2-latin-regular.woff') format('woff');
+    font-display: swap;
+  }
+
+  /* Normal Italic */
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: italic;
+    font-weight: 400;
+    src: local('IBM Plex Sans Italic'), local('IBMPlexSans-Italic'),
+      url('../fonts/ibm-plex-sans-v2-latin-italic.woff2') format('woff2'),
+      url('../fonts/ibm-plex-sans-v2-latin-italic.woff') format('woff');
+    font-display: swap;
+  }
+  
+  /* Bold */
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 700;
+    src: local('IBM Plex Sans Bold'), local('IBMPlexSans-Bold'),
+      url('../fonts/ibm-plex-sans-v2-latin-700.woff2') format('woff2'),
+      url('../fonts/ibm-plex-sans-v2-latin-700.woff') format('woff');
+    font-display: swap;
+  }
+
+  /* Bold Italic */
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: italic;
+    font-weight: 700;
+    src: local('IBM Plex Sans Bold Italic'), local('IBMPlexSans-BoldItalic'),
+      url('../fonts/ibm-plex-sans-v2-latin-700italic.woff2') format('woff2'),
+      url('../fonts/ibm-plex-sans-v2-latin-700italic.woff') format('woff');
+    font-display: swap;
+  }
+
+  /* Semi-bold */
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 500;
+    src: local('IBM Plex Sans Medium'), local('IBMPlexSans-Medium'),
+      url('../fonts/ibm-plex-sans-v2-latin-500.woff2') format('woff2'),
+      url('../fonts/ibm-plex-sans-v2-latin-500.woff') format('woff');
+    font-display: swap;
+  }
+
+  /* Semi-bold Italic */
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: italic;
+    font-weight: 500;
+    src: local('IBM Plex Sans Medium Italic'), local('IBMPlexSans-MediumItalic'),
+      url('../fonts/ibm-plex-sans-v2-latin-500italic.woff2') format('woff2'),
+      url('../fonts/ibm-plex-sans-v2-latin-500italic.woff') format('woff');
+    font-display: swap;
+  }
+
 
 body {
     background-color: var(--page-bg-color);
-    font: 13px/1.231 'IBM Plex Sans', helvetica,clean,sans-serif;
+    font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1.5em;
     color: white;
     margin: 0;
     padding: 0;
+}
+footer {
+  padding: 12px;
+  height: 24px;
+  background-color: black;
+  color: rgba(255,255,255, 0.75);
+  text-align: center;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
 }
 h1 {
 	font-size: 21px;
@@ -162,36 +299,43 @@ canvas {
   position: relative;
 }
 button {
-    padding: 5px 1em;
-    margin: 0 1px;
-    font-weight: normal;
-    background: rgb(240,152,27);
-    box-shadow: 0px 3px 3px rgba(67,68,69,0.05),    
-      0px 2px 2px rgba(67,68,69,0.1),
-      0px 1px 1px rgba(67,68,69,0.15);
-    border-width: 0;
-    color: #101012;
-    border-radius: 2px;
-    cursor: pointer;
-    line-height: 1.0;
-    font-weight: 500;
+  background: rgba(255,255,255, 0.5);
+  box-shadow: 0 1px 0 0 rgba(var(--onyx), 0.3);
+  border: none;
+  border-radius: var(--button-radius);
+  color: rgb(var(--onyx));
+  display: inline-block;
+  font-family: inherit;
+  font-size: 100%;
+  line-height: inherit;
+  padding: 8px 20px; 
+  text-align: center;
+  text-decoration: none; 
+}
+button[class] {
+  cursor: pointer;
+  -webkit-appearance: none;
 }
 button:hover {
-	background: rgba(240,152,27,0.9);
-  box-shadow: 0px 1px 1px rgba(16,16,18,0.3);
-  transform : translateY(1px);
-}
-button.default {
-  background: rgb(210,216,218);
-  box-shadow: 0px 3px 3px rgba(67,68,69,0.05), 0px 1px 1px rgba(67,68,69,0.05);
-}
-button.default:hover {
-  background: rgba(210,216,218,0.65);
-  box-shadow: 0px 1px 1px rgba(67,68,69,0.1);
+  box-shadow: none !important;
+  opacity: 0.9;
   transform: translateY(1px);
 }
+button.primary {
+  background: rgb(var(--tango));
+  box-shadow: 0 1px 0 0 rgba(var(--onyx), 0.6);  
+}
 
-
+#page-main {
+  min-height: calc(100% - 48px);
+  margin-bottom: 48px;
+  overflow-y: auto;
+  display: flex;
+  flex: 1 0 auto;
+}
+#panel-grid {
+  position: relative;
+}
 
 #panel-trace {
   position: absolute;
@@ -255,82 +399,47 @@ button.default:hover {
   vertical-align: middle;
 }
 
-#panel-grid {
-  position: relative;
-}
+
+
+
+
+
 
 /**
  * Widget Settings (Sizes and Visibility)
  */
 #Settings {
-  top: 0;
-  right: 0;
-  width: 40px;
-  min-height: 100%;
-  max-height: 100%;
-  height: 100%;
-  position: absolute;
+  position: relative;
   color: white;
-  border-radius: 3px 0 0 3px;
   box-sizing: border-box;
-}
-#Settings.SettingsExpanded {
-  width: 380px;
-  padding: 40px;
-  padding-right: 0;
-  vertical-align: top;
   background-color: var(--sidebar-bg-color);
 }
+#Settings.SettingsExpanded {
+  flex: 0 0 380px;
+  padding: 12px;
+}
 #Settings.SettingsCollapsed {
+  flex: 0 0 40px;
+  padding: 8px;
+}
+.SettingsGroups {
+  width: 100%;
+  clear: both;
 }
 .Settings button.btn-toggle {
-  position: absolute;
-  left: 0;
-  top: 5px;
-  margin-left: 5px;
-  letter-spacing: -2px;
-  display: inline-block;
-  width: 30px;
-  height: 30px;
-  text-align: center;
-  padding: 0;
-  font-size: 20px;
-  line-height: 1em;
+  float: left;
 }
-.Settings > span {
-  transform: rotate(-90deg);
-  white-space: nowrap;
-  font-size: 20px;
-  font-weight: bold;
-  display: block;
-  margin-top: 400px;
-  cursor: pointer;
-  position: absolute;
-  left: -20px;
+.Settings button.btn-add {
+  margin: 0 2px 8px 2px;
 }
-.Settings.SettingsExpanded button.btn-add {
-  position: absolute;
-  bottom: 45px;
-  left: 40px;
-}
-.Settings.SettingsCollapsed button.btn-add {  
-  position: absolute;
-  bottom: 45px;
-  left: 5px;
-}
-
-.Settings .SettingsGroups {
-  max-height: calc(100% - 60px);
-  overflow-y: auto;
-  box-sizing: border-box;
-  padding-right: 40px;
-}
-.SettingsTabs, .SettingsList {
+.SettingsTabs, 
+.SettingsList {
   position: relative;
+  margin: 8px 0;
+  background: rgba(255,255,255, 0.1);
+  border-radius: var(--block-radius);
 }
 .SettingsTabs.SettingsApp {
-  background-color: var(--app-bg-color);
-  border-radius: 3px;
 }
 .SettingsTabs.SettingsApp:after {
   content: '\1F30D';
@@ -339,35 +448,37 @@ button.default:hover {
   right: 0;
   margin: 5px;
 }
-.SettingsList.SettingsPage > * {
-  background-color: var(--page-bg-color);
-}
-
-.SettingsTabs h3 {
-  margin: 0;
-  padding: 5px 10px;
-  font-size: 14px;
-}
-.Settings .SettingsTabs h4 {
-  background-color: var(--tabs-bg-color);
+.Settings .SettingsTabs > button {
+  background: rgba(255,255,255, 0.2);
+  border-radius: var(--button-radius) var(--button-radius) 0 0;
   display: inline-block;
-  opacity: 0.65;
-  margin-left: 5px;
-  margin-top: 0;
-  padding-left: 10px;
+  border: none;
+  color: white;
+  padding: 8px 12px;
+  margin-left: 8px;
+  box-shadow: none;
 }
-.SettingsTabs h4.state-active {
+.Settings .SettingsTabs > button:focus {
+  outline: none;
+}
+.Settings .SettingsTabs > button:hover {
+  background: rgba(255,255,255, 0.15);
   opacity: 1;
+  transform: none;
+}
+.Settings .SettingsTabs > button + button {
+  margin-left: 4px;
+}
+.Settings .SettingsTabs > button.state-active {
+  background: rgba(255,255,255, 0.1);
 }
 .SettingsGroup {
-  background-color: var(--group-bg-color);
-  padding: 5px;
-  border-radius: 3px;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+  padding: 12px;
 }
 .SettingsTabs .SettingsGroup {
-  background-color: var(--tabs-bg-color);
+  background: rgba(255,255,255, 0.1);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 .Settings table {
   width: 100%;
@@ -376,14 +487,10 @@ button.default:hover {
 .Settings tr {
 }
 .Settings h4 {
-  font-size: 14px;
   cursor: pointer;
-  margin-bottom: 0;
-  background-color: var(--group-bg-color);
-  padding: 5px 10px;
+  margin: 0;
   padding-left: 30px;
-  border-top-left-radius: 3px;
-  border-top-right-radius: 3px;
+  line-height: 40px;
 }
 .SettingsList h4:before {
   position: absolute;
@@ -420,24 +527,7 @@ button.default:hover {
   margin-right: 3px;
 }
 
-#panel-grid,
-#panel-trace {
-  margin-left: 40px;
-  margin-right: 40px;
-}
-#console.state-show-settings #panel-grid, 
-#console.state-show-settings #panel-trace {
-  width: calc(100% - 420px);
-}
-#console.state-show-nav #panel-grid, 
-#console.state-show-nav #panel-trace {
-  width: calc(100% - 420px);
-  margin-left: 380px;
-}
-#console.state-show-nav.state-show-settings #panel-grid, 
-#console.state-show-nav.state-show-settings #panel-trace {
-  width: calc(100% - 760px);
-}
+
 
 /* HTML Chart Tooltips */
 #chartjs-tooltip {
@@ -518,9 +608,6 @@ table.tags th, table.tags td {
 }
 .Legend li.status-error strong {
     color: red;
-}
-.Legend span, .Legend strong {
-  background-color: var(--widget-bg-color);
 }
 @keyframes blinker {
   50% {
@@ -1134,54 +1221,76 @@ table.AnnotationTable {
 
 /* NavSidebar Component */
 .NavSidebar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  min-height: 100%;
+  position: relative;
   background-color: var(--sidebar-bg-color);
-  z-index: 108;
   color: white;
-  border-radius: 0 3px 3px 0;
-}
-.NavSidebar.NavCollapsed {
-  width: 40px;
-  background-color: transparent;
-}
-.NavSidebar.NavCollapsed > span {
-  transform: rotate(-90deg);
-  white-space: nowrap;
-  font-size: 20px;
-  font-weight: bold;
-  display: block;
-  margin-top: 400px;
-  cursor: pointer;
-}
-.NavSidebar.NavExpanded {
-  width: 380px;
-  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-height: calc(100vh - 48px);
   box-sizing: border-box;
 }
-.NavSidebar .NavLogo {
-  position: absolute;
-  top: 40px;
-  left: 40px;
-  cursor: pointer;
+.NavSidebar.NavCollapsed {
+  flex: 0 0 40px;
+  padding: 8px;
 }
-.NavSidebar .NavLogo img {
-  width: 180px;
+.NavSidebar.NavExpanded {
+  flex: 0 0 380px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.NavSidebar.NavExpanded .NavLogo {
+  cursor: pointer;
+  display: inline-block;
+}
+.NavSidebar.NavExpanded .NavLogo img {
+  max-width: 120px; 
+}
+.NavSidebar.NavCollapsed .NavLogo img {
+  max-width: 36px;
+  margin: 4px;
 }
 .NavSidebar .NavPages {
-  margin-top: 110px;
+  margin: 8px 0;
+  flex: 0 1 auto;
+  max-height: 40vh;
+  overflow-y: auto;
 }
 .NavSidebar .NavPages ul {
   padding: 0;
+  margin: 0;
 }
 .NavSidebar .NavPages .NavItem {
-  padding: 5px 10px;
-  font-weight: bold;
-  cursor: pointer;
   list-style-type: none;
 }
+.NavSidebar .NavPages .NavItem.selected a {
+  background: rgba(var(--smurf), 0.75);
+  cursor: default;
+}
+.NavSidebar .NavPages .NavItem a,
+.NavSidebar .NavPages .NavItem a:visited {
+  background-color: var(--element-bg-color);
+  color: white;
+  text-decoration: none;
+  padding: 8px calc(32px + 1.6rem) 8px 20px;
+  display: block;
+  border-top: solid 1px rgba(255,255,255, 0.1);
+}
+.NavSidebar .NavPages .NavItem a:hover {
+  background: rgba(var(--smurf), 0.25);
+}
+.NavSidebar .NavPages .NavItem:first-child a {
+  border-top-width: 0;
+  border-radius: var(--button-radius) var(--button-radius) 0 0;
+}
+.NavSidebar .NavPages .NavItem:last-child a {
+  border-radius: 0 0 var(--button-radius) var(--button-radius);
+}
+.NavSidebar .NavPages .NavItem a:focus {
+  border-radius: var(--button-radius);
+  box-shadow: 0 0 0 4px rgb(var(--smurf));
+}
+
 span.btn-edit {
   float: right;
   cursor: pointer;
@@ -1189,60 +1298,30 @@ span.btn-edit {
   margin-right: 1em;
   font-size: 18px;
 }
-.NavSidebar .NavPages .NavItem.selected {
-  background-color: var(--page-bg-color);
-  color: white;
-  margin-right: -40px;
-  padding: 10px;
-  cursor: default;
-  font-size: 20px;
-  line-height: 1em;
-  border-radius: 3px 0 0 3px;
-}
 .NavSidebar .NavPages .NavItem.selected div div {
   margin-top: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.NavSidebar .NavAdd {
-  width: 300px;
-  margin-top: 10px;
-}
-.NavSidebar .NavAdd input {
-  width: 120px;
-}
-.NavSidebar .NavAdd > div {
-  padding: 10px;
-  border: 2px solid rgb(240,152,27);
-  border-radius: 3px;
-}
-.NavSidebar .NavAdd div div {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 5px;
-}
 
-.NavSidebar .NavControls {
-  position: absolute;
-  bottom: 0;
-  margin-bottom: 40px;
+.NavSidebar .NavControls,
+.NavSidebar .NavAdd {
+  flex: 0 0 auto;
 }
 .NavSidebar.NavExpanded .NavControls {
-  width: 300px;
 }
-.NavSidebar .NavControls > dt {
+.NavSidebar .NavControls dt {
   padding-top: 1em;
   clear: both;
   font-weight: bold;
   text-align: right;
 }
-.NavSidebar .NavControls > dd {
+.NavSidebar .NavControls dd {
   text-align: right;
-  margin: 5px;
+  margin: 0 2px 8px 2px;
 }
-.NavSidebar.NavExpanded .NavControls > dd {
+.NavSidebar.NavExpanded .NavControls dd {
   float: right;
 }
 .NavSidebar .NavControls input[type="range"] {
@@ -1250,8 +1329,20 @@ span.btn-edit {
   display: inline-block;
   margin: 0 1em;
 }
-
-
+.NavTitle {
+  flex: 1 0 auto;
+  height: 0;
+  max-height: 40vh;
+  position: relative;
+}
+.NavTitle h1 {
+  left: 50%;
+  top: 50%;
+  position: absolute;
+  transform: translate(-50%) rotate(270deg);
+  white-space: nowrap;
+  cursor: pointer;
+}
 
 
 /**
@@ -1259,7 +1350,6 @@ span.btn-edit {
  **/
 .WidgetHeader {
   position: absolute;
-  z-index: 101;
   width: 100%;
 }
 .WidgetHeader.WidgetHeaderSelected h3 {
@@ -1288,19 +1378,17 @@ span.btn-edit {
 /* Overall */
 button.btn-icon {
   display: inline-block;
-  width: 30px;
-  height: 30px;
+  width: 24px;
   text-align: center;
-  padding: 0;
+  margin: 0;
+  background: rgba(var(--concrete), 0.7);
+  box-shadow: 0 1px 0 0 rgba(var(--coal), 0.6);
 }
 button.btn-toggle {
-  position: absolute;
-  right: 0;
-  top: 5px;
-  margin-right: 5px;
-  font-size: 20px;
-  line-height: 1em;
+  float: right;
+  margin: 0 2px 8px 2px;
 }
 button.btn-selected {
-  background: rgba(240, 200, 144, 0.9);
+  background: rgb(var(--onyx));
+  color: white;
 }
