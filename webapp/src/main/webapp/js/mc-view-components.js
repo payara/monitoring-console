@@ -65,6 +65,33 @@ MonitoringConsole.View.Components = (function() {
     return typeof obj === 'string';
   }
 
+  function icon(icon) {
+    const svgElem = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const useElem = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    useElem.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', 'images/icons.svg#' + icon);
+    svgElem.appendChild(useElem);
+    return $(svgElem)
+      .attr('viewBox', [0, 0, 16, 16])
+      .attr('aria-hidden', true)
+      .attr('focusable', false)
+      .attr('width', '16px')
+      .attr('height', '16px');
+  }
+
+  /**
+   * Model: { class, icon, alt, text }
+   */
+  function iconButton(model) {
+    const btn = $('<button/>', { class: model.class })
+      .append(icon( model.icon));
+    if (model.text) {
+      btn.append($('<span/>', { title: model.alt }).text(model.text));
+    } else if (model.alt) {
+      btn.append($('<span/>', { class: 'visually-hidden'}).text(model.alt)); 
+    }
+    return btn;
+  }
+
    /**
     * This is the side panel showing the details and settings of widgets
     */
@@ -345,17 +372,18 @@ MonitoringConsole.View.Components = (function() {
         const header = $('<header/>');
         sidebar.append(header);
         if (hasToggle)
-          header.append($('<button/>', { 
+          header.append(iconButton({
               class: 'btn-icon btn-toggle',
-              title: model.collapsed ? 'Open Settings' : 'Hide Settings'
+              icon: 'icon-toggle',
+              alt: model.collapsed ? 'Open Settings' : 'Hide Settings'
             })
-            .html(model.collapsed ? '&#9881;' : '&raquo;')
             .click(model.onSidebarToggle));
         if (hasToggle && model.onWidgetAdd)
-          header.append($('<button/>', { 
-            class: model.collapsed ? 'btn-icon btn-add' : 'btn-add', 
-            title: 'Add a widget to this page...' })
-            .html(model.collapsed ? '&plus;' : 'Add Widget')
+          header.append(iconButton({ 
+            class: model.collapsed ? 'btn-icon btn-add' : 'btn-add',
+            icon: 'icon-plus',
+            text: model.collapsed ? undefined : 'Add Widget',
+            alt: 'Add a widget to this page...' })
             .click(model.onWidgetAdd));
         if (hasToggle && model.collapsed) 
           return sidebar;
@@ -434,7 +462,9 @@ MonitoringConsole.View.Components = (function() {
         const config = {};
         if (group.description)
           config.title = group.description;
-        return $(tabs ? '<button/>' : '<h4/>', config).text(group.caption);
+        if (tabs)
+          return $('<button/>').text(group.caption);
+        return $('<h4/>', config).append(icon('icon-menu-arrow')).append($('<span/>').text(group.caption));
       }
 
       function createGroup(group, idProvider) {
