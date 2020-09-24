@@ -304,7 +304,8 @@ button {
   border: none;
   border-radius: var(--button-radius);
   color: rgb(var(--onyx));
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   font-family: inherit;
   font-size: 100%;
   line-height: inherit;
@@ -325,15 +326,22 @@ button.primary {
   background: rgb(var(--tango));
   box-shadow: 0 1px 0 0 rgba(var(--onyx), 0.6);  
 }
-button > svg {
-    margin-left: -8px;
-    margin-right: -8px;
-    pointer-events: none;
-    display: inline-block;
-    position: relative;
-    width: 16px;
-    height: 16px;
-    top: 0;
+button svg.icon {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  fill: rgb(var(--onyx));
+}
+button svg + span:not([class='visually-hidden']) {
+  margin-left: 20px;
+}
+svg.icon {
+  pointer-events: none;
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  padding: 12px;
+  fill: white;
 }
 
 .visually-hidden:not(:focus):not(:active) {
@@ -435,13 +443,17 @@ button > svg {
   background-color: var(--sidebar-bg-color);
 }
 #Settings.SettingsExpanded {
-  flex: 0 0 380px;
+  flex: 0 0 460px;
   padding: 12px;
 }
 #Settings.SettingsCollapsed {
   flex: 0 0 40px;
   padding: 8px;
 }
+#Settings.SettingsCollapsed .btn-toggle {
+  transform: rotate(180deg);
+}
+
 .SettingsGroups {
   width: 100%;
   clear: both;
@@ -461,14 +473,7 @@ button > svg {
 }
 .SettingsTabs.SettingsApp {
 }
-.SettingsTabs.SettingsApp:after {
-  content: '\1F30D';
-  position: absolute;
-  top: 0;
-  right: 0;
-  margin: 5px;
-}
-.Settings .SettingsTabs > button {
+.Settings .SettingsTabs > div > button {
   background: rgba(255,255,255, 0.2);
   border-radius: var(--button-radius) var(--button-radius) 0 0;
   display: inline-block;
@@ -478,18 +483,18 @@ button > svg {
   margin-left: 8px;
   box-shadow: none;
 }
-.Settings .SettingsTabs > button:focus {
+.Settings .SettingsTabs > div > button:focus {
   outline: none;
 }
-.Settings .SettingsTabs > button:hover {
+.Settings .SettingsTabs > div > button:hover {
   background: rgba(255,255,255, 0.15);
   opacity: 1;
   transform: none;
 }
-.Settings .SettingsTabs > button + button {
+.Settings .SettingsTabs > div > button + button {
   margin-left: 4px;
 }
-.Settings .SettingsTabs > button.state-active {
+.Settings .SettingsTabs > div > button.state-active {
   background: rgba(255,255,255, 0.1);
 }
 .SettingsGroup {
@@ -512,15 +517,15 @@ button > svg {
   display: flex;
   align-items: center;
 }
-.SettingsList h4 > svg {
-  pointer-events: none;
-  box-sizing: border-box;
-  width: 40px;
-  height: 40px;
-  padding: 12px;
+.Settings h4 span + svg.icon {
+  fill: rgba(255,255,255, 0.3);
+  position: absolute;
+  right: 0;
+}
+.Settings h4 > .icon-menu-arrow {
   transform: rotate(-90deg);
 }
-.SettingsList h4.state-collapsed svg {
+.Settings h4.state-collapsed .icon-menu-arrow {
  transform: rotate(90deg); 
 }
 .Settings table td {
@@ -1254,7 +1259,7 @@ table.AnnotationTable {
   padding: 8px;
 }
 .NavSidebar.NavExpanded {
-  flex: 0 0 380px;
+  flex: 0 0 300px;
   padding: 12px;
   box-sizing: border-box;
 }
@@ -1264,9 +1269,11 @@ table.AnnotationTable {
 }
 .NavSidebar.NavExpanded .NavLogo img {
   max-width: 120px; 
+  width: 120px;
 }
 .NavSidebar.NavCollapsed .NavLogo img {
   max-width: 36px;
+  width: 36px;
   margin: 4px;
 }
 .NavSidebar .NavPages {
@@ -1396,10 +1403,11 @@ span.btn-edit {
 
 /* Overall */
 button.btn-icon {
-  display: inline-block;
-  width: 24px;
-  text-align: center;
-  margin: 0;
+  display: flex;
+  width: 40px;
+  height: 40px;
+  padding: 12px;
+  box-sizing: border-box;
   background: rgba(var(--concrete), 0.7);
   box-shadow: 0 1px 0 0 rgba(var(--coal), 0.6);
 }

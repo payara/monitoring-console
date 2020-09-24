@@ -65,12 +65,13 @@ MonitoringConsole.View.Components = (function() {
     return typeof obj === 'string';
   }
 
-  function icon(icon) {
+  function createIcon(icon) {
     const svgElem = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     const useElem = document.createElementNS('http://www.w3.org/2000/svg', 'use');
     useElem.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', 'images/icons.svg#' + icon);
     svgElem.appendChild(useElem);
     return $(svgElem)
+      .attr('class', 'icon ' + icon)
       .attr('viewBox', [0, 0, 16, 16])
       .attr('aria-hidden', true)
       .attr('focusable', false)
@@ -81,9 +82,9 @@ MonitoringConsole.View.Components = (function() {
   /**
    * Model: { class, icon, alt, text }
    */
-  function iconButton(model) {
+  function createIconButton(model) {
     const btn = $('<button/>', { class: model.class })
-      .append(icon( model.icon));
+      .append(createIcon( model.icon));
     if (model.text) {
       btn.append($('<span/>', { title: model.alt }).text(model.text));
     } else if (model.alt) {
@@ -372,14 +373,14 @@ MonitoringConsole.View.Components = (function() {
         const header = $('<header/>');
         sidebar.append(header);
         if (hasToggle)
-          header.append(iconButton({
+          header.append(createIconButton({
               class: 'btn-icon btn-toggle',
               icon: 'icon-toggle',
               alt: model.collapsed ? 'Open Settings' : 'Hide Settings'
             })
             .click(model.onSidebarToggle));
         if (hasToggle && model.onWidgetAdd)
-          header.append(iconButton({ 
+          header.append(createIconButton({ 
             class: model.collapsed ? 'btn-icon btn-add' : 'btn-add',
             icon: 'icon-plus',
             text: model.collapsed ? undefined : 'Add Widget',
@@ -397,22 +398,32 @@ MonitoringConsole.View.Components = (function() {
         const widgetGroups = groups.filter(g => g.type === undefined || g.type == 'widget');
         const groupPanels = $('<div/>', { class: 'SettingsGroups'});
         if (appGroups.length > 0)
-          groupPanels.append(createGroupList(appGroups, SyntheticId, true, 'App Settings'));
+          groupPanels.append(createGroupList(appGroups, SyntheticId, true, 'App Settings', 'icon-global'));
         if (pageGroups.length > 0) 
-          groupPanels.append(createGroupList(pageGroups, SyntheticId));  
+          groupPanels.append(createGroupList(pageGroups, SyntheticId, false, '', 'icon-page'));  
         if (widgetGroups.length > 0) 
           groupPanels.append(createGroupList(widgetGroups, SyntheticId));  
         return sidebar.append(groupPanels);
       }
 
-      function createGroupList(groups, idProvider, tabs = false, name = "") {
+      function createGroupList(groups, idProvider, tabs = false, name = "", icon = undefined) {
         function upper(str) {
           return str.charAt(0).toUpperCase() + str.slice(1);      
         }
 
-        const list = $('<div/>', {class: 'Settings' + upper(groups[0].type || 'Widget') + (tabs ? ' SettingsTabs' : ' SettingsList')});
-        if (tabs && name != "")
-          list.append($('<h4/>').text(name));
+        const box = $('<div/>', {class: 'Settings' + upper(groups[0].type || 'Widget') + (tabs ? ' SettingsTabs' : ' SettingsList')});
+        const list = $('<div/>');
+        if (tabs && name != "") {
+          const caption = $('<h4/>').append(createIcon('icon-menu-arrow')).append($('<span/>').text(name));
+          if (icon)
+            caption.append(createIcon(icon));
+          caption.click(() => { 
+            list.toggle();
+            caption.toggleClass('state-collapsed');
+          });
+          box.append(caption);
+        }
+        box.append(list);
         const containers = [];
         for (let group of groups) {          
           const container = $('<div/>', { id: group.id, class: 'SettingsGroup' });
@@ -423,6 +434,8 @@ MonitoringConsole.View.Components = (function() {
         }
         const headers = [];
         for (let group of groups) {
+          if (!tabs && icon)
+            group.icon = icon;
           headers.push(createHeader(group, tabs));
         }
         for (let i = 0; i < groups.length; i++) {
@@ -455,7 +468,7 @@ MonitoringConsole.View.Components = (function() {
         if (tabs) // when using tabs containers are appended last
           for (let container of containers)
             list.append(container);
-        return list;
+        return box;
       }
 
       function createHeader(group, tabs) {
@@ -464,7 +477,12 @@ MonitoringConsole.View.Components = (function() {
           config.title = group.description;
         if (tabs)
           return $('<button/>').text(group.caption);
-        return $('<h4/>', config).append(icon('icon-menu-arrow')).append($('<span/>').text(group.caption));
+        const header = $('<h4/>', config)
+          .append(createIcon('icon-menu-arrow'))
+          .append($('<span/>').text(group.caption));
+        if (group.icon)
+          header.append(createIcon(group.icon));
+        return header;
       }
 
       function createGroup(group, idProvider) {
