@@ -931,13 +931,14 @@ MonitoringConsole.View = (function() {
         const pages = [];
         function createNavItem(page) {
             const selected = page.active;
+            const hasPreset = Page.hasPreset(page.id);
             return {
                 id: page.id,
                 label: page.name,
                 selected: selected,
                 onSwitch: selected ? undefined : () => MonitoringConsole.View.onPageChange(Page.changeTo(page.id)),
-                onDelete: selected && !Page.hasPreset() ? () => MonitoringConsole.View.onPageDelete() : undefined,
-                onReset: selected && Page.hasPreset() ? () => onPageRefresh(Page.reset()) : undefined,
+                onDelete: hasPreset ? undefined : () => MonitoringConsole.View.onPageDelete(),
+                onReset: selected && hasPreset ? () => MonitoringConsole.View.onPageReset() : undefined,
             };
         }
         for (let page of MonitoringConsole.Model.listPages()) {
@@ -1408,7 +1409,23 @@ MonitoringConsole.View = (function() {
         },
         onPageChange: (layout) => onPageChange(layout),
         onPageUpdate: (layout) => onPageUpdate(layout),
-        onPageReset: () => onPageChange(MonitoringConsole.Model.Page.reset()),
+        onPageReset: () => {
+            const name = MonitoringConsole.Model.Page.name();
+            showModalDialog(createYesNoModualDialog({
+                title: 'Reset Page?',
+                question: `Are you sure you want to reset the page <em>${name}</em> to its preset?`,
+                yes: 'Reset',
+                no: 'Cancel',
+                onYes: () => { 
+                    if (MonitoringConsole.Model.Page.reset()) {
+                        showFeedback({ type: 'success', message: `Page <em>${name}</em> reset successfully.` });
+                        onPageChange(MonitoringConsole.Model.Page.arrange());
+                    } else {
+                        showFeedback({ type: 'error', message: `Failed to reset page <em>${name}</em>. The page has no preset.` });
+                    }
+                }
+            }));
+        },
         onPageMenu: function() { MonitoringConsole.Model.Settings.toggle(); updateSettings(); },
         onPageLayoutChange: (numberOfColumns) => onPageUpdate(MonitoringConsole.Model.Page.arrange(numberOfColumns)),
         onPageDelete: () => {

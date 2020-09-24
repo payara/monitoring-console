@@ -748,9 +748,11 @@ MonitoringConsole.Model = (function() {
 				return false;
 			},
 
-			hasPreset: function() {
+			hasPreset: function(pageId) {
+				if (pageId === undefined)
+					pageId = settings.home;
 				let presets = Data.PAGES;
-				return presets && presets[settings.home];
+				return presets && presets[pageId];
 			},
 			
 			switchPage: function(pageId) {
@@ -1520,8 +1522,9 @@ MonitoringConsole.Model = (function() {
 				if (UI.resetPage()) {
 					Charts.clear();
 					Interval.tick();
+					return true;
 				}
-				return UI.arrange();
+				return false;
 			},
 
 			hasPreset: UI.hasPreset,

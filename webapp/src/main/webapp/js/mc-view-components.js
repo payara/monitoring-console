@@ -383,7 +383,7 @@ MonitoringConsole.View.Components = (function() {
           header.append(createIconButton({ 
             class: model.collapsed ? 'btn-icon btn-add' : 'btn-add',
             icon: 'icon-plus',
-            text: model.collapsed ? undefined : 'Add Widget',
+            text: model.collapsed ? undefined : 'Add New Chart',
             alt: 'Add a widget to this page...' })
             .click(model.onWidgetAdd));
         if (hasToggle && model.collapsed) 
@@ -1682,8 +1682,11 @@ MonitoringConsole.View.Components = (function() {
       const sidebar = $('<aside/>', config);
       const header = $('<header/>');
       sidebar.append(header);
-      header.append($('<button/>', { class: 'btn-icon btn-toggle default' })
-        .html(model.collapsed ? '&#9776;' : '&laquo;')
+      header.append(createIconButton({ 
+        class: 'btn-icon btn-toggle',
+        icon: 'icon-toggle',
+        alt: 'Toggle Sidebar',
+      })
         .click(model.onSidebarToggle));
       if (model.logo !== undefined)
         header.append($('<a/>', { class: 'NavLogo' }).click(model.onLogoClick).append($('<img/>', { src: model.logo, alt: 'Payara' })));      
@@ -1693,7 +1696,9 @@ MonitoringConsole.View.Components = (function() {
         sidebar.append($('<div/>', {class: 'NavTitle'}).append($('<h1/>').text(page.label).click(model.onSidebarToggle)));
         for (let i = 1; i <= 4; i++)
           controls.append($('<dd/>').append(createLayoutButton(model, i)));
+        controls.append($('<dt/>'));
         controls.append($('<dd/>').append(createRefreshButton(model)));
+        controls.append($('<dt/>'));
         controls.append($('<dd/>').append(createRotationButton(model)));
       } else {
         sidebar.append(createPageList(model));
@@ -1702,6 +1707,7 @@ MonitoringConsole.View.Components = (function() {
         for (let i = 1; i <= 4; i++)
           controls.append($('<dd/>').append(createLayoutButton(model, i)));
         controls.append($('<dt/>').text('Data Refresh'));
+        controls.append($('<dd/>').append(createRefreshButton(model)));
         controls.append($('<dd/>').append(createRefreshInput(model)));
         controls.append($('<dt/>').text('Page Rotation'));
         controls.append($('<dd/>').append(createRotationButton(model)));
@@ -1722,31 +1728,33 @@ MonitoringConsole.View.Components = (function() {
       const item = $('<li/>', { class: 'NavItem' + (page.selected ? ' selected' : '')});
       item.append(label);
       if (page.selected) {
-        const options = $('<div/>', { style: 'display: none;' });
-        let hasDelete = isFunction(page.onDelete);
-        let hasReset = isFunction(page.onReset);
-
-        item.append($('<span/>', { class: 'btn-edit', title: 'Edit'}).html('&#9998;').click(() => options.toggle()));
-        if (hasDelete || hasReset) {
-          let bar = $('<div/>');
-          if (hasDelete)
-            bar.append($('<button/>').text('Delete').click(page.onDelete));
-          if (hasReset)
-            bar.append($('<button/>').text('Reset').click(page.onReset));
-          options.append(bar);
-        }
-        label.click(() => options.toggle());
-        item.append(options);
+        if (isFunction(page.onReset))
+          item.append(createIconButton({
+            class: 'btn-icon',
+            icon: 'icon-reset',
+            alt: 'Reset Page',
+          }).click(page.onReset));
+        //label.click(() => options.toggle()); //TODO hide nav
       } else {
         if (isFunction(page.onSwitch))
           label.click(page.onSwitch);
+      }
+      if (isFunction(page.onDelete)) {
+        item.append(createIconButton({
+          class: 'btn-icon',
+          icon: 'icon-delete',
+          alt: 'Delete Page',
+        }).click(page.onDelete));
       }
       return item;
     }
 
     function createAddPagePanel(model) {
       return $('<div/>', { class: 'NavAdd'})
-        .append($('<button/>').text('Add Page').click(model.onPageAdd));
+        .append(createIconButton({
+          icon: 'icon-plus',
+          text: 'Add New Page',
+        }).click(model.onPageAdd));
     }
 
     function createRefreshInput(model) {
@@ -1761,35 +1769,31 @@ MonitoringConsole.View.Components = (function() {
       return $('<span/>')
         .append($('<label/>').text('Speed'))
         .append(button)
-        .append(value)
-        .append(createRefreshButton(model));
+        .append(value);
     }
 
     function createLayoutButton(model, numberOfColumns) {
-      return $('<button/>', {
-          class: 'btn-icon btn-layout' + (model.layoutColumns == numberOfColumns ? ' btn-selected' : ''), 
-          title: 'Use '+numberOfColumns+' column layout' 
-      })
-        .text(numberOfColumns)
-        .click(() => model.onLayoutChange(numberOfColumns));
+      return createIconButton( {
+          class: 'btn-icon btn-layout' + (model.layoutColumns == numberOfColumns ? ' btn-selected' : ''),
+          icon: `icon-${numberOfColumns}-column`,
+          alt: 'Use '+numberOfColumns+' column layout' 
+      }).click(() => model.onLayoutChange(numberOfColumns));
     }
 
     function createRotationButton(model) {
-      return $('<button/>', {
+      return createIconButton({
         class: 'btn-icon btn-rotation', 
+        icon: model.rotationEnabled ? 'icon-pause' : 'icon-play',
         title: (model.rotationEnabled ? 'stop' : 'start') + ' page rotation'
-      })
-        .html(model.rotationEnabled ? '&#9209;' : '&#128257;') // '&#9654;')
-        .click(model.onRotationToggle);
+      }).click(model.onRotationToggle);
     }
 
     function createRefreshButton(model) {
-      return $('<button/>', {
+      return createIconButton({
         class: 'btn-icon',
-        title: (model.refreshEnabled ? 'pause' : 'unpause') + ' data updates'
-      })
-        .html(model.refreshEnabled ? '&#9208;' : '&#9654;')
-        .click(model.onRefreshToggle);
+        icon: model.refreshEnabled ? 'icon-pause' : 'icon-play',
+        alt: (model.refreshEnabled ? 'pause' : 'unpause') + ' data updates'
+      }).click(model.onRefreshToggle);
     }
 
     return { createComponent: createComponent };
