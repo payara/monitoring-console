@@ -83,10 +83,10 @@ MonitoringConsole.View.Components = (function() {
    * Model: { class, icon, alt, text }
    */
   function createIconButton(model) {
-    const btn = $('<button/>', { class: model.class })
+    const btn = $('<button/>', { class: model.class, title: model.alt })
       .append(createIcon( model.icon));
     if (model.text) {
-      btn.append($('<span/>', { title: model.alt }).text(model.text));
+      btn.append($('<span/>').text(model.text));
     } else if (model.alt) {
       btn.append($('<span/>', { class: 'visually-hidden'}).text(model.alt)); 
     }
@@ -1842,9 +1842,9 @@ MonitoringConsole.View.Components = (function() {
         config.id = model.id;
       const header = $('<div/>', config);
       return header
-        .append($('<span/>', { class: 'btn-edit'}).html('&#9998;').click(model.onClick))
         .append($('<h3/>', { title: model.description })
-          .text(model.title)
+          .append($('<span/>').text(model.title))
+          .append(createIcon('icon-toggle'))
           .click(() => {            
             model.onClick();
             if (model.selected()) {

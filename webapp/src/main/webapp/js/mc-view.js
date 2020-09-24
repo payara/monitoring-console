@@ -937,8 +937,8 @@ MonitoringConsole.View = (function() {
                 label: page.name,
                 selected: selected,
                 onSwitch: selected ? undefined : () => MonitoringConsole.View.onPageChange(Page.changeTo(page.id)),
-                onDelete: hasPreset ? undefined : () => MonitoringConsole.View.onPageDelete(),
-                onReset: selected && hasPreset ? () => MonitoringConsole.View.onPageReset() : undefined,
+                onDelete: hasPreset ? undefined : () => MonitoringConsole.View.onPageDelete(page),
+                onReset: selected && hasPreset ? () => MonitoringConsole.View.onPageReset(page) : undefined,
             };
         }
         for (let page of MonitoringConsole.Model.listPages()) {
@@ -1409,15 +1409,16 @@ MonitoringConsole.View = (function() {
         },
         onPageChange: (layout) => onPageChange(layout),
         onPageUpdate: (layout) => onPageUpdate(layout),
-        onPageReset: () => {
-            const name = MonitoringConsole.Model.Page.name();
+        onPageReset: page => {
+            const name = page.name;
             showModalDialog(createYesNoModualDialog({
+                dangerzone: true,
                 title: 'Reset Page?',
                 question: `Are you sure you want to reset the page <em>${name}</em> to its preset?`,
                 yes: 'Reset',
                 no: 'Cancel',
                 onYes: () => { 
-                    if (MonitoringConsole.Model.Page.reset()) {
+                    if (MonitoringConsole.Model.Page.reset(page.id)) {
                         showFeedback({ type: 'success', message: `Page <em>${name}</em> reset successfully.` });
                         onPageChange(MonitoringConsole.Model.Page.arrange());
                     } else {
@@ -1428,19 +1429,21 @@ MonitoringConsole.View = (function() {
         },
         onPageMenu: function() { MonitoringConsole.Model.Settings.toggle(); updateSettings(); },
         onPageLayoutChange: (numberOfColumns) => onPageUpdate(MonitoringConsole.Model.Page.arrange(numberOfColumns)),
-        onPageDelete: () => {
-            const name = MonitoringConsole.Model.Page.name();
+        onPageDelete: page => {
+            const name = page.name;
             showModalDialog(createYesNoModualDialog({
+                dangerzone: true,
                 title: 'Delete Page?',
                 question: `Are you sure you want to delete the page <em>${name}</em>?`, 
                 yes: 'Delete', 
                 no: 'Cancel', 
                 onYes: () => {
-                    MonitoringConsole.Model.Page.erase(() => {
+                    MonitoringConsole.Model.Page.erase(page.id, () => {
                         onPageUpdate(MonitoringConsole.Model.Page.arrange());    
                         showFeedback({ type: 'success', message: `Your page <em>${name}</em> has been deleted.` });             
                         updatePageNavigation();                        
-                    });
+                    }, 
+                    () => showFeedback({ type: 'error', message: `Failed to delete page <em>${name}</em> remotely. Delete page aborted.`}));
                 }
             }));
         },

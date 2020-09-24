@@ -709,25 +709,28 @@ MonitoringConsole.Model = (function() {
 			 * Deletes the active page and changes to the first page.
 			 * Does not delete the last page.
 			 */
-			deletePage: function(onSuccess) {
+			deletePage: function(pageId, onSuccess, onError) {
+				if (pageId === undefined)
+					pageId = settings.home;
 				let presets = Data.PAGES;
-				let hasPreset = presets && presets[settings.home];
+				let hasPreset = presets && presets[pageId];
 				if (hasPreset)
 					return;
 				let pageIds = Object.keys(pages);
 				if (pageIds.length <= 1)
 					return;
 				let deletion = () => {
-					delete pages[settings.home];
-					settings.home = pageIds[0];
+					delete pages[pageId];
+					if (pageId == settings.home)
+						settings.home = pageIds[0];
 					doStore(false);
 					if (typeof onSuccess === 'function')
 						onSuccess();
 				};
 				if (settings.role === 'admin') {
-					let page = pages[settings.home];
+					let page = pages[pageId];
 					if (page.sync.basedOnRemoteLastModified !== undefined) {
-						Controller.requestDeleteRemotePage(settings.home, deletion);
+						Controller.requestDeleteRemotePage(pageId, deletion, onError);
 					} else {
 						deletion();
 					}
@@ -736,12 +739,13 @@ MonitoringConsole.Model = (function() {
 				}
 			},
 
-			resetPage: function() {
+			resetPage: function(pageId) {
+				if (pageId === undefined)
+					pageId = settings.home;				
 				let presets = Data.PAGES;
-				let currentPageId = settings.home;
-				if (presets && presets[currentPageId]) {
-					let preset = presets[currentPageId];
-					pages[currentPageId] = sanityCheckPage(JSON.parse(JSON.stringify(preset)));
+				if (presets && presets[pageId]) {
+					let preset = presets[pageId];
+					pages[pageId] = sanityCheckPage(JSON.parse(JSON.stringify(preset)));
 					doStore(true);
 					return true;
 				}
@@ -1509,17 +1513,17 @@ MonitoringConsole.Model = (function() {
 				return UI.arrange();
 			},
 			
-			erase: function(onSuccess) {
-				UI.deletePage(() => {
+			erase: function(pageId, onSuccess, onError) {
+				UI.deletePage(pageId, () => {
 					Charts.clear();
 					Interval.tick();
 					if (typeof onSuccess === 'function')
 						onSuccess();
-				});
+				}, onError);
 			},
 			
-			reset: function() {
-				if (UI.resetPage()) {
+			reset: function(pageId) {
+				if (UI.resetPage(pageId)) {
 					Charts.clear();
 					Interval.tick();
 					return true;
