@@ -420,7 +420,6 @@ MonitoringConsole.View = (function() {
                 { available: pushAvailable, input: () => $('<button />', { text: 'Push', title: 'Push local page to server (update remote)' }).click(showPushPageConfirmModalDialog) },
                 { available: pullAvailable, input: () => showIfRemotePageExists($('<button />', { text: 'Pull', title: 'Pull remote page from server (update local)', style: 'display: none'}).click(showPullPageConfirmModalDialog)) },
             ]},
-            { label: 'Widgets', available: !queryAvailable, input: $('<button/>', { text: 'Add...' }).click(showAddWidgetModalDialog) },
         ]};
     }
 
@@ -458,7 +457,7 @@ MonitoringConsole.View = (function() {
         }
 
         showModalDialog(createWizardModalDialogModel({
-            title: 'Add Widget',
+            title: 'Add New Widget',
             submit: 'Add',
             series: [], 
             onExit: addNewWidget,

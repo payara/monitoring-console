@@ -1686,8 +1686,7 @@ MonitoringConsole.View.Components = (function() {
         class: 'btn-icon btn-toggle',
         icon: 'icon-toggle',
         alt: 'Toggle Sidebar',
-      })
-        .click(model.onSidebarToggle));
+      }).click(model.onSidebarToggle));
       if (model.logo !== undefined)
         header.append($('<a/>', { class: 'NavLogo' }).click(model.onLogoClick).append($('<img/>', { src: model.logo, alt: 'Payara' })));      
       const controls = $('<dl/>', {class: 'NavControls'});
@@ -1719,11 +1718,11 @@ MonitoringConsole.View.Components = (function() {
     function createPageList(model) {
       const list = $('<ul/>');
       for (let page of model.pages)
-        list.append(createPageItem(page));
+        list.append(createPageItem(model, page));
       return $('<nav/>', { class: 'NavPages'}).append(list);
     }
 
-    function createPageItem(page) {      
+    function createPageItem(model, page) {      
       const label = $('<a/>', { href: '#'}).text(page.label);
       const item = $('<li/>', { class: 'NavItem' + (page.selected ? ' selected' : '')});
       item.append(label);
@@ -1734,7 +1733,7 @@ MonitoringConsole.View.Components = (function() {
             icon: 'icon-reset',
             alt: 'Reset Page',
           }).click(page.onReset));
-        //label.click(() => options.toggle()); //TODO hide nav
+        label.click(model.onSidebarToggle);
       } else {
         if (isFunction(page.onSwitch))
           label.click(page.onSwitch);

@@ -202,7 +202,7 @@ footer {
   width: 100%;
 }
 h1 {
-	font-size: 21px;
+	font-size: 24px;
   font-weight: bold;
 }
 select {
@@ -628,7 +628,7 @@ table.tags th, table.tags td {
   margin-right: 20px;
 }
 .Legend li strong {
-  font-size: 200%;
+  font-size: 180%;
   font-weight: bold;
 }
 .Legend li span:first-child {
