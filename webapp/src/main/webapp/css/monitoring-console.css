@@ -207,12 +207,17 @@ h1 {
 }
 select {
 	width: 100%;
+  box-sizing: border-box;
   max-width: 162px;
   background: white;
   padding: 2px 5px;
   border-radius: 2px;
   margin-bottom: 2px;
   border: 1px solid #ccc;  
+}
+textarea {
+  width: 100%;
+  box-sizing: border-box;
 }
 input[type=color] {
   border: 0;
@@ -330,6 +335,9 @@ button.primary {
 button svg.icon {
   padding: 0;
   fill: rgba(var(--onyx), 0.75);
+}
+button:not([class*='btn-icon']) svg.icon {
+  margin: 0 -8px;
 }
 button.btn-icon {
   display: inline-flex;
@@ -483,6 +491,7 @@ svg.icon {
 }
 .Settings button.btn-add {
   margin: 0 2px 8px 2px;
+  float: right;
 }
 .SettingsTabs, 
 .SettingsList {
@@ -552,9 +561,10 @@ svg.icon {
   max-width: 230px;
 }
 .Settings table td:first-child {
-  width: 100px;
+  width: 150px;
   vertical-align: top;
   padding-left: 5px;
+  color: rgba(255,255,255,0.75);
 }
 .Settings a, .Settings a:visited {
   color: white;

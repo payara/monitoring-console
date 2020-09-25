@@ -279,21 +279,20 @@ MonitoringConsole.View = (function() {
         let settings = [];
         
         let modeOptions = widget.type == 'annotation' ? { table: 'Table', list: 'List' } : { list: '(Default)' };
-        settings.push({ id: 'settings-widget', caption: 'Widget', collapsed: false, entries: [
-            { label: 'Display Name', type: 'text', value: widget.displayName, onChange: (widget, value) => widget.displayName = value},
-            { label: 'Type', type: 'dropdown', options: WIDGET_TYPE_OPTIONS, value: widget.type, onChange: (widget, selected) => widget.type = selected},
-            { label: 'Mode', type: 'dropdown', options: modeOptions, value: widget.mode, onChange: (widget, selected) => widget.mode = selected},
-            { label: 'Column / Item', input: [
-                { type: 'range', min: 1, max: 4, value: 1 + (widget.grid.column || 0), onChange: (widget, value) => widget.grid.column = value - 1},
-                { type: 'range', min: 1, max: 8, value: 1 + (widget.grid.item || 0), onChange: (widget, value) => widget.grid.item = value - 1},
-            ]},             
+        settings.push({ id: 'settings-widget', caption: 'General', collapsed: false, entries: [
+            { label: 'Display Name', type: 'text', value: widget.displayName, placeholder: '(derived from series)', onChange: (widget, value) => widget.displayName = value},
+            { label: 'Column', type: 'range', min: 1, max: 4, value: 1 + (widget.grid.column || 0), onChange: (widget, value) => widget.grid.column = value - 1},
+            { label: 'Rank', type: 'range', min: 1, max: 8, value: 1 + (widget.grid.item || 0), onChange: (widget, value) => widget.grid.item = value - 1, 
+                description: 'Columns are filled by rank, lowest rank is added first to the column' },
             { label: 'Size', input: [
                 { label: '&nbsp;x', type: 'range', min: 1, max: 4, value: widget.grid.colspan || 1, onChange: (widget, value) => widget.grid.colspan = value},
                 { type: 'range', min: 1, max: 4, value: widget.grid.rowspan || 1, onChange: (widget, value) => widget.grid.rowspan = value},
             ]},
-            { label: 'Actions', input: $('<button/>').text('Remove Widget').click(() => onWidgetDelete(widget)) },
+            { input: $('<button/>').text('Remove Widget').click(() => onWidgetDelete(widget)) },
         ]});
         settings.push({ id: 'settings-data', caption: 'Data', entries: [
+            { label: 'Type', type: 'dropdown', options: WIDGET_TYPE_OPTIONS, value: widget.type, onChange: (widget, selected) => widget.type = selected},
+            { label: 'Mode', type: 'dropdown', options: modeOptions, value: widget.mode || 'list', onChange: (widget, selected) => widget.mode = selected},
             { label: 'Series', input: seriesInput },
             { label: 'Unit', input: [
                 { type: 'dropdown', options: Units.names(), value: widget.unit, onChange: function(widget, selected) { widget.unit = selected; updateSettings(); }},
@@ -305,12 +304,7 @@ MonitoringConsole.View = (function() {
                 { label: 'decimal value', type: 'checkbox', value: options.decimalMetric, onChange: (widget, checked) => widget.options.decimalMetric = checked,
                     description: 'Values that are collected as decimal are converted to a integer with 4 fix decimal places. By checking this option this conversion is reversed to get back the original decimal range.'},
             ]},
-            { label: 'Extra Lines', input: [
-                { label: 'Min', type: 'checkbox', value: options.drawMinLine, onChange: (widget, checked) => widget.options.drawMinLine = checked},
-                { label: 'Max', type: 'checkbox', value: options.drawMaxLine, onChange: (widget, checked) => widget.options.drawMaxLine = checked},
-                { label: 'Avg', type: 'checkbox', value: options.drawAvgLine, onChange: (widget, checked) => widget.options.drawAvgLine = checked},            
-            ]},
-            { label: 'Lines', input: [
+            { label: 'Line Style', input: [
                 { label: 'Points', type: 'checkbox', value: options.drawPoints, onChange: (widget, checked) => widget.options.drawPoints = checked},
                 { label: 'Curvy', type: 'checkbox', value: options.drawCurves, onChange: (widget, checked) => widget.options.drawCurves = checked},
             ]},
@@ -326,31 +320,42 @@ MonitoringConsole.View = (function() {
             ]},
             { label: 'Coloring', type: 'dropdown', options: { instance: 'Instance Name', series: 'Series Name', index: 'Result Set Index', 'instance-series': 'Instance and Series Name' }, value: widget.coloring, onChange: (widget, value) => widget.coloring = value,
                 description: 'What value is used to select the index from the color palette' },
-            { label: 'Fields', type: 'text', value: (widget.fields || []).join(' '), onChange: (widget, value) => widget.fields = value == undefined || value == '' ? undefined : value.split(/[ ,]+/),
-                description: 'Selection and order of annotation fields to display, empty for auto selection and default order' },
-            {label: 'Annotations', type: 'checkbox', value: !options.noAnnotations, onChange: (widget, checked) => widget.options.noAnnotations = !checked}                
         ]});
-        settings.push({ id: 'settings-decorations', caption: 'Decorations', collapsed: true, entries: [
-            { label: 'Waterline', input: [
+        const lineExtrasAvailable = widget.type == 'line';
+        settings.push({ id: 'settings-decorations', caption: 'Extras', collapsed: true, entries: [
+            { label: 'Annotations', input: [
+                { label: 'show', type: 'checkbox', value: !options.noAnnotations, onChange: (widget, checked) => widget.options.noAnnotations = !checked},
+            ]},
+            { type: 'textarea', value: (widget.fields || []).join(' '), placeholder: '(fields: auto)', onChange: (widget, value) => widget.fields = value == undefined || value == '' ? undefined : value.split(/[ ,]+/),
+                description: 'Selection and order of annotation fields to display, empty for auto selection and default order' },
+            { label: 'Aggregates', available: lineExtrasAvailable, input: [
+                { label: 'Min', type: 'checkbox', value: options.drawMinLine, onChange: (widget, checked) => widget.options.drawMinLine = checked},
+                { label: 'Max', type: 'checkbox', value: options.drawMaxLine, onChange: (widget, checked) => widget.options.drawMaxLine = checked},
+                { label: 'Avg', type: 'checkbox', value: options.drawAvgLine, onChange: (widget, checked) => widget.options.drawAvgLine = checked},            
+            ]},            
+            { label: 'Waterline', available: lineExtrasAvailable, input: [
                 { type: 'value', unit: unit, value: widget.decorations.waterline.value, onChange: (widget, value) => widget.decorations.waterline.value = value },
                 { type: 'color', value: widget.decorations.waterline.color, defaultValue: Theme.color('waterline'), onChange: (widget, value) => widget.decorations.waterline.color = value },
             ]},
-            { label: 'Alarming Threshold', input: [
-                { type: 'value', unit: unit, value: thresholds.alarming.value, onChange: (widget, value) => widget.decorations.thresholds.alarming.value = value },
-                { type: 'color', value: thresholds.alarming.color, defaultValue: Theme.color('alarming'), onChange: (widget, value) => thresholds.alarming.color = value },
-                { label: 'Line', type: 'checkbox', value: thresholds.alarming.display, onChange: (widget, checked) => thresholds.alarming.display = checked },
-            ]},
-            { label: 'Critical Threshold', input: [
-                { type: 'value', unit: unit, value: thresholds.critical.value, onChange: (widget, value) => widget.decorations.thresholds.critical.value = value },
-                { type: 'color', value: thresholds.critical.color, defaultValue: Theme.color('critical'), onChange: (widget, value) => widget.decorations.thresholds.critical.color = value },
-                { label: 'Line', type: 'checkbox', value: thresholds.critical.display, onChange: (widget, checked) => widget.decorations.thresholds.critical.display = checked },
+            { label: 'Visual Thresholds', available: lineExtrasAvailable, input: [
+                { type: 'dropdown', options: { off: 'Off', now: 'Most Recent Value', min: 'Minimum Value', max: 'Maximum Value', avg: 'Average Value'}, value: thresholds.reference, onChange: (widget, selected) => widget.decorations.thresholds.reference = selected},
+                [
+                    { label: 'alarming', type: 'value', unit: unit, value: thresholds.alarming.value, onChange: (widget, value) => widget.decorations.thresholds.alarming.value = value },
+                    { type: 'color', value: thresholds.alarming.color, defaultValue: Theme.color('alarming'), onChange: (widget, value) => thresholds.alarming.color = value },
+                    { label: 'Line', type: 'checkbox', value: thresholds.alarming.display, onChange: (widget, checked) => thresholds.alarming.display = checked },
+                ],
+                [
+                    { label: 'critical', type: 'value', unit: unit, value: thresholds.critical.value, onChange: (widget, value) => widget.decorations.thresholds.critical.value = value },
+                    { type: 'color', value: thresholds.critical.color, defaultValue: Theme.color('critical'), onChange: (widget, value) => widget.decorations.thresholds.critical.color = value },
+                    { label: 'Line', type: 'checkbox', value: thresholds.critical.display, onChange: (widget, checked) => widget.decorations.thresholds.critical.display = checked },
+                ]
             ]},                
-            { label: 'Threshold Reference', type: 'dropdown', options: { off: 'Off', now: 'Most Recent Value', min: 'Minimum Value', max: 'Maximum Value', avg: 'Average Value'}, value: thresholds.reference, onChange: (widget, selected) => widget.decorations.thresholds.reference = selected},
+            
         ]});
         settings.push({ id: 'settings-status', caption: 'Status', collapsed: true, description: 'Set a text for an assessment status', entries: [
-            { label: '"No Data"', type: 'text', value: widget.status.missing.hint, onChange: (widget, text) => widget.status.missing.hint = text},
-            { label: '"Alaraming"', type: 'text', value: widget.status.alarming.hint, onChange: (widget, text) => widget.status.alarming.hint = text},
-            { label: '"Critical"', type: 'text', value: widget.status.critical.hint, onChange: (widget, text) => widget.status.critical.hint = text},
+            { label: '"No Data"', type: 'textarea', value: widget.status.missing.hint, onChange: (widget, text) => widget.status.missing.hint = text},
+            { label: '"Alaraming"', type: 'textarea', value: widget.status.alarming.hint, onChange: (widget, text) => widget.status.alarming.hint = text},
+            { label: '"Critical"', type: 'textarea', value: widget.status.critical.hint, onChange: (widget, text) => widget.status.critical.hint = text},
         ]});
         let alerts = widget.decorations.alerts;
         settings.push({ id: 'settings-alerts', caption: 'Alerts', collapsed: true, entries: [

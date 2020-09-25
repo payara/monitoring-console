@@ -199,6 +199,26 @@ MonitoringConsole.View.Components = (function() {
         return createTextInput(model);
       }
 
+      function createTextAreaInput(model) {
+        const config = { rows: 3 };
+        let readonly = model.onChange === undefined;
+        if (readonly)
+          config.readonly = true;
+        if (model.placeholder)
+          config.placeholder = model.placeholder;
+        const input = $('<textarea/>', config);
+        if (model.value)
+          input.append(model.value);
+        if (!readonly) {
+          let onChange = enhancedOnChange(model.onChange, false);
+          input.on('input change', function() {
+            const val = input.val();
+            onChange(val == '' ? undefined : val);
+          });
+        }
+        return input;
+      }
+
       function createTextInput(model) {
         function getConverter() {
           if (model.unit === undefined)
@@ -218,7 +238,7 @@ MonitoringConsole.View.Components = (function() {
           class: `input-${model.type}`,
         };
         if (model.description && !model.label)
-          config.title = description;
+          config.title = model.description;
         let readonly = model.onChange === undefined;
         if (!readonly && isString(model.unit)) {
           if (converter.pattern !== undefined)
@@ -226,6 +246,8 @@ MonitoringConsole.View.Components = (function() {
           if (converter.patternHint !== undefined)
             config.title = (config.title ? config.title + ' ' : '') + converter.patternHint();
         }
+        if (model.placeholder)
+          config.placeholder = model.placeholder;
         let input = $('<input/>', config);
         if (!readonly) {
           let onChange = enhancedOnChange(model.onChange, true);
@@ -358,6 +380,7 @@ MonitoringConsole.View.Components = (function() {
             case 'range'   : return createRangeInput(model);
             case 'value'   : return createValueInput(model);
             case 'text'    : return createTextInput(model);
+            case 'textarea': return createTextAreaInput(model);
             case 'color'   : return createColorInput(model);
             case 'toggle'  : return createToggleInput(model);
             default        : return model.input;
@@ -402,7 +425,7 @@ MonitoringConsole.View.Components = (function() {
         if (pageGroups.length > 0) 
           groupPanels.append(createGroupList(pageGroups, SyntheticId, false, '', 'icon-page'));  
         if (widgetGroups.length > 0) 
-          groupPanels.append(createGroupList(widgetGroups, SyntheticId));  
+          groupPanels.append(createGroupList(widgetGroups, SyntheticId, true, 'Widget Settings'));  
         return sidebar.append(groupPanels);
       }
 
