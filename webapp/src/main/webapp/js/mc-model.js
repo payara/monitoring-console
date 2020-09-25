@@ -714,11 +714,15 @@ MonitoringConsole.Model = (function() {
 					pageId = settings.home;
 				let presets = Data.PAGES;
 				let hasPreset = presets && presets[pageId];
-				if (hasPreset)
+				if (hasPreset) {
+					onError('Page cannot be deleted.');
 					return;
+				}
 				let pageIds = Object.keys(pages);
-				if (pageIds.length <= 1)
+				if (pageIds.length <= 1) {
+					onError('Last page cannot be deleted.');
 					return;
+				}
 				let deletion = () => {
 					delete pages[pageId];
 					if (pageId == settings.home)

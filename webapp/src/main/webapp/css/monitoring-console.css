@@ -1051,40 +1051,59 @@ table.AnnotationTable {
 #FeedbackBannerContainer {
   position: absolute;
   z-index: 120;
-  width: 50%;
-  margin: 0 25%;
+  width: 40%;
+  margin: 0 30%;
 }
 .FeedbackBanner {
-  padding: 10px;
+  padding: 12px;
   position: relative;
   background-color: white;
-  color: black;
-  border-radius: 3px;
-  margin-top: 1em;
+  color: white;
+  border-radius: var(--block-radius);
+  margin: 8px;
+  background: linear-gradient( 
+    rgba(var(--basalt), 0.8), 
+    rgba(var(--basalt), 0.8)), rgb(var(--coal));
 }
 .FeedbackBanner.FeedbackBannerSuccess {
-  background-color: #3cb44b;
+  background: linear-gradient( 
+    rgba(var(--frog), 0.8), 
+    rgba(var(--frog), 0.8)), rgb(var(--coal));
 }
 .FeedbackBanner.FeedbackBannerError {
-  background-color: #e6194B;
+  background: linear-gradient( 
+    rgba(var(--cherry), 0.8), 
+    rgba(var(--cherry), 0.8)), rgb(var(--coal));
 }
 
 .FeedbackBanner p {
-  margin-left: 60px;
+  margin: 0;
+  margin-left: 48px;
 }
-.FeedbackBanner .FeedbackBannerIcon {
+.FeedbackBanner p em {
+  font-style: normal;
+  font-weight: bold;
+}
+.FeedbackBanner > .icon {
   position: absolute;
-  left: 20px;
-  top: 10px;
-  font-size: 40px;
+  width: 24px;
+  height: 24px;
+  left: 16px;
+  top: 12px;
+  padding: 0;
 }
 .FeedbackBanner .btn-close {
   position: absolute;
-  right: 10px;
-  top: 10px;
+  right: 0;
+  top: 0;
   background: none;
   box-shadow: none;
-  border-width: 0;
+}
+.FeedbackBanner .btn-close .icon {  
+  fill: rgba(255,255,255, 0.75);
+}
+.FeedbackBanner .btn-close:hover .icon {
+  fill: rgba(255,255,255, 1);
 }
 
 
@@ -1388,6 +1407,11 @@ table.AnnotationTable {
 }
 .NavSidebar.NavExpanded .NavControls dd {
   float: left;
+}
+.NavSidebar.NavExpanded .NavControls dd > span {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
 }
 .NavSidebar .NavControls input[type="range"] {
   width: 120px;

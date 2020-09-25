@@ -480,7 +480,6 @@ MonitoringConsole.View = (function() {
         banner.delay(3000).fadeOut();
     }
 
-
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Event Handlers ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     function onWidgetDelete(widget) {
@@ -1447,7 +1446,7 @@ MonitoringConsole.View = (function() {
                         showFeedback({ type: 'success', message: `Your page <em>${name}</em> has been deleted.` });             
                         updatePageNavigation();                        
                     }, 
-                    () => showFeedback({ type: 'error', message: `Failed to delete page <em>${name}</em> remotely. Delete page aborted.`}));
+                    msg => showFeedback({ type: 'error', message: `Failed to delete page <em>${name}</em>. ${msg}`}));
                 }
             }));
         },

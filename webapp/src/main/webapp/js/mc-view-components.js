@@ -1835,16 +1835,24 @@ MonitoringConsole.View.Components = (function() {
         typeClass = 'FeedbackBannerSuccess';
       if (isError)
         typeClass = 'FeedbackBannerError';
-      const config = { class: `FeedbackBanner  ${typeClass}`  };
+      const config = { 
+        class: `FeedbackBanner  ${typeClass}`,
+        role: 'dialog',
+        'aria-labelledby': 'this-modal-title'
+      };
       if (model.id === undefined)
         model.id = 'FeedbackBanner';
       config.id = model.id;      
       const banner = $('<div/>', config);
-      banner.append($('<button/>', { class: 'btn-close'}).text('x').click(() => banner.remove()));
+      banner.append(createIconButton({
+        class: 'btn-icon btn-close',
+        icon: 'icon-cross',
+        alt: 'Close Dialog'
+      }).click(() => banner.remove()));
       if (isSuccess)
-        banner.append($('<span/>', { class: 'FeedbackBannerIcon'}).html('&check;'));
+        banner.append(createIcon('icon-tick'));
       if (isError)
-        banner.append($('<span/>', { class: 'FeedbackBannerIcon'}).html('&cross;'));
+        banner.append(createIcon('icon-cross'));
       banner.append($('<p/>').append(model.message));
       return banner;
     }
