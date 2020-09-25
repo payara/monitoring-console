@@ -1642,17 +1642,17 @@ MonitoringConsole.View.Components = (function() {
       if (typeof model.width === 'number')
         boxConfig.style += 'width: ' + model.width + 'px;'; 
       const box = $('<div/>', boxConfig);
+      if (model.title !== undefined && model.title != '')
+        box.append($('<h2/>').html(model.title));
       if (isString(model.closeProperty)) {
         const button = model.buttons.find(button => button.property == model.closeProperty);
-        box.append($('<span/>', {
-          class: 'btn-close', 
-          title: button === undefined ? 'Cancel' : button.label 
-        })
-          .html('&times;')
-          .click(createClickHandler(model, model.closeProperty)));
-      }
-      if (model.title !== undefined && model.title != '')
-        box.append($('<h3/>').html(model.title));
+        box.append(createIconButton({
+          class: 'btn-icon btn-close', 
+          icon: 'icon-cross',
+          alt: button === undefined ? 'Cancel' : button.label 
+        }).click(createClickHandler(model, model.closeProperty)));
+      }      
+
       const content = isFunction(model.context) ? model.content() : model.content;
       if (Array.isArray(content)) {
         content.forEach(e => box.append(e));

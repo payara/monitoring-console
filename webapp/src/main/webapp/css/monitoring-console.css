@@ -1045,173 +1045,9 @@ table.AnnotationTable {
 }
 
 
-/**
- * FeedbackBanner
- */
-#FeedbackBannerContainer {
-  position: absolute;
-  z-index: 120;
-  width: 40%;
-  margin: 0 30%;
-}
-.FeedbackBanner {
-  padding: 12px;
-  position: relative;
-  background-color: white;
-  color: white;
-  border-radius: var(--block-radius);
-  margin: 8px;
-  background: linear-gradient( 
-    rgba(var(--basalt), 0.8), 
-    rgba(var(--basalt), 0.8)), rgb(var(--coal));
-}
-.FeedbackBanner.FeedbackBannerSuccess {
-  background: linear-gradient( 
-    rgba(var(--frog), 0.8), 
-    rgba(var(--frog), 0.8)), rgb(var(--coal));
-}
-.FeedbackBanner.FeedbackBannerError {
-  background: linear-gradient( 
-    rgba(var(--cherry), 0.8), 
-    rgba(var(--cherry), 0.8)), rgb(var(--coal));
-}
-
-.FeedbackBanner p {
-  margin: 0;
-  margin-left: 48px;
-}
-.FeedbackBanner p em {
-  font-style: normal;
-  font-weight: bold;
-}
-.FeedbackBanner > .icon {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  left: 16px;
-  top: 12px;
-  padding: 0;
-}
-.FeedbackBanner .btn-close {
-  position: absolute;
-  right: 0;
-  top: 0;
-  background: none;
-  box-shadow: none;
-}
-.FeedbackBanner .btn-close .icon {  
-  fill: rgba(255,255,255, 0.75);
-}
-.FeedbackBanner .btn-close:hover .icon {
-  fill: rgba(255,255,255, 1);
-}
 
 
 
-/* Modal Components */
-.ModalDialog {
-  position: fixed;
-  z-index: 110; 
-  left: 0;
-  top: 0;
-  width: 100%; 
-  height: 100%;
-  overflow: auto; 
-  background-color: rgb(0,0,0); 
-  background-color: rgba(0,0,0,0.4); 
-}
-
-.ModalDialog .ModalDialogContent.danger-zone {
-  border: 5px solid #e6194B;
-}
-.ModalDialog .ModalDialogContent.danger-zone:before {
-  content: 'Danger Zone \002122';
-  position: absolute;
-  margin-top: -65px;
-  color: #e6194B;
-  right: 0;
-  font-weight: bold;
-}
-
-
-/* ModalDialog Component */
-.ModalDialog .btn-close {
-  position: absolute;
-  top: 0;
-  right: 0;
-  cursor: pointer;
-  padding: 15px 20px;
-}
-
-.ModalDialog .btn-close:hover {
-  color: rgb(var(--primary-color-rgb-orange));
-}
-
-.ModalDialog .ModalDialogContent > h3 {
-  margin: -40px -40px 20px -40px;
-  background-color: var(--group-bg-color);
-  padding: 15px 40px;
-}
-
-.ModalDialog .ModalDialogContent {
-  position: relative;
-  margin: 0 auto;
-  padding: 40px;
-  padding-bottom: 0;
-  box-sizing: border-box;
-  width: calc(100% - 760px);
-  background-color: var(--sidebar-bg-color);
-  border-radius: 3px;
-}
-
-.ModalDialog .ModalDialogContent.centered {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-}  
-
-.ModalDialog .ModalDialogButtons {
-  padding: 10px 0;
-  text-align: center;
-  clear: both;
-}
-.ModalDialog .ModalDialogButtons button {
-  margin: 0 10px;
-}
-.ModalDialog em {
-  font-style: normal;
-  color: rgb(var(--primary-color-rgb-orange));
-}
-.ModalDialog ul {
-  list-style-type: none;
-  padding: 0;
-}
-.ModalDialog input[type=checkbox] + label {
-  cursor: pointer;
-}
-
-/* Modal Dialog Customisation */
-.ModalDialog .ModalDialogUserRole dl {
-  display: grid;
-  grid-template-rows: auto auto;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-auto-flow: column;
-  grid-gap: 5px 40px;
-}
-.ModalDialog .ModalDialogUserRole dd {
-  margin: 0;
-}
-.ModalDialog .ModalDialogUserRole .ModalDialogButtons {
-  display: grid;
-  grid-template-rows: auto;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-auto-flow: column;
-  grid-gap: 0 40px;
-}
-.ModalDialog .ModalDialogUserRole .ModalDialogButtons button {
-  justify-self: center;
-}
 
 /* SelectionWizard Component */
 
@@ -1469,4 +1305,158 @@ table.AnnotationTable {
 
 
 
+/**
+ * FeedbackBanner
+ */
+#FeedbackBannerContainer {
+  position: absolute;
+  z-index: 120;
+  width: 40%;
+  margin: 0 30%;
+}
+.FeedbackBanner {
+  padding: 12px;
+  position: relative;
+  color: white;
+  border-radius: var(--block-radius);
+  margin: 8px;
+  background: rgba(var(--basalt), 1);
+}
+.FeedbackBanner.FeedbackBannerSuccess {
+  background: rgba(var(--frog), 1);
+}
+.FeedbackBanner.FeedbackBannerError {
+  background: rgba(var(--cherry), 1);
+}
+.FeedbackBanner p {
+  margin: 0;
+  margin-left: 48px;
+}
+.FeedbackBanner p em {
+  font-style: normal;
+  font-weight: bold;
+}
+.FeedbackBanner > .icon {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  left: 16px;
+  top: 12px;
+  padding: 0;
+}
+.FeedbackBanner .btn-close {
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: none;
+  box-shadow: none;
+}
+.FeedbackBanner .btn-close .icon {
+  fill: rgba(255,255,255, 0.75);
+}  
+.FeedbackBanner .btn-close:hover .icon {
+  fill: rgba(255,255,255, 1);
+}
 
+/* Modal Components */
+.ModalDialog {
+  align-items: center;
+  background: rgba(var(--coal), 0.9);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  left: 0;
+  padding: 24px;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 100;
+}
+.ModalDialog .ModalDialogContent {
+  background: rgba(var(--basalt, 0.8));
+  border-radius: var(--block-radius);
+  display: inline-flex;
+  flex-direction: column;
+  margin: 8px 0;
+  min-width: 30vw;
+  max-width: 60vw;
+  padding: 12px;
+  position: relative;
+  box-sizing: border-box;
+}
+.ModalDialog .ModalDialogContent.xxxcentered {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+} 
+.ModalDialog .ModalDialogContent.danger-zone {
+  border: 5px solid #e6194B;
+}
+.ModalDialog .ModalDialogContent.danger-zone:before {
+  content: 'Danger Zone \002122';
+  position: absolute;
+  margin-top: -65px;
+  color: #e6194B;
+  right: 0;
+  font-weight: bold;
+}
+.ModalDialog .btn-close {
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: none;
+  box-shadow: none;
+  transform: none !important;
+}
+.ModalDialog .btn-close .icon {
+  fill: rgba(255,255,255,0.75);
+}
+.ModalDialog .btn-close:hover .icon {
+  fill: rgba(255,255,255,1);
+}
+.ModalDialog .ModalDialogContent > h2 {
+  margin: 0 28px 16px 0;
+}
+.ModalDialog .ModalDialogButtons {
+  padding: 10px 0;
+  text-align: center;
+  clear: both;
+}
+.ModalDialog .ModalDialogButtons button {
+  margin: 0 10px;
+}
+.ModalDialog em {
+  font-style: normal;
+  color: rgb(var(--primary-color-rgb-orange));
+}
+.ModalDialog ul {
+  list-style-type: none;
+  padding: 0;
+}
+.ModalDialog input[type=checkbox] + label {
+  cursor: pointer;
+}
+
+/* Modal Dialog Customisation */
+.ModalDialog .ModalDialogUserRole dl {
+  display: grid;
+  grid-template-rows: auto auto;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-auto-flow: column;
+  grid-gap: 5px 40px;
+}
+.ModalDialog .ModalDialogUserRole dd {
+  margin: 0;
+}
+.ModalDialog .ModalDialogUserRole .ModalDialogButtons {
+  display: grid;
+  grid-template-rows: auto;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-auto-flow: column;
+  grid-gap: 0 40px;
+}
+.ModalDialog .ModalDialogUserRole .ModalDialogButtons button {
+  justify-self: center;
+}
