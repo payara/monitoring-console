@@ -1381,8 +1381,6 @@ MonitoringConsole.View = (function() {
      * Method to call when page changes to update UI elements accordingly
      */
     function onPageChange(layout) {
-        MonitoringConsole.Chart.Trace.onClosePopup();
-        $('#chart-grid').show();
         onPageUpdate(layout);
         updatePageNavigation();
         updateSettings();

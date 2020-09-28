@@ -1694,7 +1694,7 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createPageItem(model, page) {      
-      const label = $('<a/>', { href: '#'}).text(page.label);
+      const label = $('<a/>', { href: '#' + page.id}).text(page.label);
       const item = $('<li/>', { class: 'NavItem' + (page.selected ? ' selected' : '')});
       item.append(label);
       if (page.selected) {
