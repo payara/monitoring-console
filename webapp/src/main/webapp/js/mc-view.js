@@ -1176,15 +1176,15 @@ MonitoringConsole.View = (function() {
                     no: 'Cancel',
                     onYes: () => Controller.requestDeleteWatch(name, 
                         wrapOnSuccess(name, onSuccess, `Successfully delete watch <em>${name}</em>.`), 
-                        wrapOnError(name, onFailure, `Failed to delete watch <em>${name}</em>.`))
+                        wrapOnError(name, onFailure, `Failed to deleted watch <em>${name}</em>.`))
                 }));
             };
             actions.onDisable = (name, onSuccess, onFailure) => Controller.requestDisableWatch(name, 
-                wrapOnSuccess(name, onSuccess, `Successfully disabled watch ${name}.`), 
-                wrapOnError(name, onFailure), `Failed to disable watch ${name}.`);
+                wrapOnSuccess(name, onSuccess, `Successfully disabled watch <em>${name}</em>.`), 
+                wrapOnError(name, onFailure), `Failed to disable watch <em>${name}</em>.`);
             actions.onEnable = (name, onSuccess, onFailure) => Controller.requestEnableWatch(name, 
-                wrapOnSuccess(name, onSuccess, `Successfully enabled watch ${name}.`), 
-                wrapOnError(name, onFailure, `Failed to enable watch ${name}.`));            
+                wrapOnSuccess(name, onSuccess, `Successfully enabled watch <em>${name}</em>.`), 
+                wrapOnError(name, onFailure, `Failed to enable watch <em>${name}</em>.`));            
         }
         if (!Role.isGuest()) {
             actions.onCreate = (watch, onSuccess, onFailure) => Controller.requestCreateWatch(watch, 

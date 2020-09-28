@@ -1054,12 +1054,12 @@ MonitoringConsole.View.Components = (function() {
       const container = $('<div/>', config);
       let items = model.items.filter(watch => watch.programmatic);
       if (items.length > 0) {
-        container.append($('<h3>').html('&#129302; System Watches'));
+        container.append($('<h3>').html('System Watches'));
         container.append(createList(items, model));
       }
       items = model.items.filter(watch => !watch.programmatic);
       if (items.length > 0) {
-        container.append($('<h3>').html('&#129488; User Watches'));
+        container.append($('<h3>').html('User Watches'));
         container.append(createList(items, model));
       }      
       return container;
@@ -1074,15 +1074,23 @@ MonitoringConsole.View.Components = (function() {
 
     function createItem(list, item, colors, actions) {
       const label = $('<b/>').text(item.name + (item.stopped ? ' (stopped)' : ''));
+      const icon = createIconButton({
+          class: 'btn-icon',
+          icon: 'icon-menu-arrow',
+          alt: 'Expand/Collapse Details'
+      });
       const dt = $('<dt/>', { class: 'state-collapsed state-' + (item.disabled || item.stopped ? 'disabled' : 'enabled') })
+        .append(icon)
         .append(label)
         .append($('<code/>').text(item.series));
-      label.click(() =>  {
+      const onClick = () =>  {
         dt.nextUntil('dt').toggle();
         dt.toggleClass('state-collapsed');
-      });
+      };
+      icon.click(onClick);
+      label.click(onClick);
       if (isFunction(actions.onCreate)) {
-        dt.append($('<button/>').text(item.programmatic ? 'Duplicate' : 'Edit').click(() => actions.onEdit(item)));
+        dt.append($('<button/>').text(item.programmatic ? 'Copy' : 'Edit').click(() => actions.onEdit(item)));
       } else {
         dt.append($('<span/>'));
       }
@@ -1129,7 +1137,7 @@ MonitoringConsole.View.Components = (function() {
   const WatchBuilder = (function() {
     
     function createComponent(model, watch) {
-      const config = { class: 'WatchBuilder WatchItem' };
+      const config = { class: 'WatchBuilder' };
       if (model.id)
         config.id = model.id;
       let editedWatch = watch || { unit: 'count', name: 'New Watch' };
@@ -1372,11 +1380,6 @@ MonitoringConsole.View.Components = (function() {
       for (let i = 0; i < model.filters.length; i++)
         model.filters[i].id = i;
 
-      // fixed UI state
-      const searchBox = $('<div/>', { class: 'Search' });
-      const filterBox = $('<div/>', { class: 'Filters' });
-      const matchList = $('<div/>', { class: 'Matches'});
-      
       // applying the state to the UI
       let matches;
 
@@ -1395,48 +1398,57 @@ MonitoringConsole.View.Components = (function() {
           model.onChange(Object.keys(state.selection), state.selection);
         }
         matches.forEach(match => match.filtered = false);
-        filterBox.empty();
-        for (let filter of model.filters)
-          filterBox.append(createFilter(model, filter, matches, state));
-        recreateMatchList(model, state, matchList, matches);
+        populateWizard(model, wizard, state, matches);
       };
       state.changed = update;
       update();
-      searchBox.append(filterBox);
-      return wizard.append(searchBox).append(matchList);
+      return wizard;
+    }
+
+    function populateWizard(model, wizard, state, matches) {
+      wizard.empty();
+
+      const searchBox = $('<header/>', { class: 'SelectionWizardSearch' });
+        for (let filter of model.filters)
+          searchBox.append(createFilter(model, filter, matches, state));
+      wizard.append(searchBox);
+
+      const matchesCount = countTotalMatches(matches);
+      const noFilter = matchesCount == matches.length;
+      const selectionCount = Object.keys(state.selection).length;
+      wizard.append($('<h4/>').text(noFilter 
+        ? 'Please select a filter...' 
+        : `${matchesCount} matches for total of ${matches.length} metrics`));
+      wizard.append($('<h4/>').text(selectionCount + ' Selected'));
+      wizard.append(noFilter ? $('<ol/>') : createMatchList(model, state, matches));
+      wizard.append(selectionCount == 0 ? $('<ol/>') : createSelectionList(model, state, matches));
     }
 
     function matchForKey(key, keyProperty, matches) {
       return matches.find(match => match[keyProperty] == key);
     }
 
-    function recreateMatchList(model, state, list, matches) {
-      list.empty();
-
-      const selectionCount = Object.keys(state.selection).length;
-      if (selectionCount > 0) {
-        const selection = $('<div/>', { class: 'Selection' });
-        selection.append($('<b/>').text(selectionCount + ' Selected'));
-        for (let match of Object.values(state.selection))
-          selection.append(createMatchEntry(model, state, match, true));
-        list.append(selection);
-      }
-
+    function countTotalMatches(matches) {
       let c = 0;
       for (let match of matches)
         if (!match.filtered)
           c++;
+      return c;
+    }
 
-      if (c == matches.length) {
-        list.append($('<b/>').text('Please select a filter...'));
-        return;
-      }
+    function createSelectionList(model, state, matches) {
+      const list = $('<ol/>', { class: 'SelectionWizardSelection' });
+      for (let match of Object.values(state.selection))
+        list.append(createMatchEntry(model, state, match, true));
+      return list;
+    }
 
-      list.append($('<b/>').text(c + ' matches')).append($('<span/>').text(` for total of ${matches.length} metrics`));
+    function createMatchList(model, state, matches) {
+      const list = $('<ol/>', { class: 'SelectionWizardMatches' });
       for (let match of matches)
         if (!match.filtered)
           list.append(createMatchEntry(model, state, match, false));
-      list.append($('<div/>', { style: 'clear:both;' }));
+      return list;
     }
 
     function createMatchEntry(model, state, match, describe) {
@@ -1457,7 +1469,7 @@ MonitoringConsole.View.Components = (function() {
         entry[property] = model.properties[property].call(this, match);
       entry.selected = state.selection[key] !== undefined;
       entry.describe = describe;
-      return $('<div/>').append(input).append($('<label/>', { for: id }).append(model.render(entry)));
+      return $('<li/>').append(input).append($('<label/>', { for: id }).append(model.render(entry)));
     }
 
     function createFilter(model, filter, matches, state) {
@@ -1474,7 +1486,7 @@ MonitoringConsole.View.Components = (function() {
       if (active) {
         applyFilter(model, filter, state, matches);
       }
-      return $('<div/>', { class: 'Filter' })
+      return $('<div/>', { class: 'SelectionWizardFilter' })
         .append(label)
         .append(filterInput);
     }
@@ -1653,11 +1665,13 @@ MonitoringConsole.View.Components = (function() {
         }).click(createClickHandler(model, model.closeProperty)));
       }      
 
+      const scroll = $('<div/>', { class: 'ModalDialogScroll'});
+      box.append(scroll);
       const content = isFunction(model.context) ? model.content() : model.content;
       if (Array.isArray(content)) {
-        content.forEach(e => box.append(e));
+        content.forEach(e => scroll.append(e));
       } else {
-        box.append(content);
+        scroll.append(content);
       }
       if (model.buttons) {
         const bar = $('<div/>', { class: 'ModalDialogButtons' });

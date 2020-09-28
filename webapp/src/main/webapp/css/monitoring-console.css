@@ -951,46 +951,52 @@ table.AnnotationTable {
 }
 
 /* Watch List Component */
-.WatchListContainer > h3:first-letter {
-  font-size: 40px;
-  font-weight: normal;
-}
 .WatchList {
-  background-color: white;
-  border-radius: 3px;
-  color: black;
-  padding: 10px;
+  background-color: rgba(255,255,255,0.1);
+  border-radius: var(--block-radius);
+  padding: 12px;
 }
 .WatchList dt {
-  margin: 10px 0;
-  display: grid;
-  grid-template-columns: 2fr 2fr 1fr 1fr 1fr;
-  grid-gap: 5px;
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
 }
-.WatchList dt:before {
-  position: absolute;
-  content: '\2303';
-  pointer-events: none;
-  font-size: 20px;
-}
-.WatchList dt.state-collapsed:before {
-  content: '\2304';
-  margin-top: -8px;
-}
-
 .WatchList dt b {
   cursor: pointer;
-  padding-left: 20px;
+  flex: 0 0 25%;
 }
-.WatchList dt.state-disabled b {
+.WatchList dt button {
+  margin-right: 8px;
+}
+.WatchList dt code {
+  flex: 1 1 auto;
+}
+.WatchList .state-disabled b {
   text-decoration: line-through;
 }
+.WatchList .btn-icon {
+  background: none;
+  outline: none;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.WatchList .btn-icon .icon {
+  transform: rotate(-90deg);
+  fill: rgba(255,255,255,0.9);
+}
+.WatchList .state-collapsed .btn-icon .icon {
+  transform: rotate(90deg);
+}
+.WatchList .btn-icon:hover .icon {
+  fill: rgba(255,255,255,1);
+}
 .WatchManager .WatchCondition em {
-  color: black;
+  font-weight: normal;
 }
 .WatchCondition {
   padding: 0 0.5em;
   font-family: monospace;
+  font-size: 14px;
 }
 .WatchCondition em {
   font-style: normal;
@@ -1013,17 +1019,12 @@ table.AnnotationTable {
   max-width: 200px;
 }
 .WatchBuilder {
-  position: relative;
-  padding-bottom: 2.5em;
-}
-.WatchBuilder h3 input {
-  width: 200px;
-  max-width: 200px;
+  background-color: rgba(var(--cherry),0.8);
+  border-radius: var(--block-radius);
+  padding: 12px;
 }
 .WatchBuilder .WatchCondition {
   margin: 5px 0;
-  background-color: white;
-  border-radius: 3px;
   padding: 3px 1em;
 }
 .WatchBuilder .WatchBuilderForm > div {
@@ -1050,41 +1051,56 @@ table.AnnotationTable {
 
 
 /* SelectionWizard Component */
-
-.SelectionWizard .Filter label {
-  width: 160px;
+.SelectionWizard {
+  min-width: calc(80vw - 24px);
+  display: grid;
+  grid-template-columns: 50% 50%;
+  grid-gap: 8px;
+  box-sizing: border-box;
+}
+.SelectionWizard .SelectionWizardFilter label {
+  width: 240px;
   display: inline-block;
 }
-.SelectionWizard .Filter select,
-.SelectionWizard .Filter input[type=text] {
+.SelectionWizard .SelectionWizardFilter select,
+.SelectionWizard .SelectionWizardFilter input[type=text] {
   max-width: 240px;
 }
-.SelectionWizard .Search {
-  padding: 10px 0;
+.SelectionWizard .SelectionWizardSearch {
+  padding: 8px 0;
+  grid-column: 1 / 3;
 }
-.SelectionWizard .Matches {
-  padding: 20px;
-  background-color: white;
-  color: #434445;
-  min-height: 10em;
-  border-radius: 3px;
+.SelectionWizard .SelectionWizardMatches {
+  padding: 8px;
+  background-color: rgba(255,255,255,0.1);
+  border-radius: var(--block-radius);
 }
-.SelectionWizard .Matches .Selection {
-  float: right;
-  width: 50%;
+.SelectionWizard .SelectionWizardSelection {
+  padding: 8px;
+  background-color: rgba(255,255,255,0.1);
+  border-radius: var(--block-radius);
 }
 .SelectionWizard .Matches p {
   font-style: italic;
   padding: 0;
   margin: 2px 2em 0.5em 2em;  
 }
-
+.SelectionWizard h4,
+.SelectionWizard ol {
+  margin: 0;
+}
+.SelectionWizard ol li {
+  display: flex;
+  align-items: flex-start;
+}
+.SelectionWizard ol li input[type=checkbox] {
+  margin: 8px;
+}
 
 /* Page Manager Component */
 .PageManager table {
   border-spacing: 10px 0;
   border-collapse: separate;
-  color: black;
   width: calc(100% + 20px);
   margin-left: -10px;
   clear: both;
@@ -1095,7 +1111,7 @@ table.AnnotationTable {
 }
 .PageManager table td, .PageManager table th {
   padding: 2px 0.5em;
-  background-color: white;
+  background-color: rgba(255,255,255,0.1);
 }
 .PageManager span {
   padding-left: 20px;
@@ -1108,8 +1124,9 @@ table.AnnotationTable {
   content: '\00002a';
   font-size: 20px;
   font-weight: bold;
-  position: absolute;
-  margin-left: -15px;
+  position: relative;
+  margin-left: -20px;
+  margin-right: 8px;
 }
 .PageManager table tr {
   border-top: 1px solid rgba(var(--primary-color-rgb-orange));
@@ -1121,7 +1138,7 @@ table.AnnotationTable {
   width: 20%;
 }
 .PageManager table tr:nth-child(even) td {
-  background-color: #ddd;
+  background-color: rgba(255,255,255,0.2);
 }
 .PageManager table div {
   display: grid;
@@ -1375,32 +1392,25 @@ table.AnnotationTable {
 }
 .ModalDialog .ModalDialogContent {
   background: rgba(var(--basalt, 0.8));
+  box-shadow: 0px 20px 20px 4px rgba(var(--onyx),0.9);
   border-radius: var(--block-radius);
   display: inline-flex;
   flex-direction: column;
   margin: 8px 0;
-  min-width: 30vw;
-  max-width: 60vw;
+  min-width: 20vw;
+  max-width: 80vw;
   padding: 12px;
   position: relative;
   box-sizing: border-box;
 }
-.ModalDialog .ModalDialogContent.xxxcentered {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-} 
 .ModalDialog .ModalDialogContent.danger-zone {
-  border: 5px solid #e6194B;
+  background: rgba(var(--cherry, 0.8));
 }
-.ModalDialog .ModalDialogContent.danger-zone:before {
-  content: 'Danger Zone \002122';
-  position: absolute;
-  margin-top: -65px;
-  color: #e6194B;
-  right: 0;
-  font-weight: bold;
+.ModalDialog .ModalDialogScroll {
+  flex: 1 0 auto;
+  max-height: 80vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .ModalDialog .btn-close {
   position: absolute;
@@ -1429,7 +1439,8 @@ table.AnnotationTable {
 }
 .ModalDialog em {
   font-style: normal;
-  color: rgb(var(--primary-color-rgb-orange));
+  color: white;
+  font-weight: bold;
 }
 .ModalDialog ul {
   list-style-type: none;
