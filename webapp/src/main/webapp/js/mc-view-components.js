@@ -388,10 +388,10 @@ MonitoringConsole.View.Components = (function() {
       }
 
       function createComponent(model) {
-        const config = { id: model.id };
+        const config = { id: model.id, class: 'Settings' };
         const hasToggle = isFunction(model.onSidebarToggle);
         if (hasToggle)
-          config['class'] = model.collapsed ? 'Settings SettingsCollapsed' : 'Settings SettingsExpanded';
+          config.class += model.collapsed ? ' SettingsCollapsed' : ' SettingsExpanded';
         const sidebar = $('<aside/>', config);
         const header = $('<header/>');
         sidebar.append(header);
@@ -415,6 +415,10 @@ MonitoringConsole.View.Components = (function() {
           let nextId = 0;
           return { next: () => nextId++ };
         })();
+        if (!hasToggle) {
+          sidebar.append(createGroupList(model.groups, SyntheticId, false));
+          return sidebar;
+        }
         const groups = model.groups.filter(g => g.available !== false);
         const appGroups = groups.filter(g => g.type == 'app');
         const pageGroups = groups.filter(g => g.type == 'page');
@@ -672,71 +676,6 @@ MonitoringConsole.View.Components = (function() {
     return { createComponent: createComponent };
 
   })();
-
-  /**
-   * Component for any of the text+icon menus/toolbars.
-   */
-  const Menu = (function() {
-
-    function createComponent(model) {
-      let attrs = { class: 'Menu' };
-      if (model.id)
-        attrs.id = model.id;
-      let menu = $('<span/>', attrs);
-      let groups = model.groups;
-      for (let g = 0; g < groups.length; g++) {
-        let group = groups[g];
-        if (group.items) {
-          let groupBox = $('<span/>', { class: 'Group' });
-          let groupLabel = $('<a/>').html(createText(group));
-          let groupItem = $('<span/>', { class: 'Item' })
-            .append(groupLabel)
-            .append(groupBox)
-            ;
-          if (group.clickable) {
-            groupLabel
-              .click(group.items.find(e => e.hidden !== true && e.disabled !== true).onClick)
-              .addClass('clickable');
-          }
-          menu.append(groupItem);
-          for (let i = 0; i < group.items.length; i++) {
-            let item = group.items[i];
-            if (item.hidden !== true)
-              groupBox.append(createButton(item));
-          }          
-        } else {
-          if (group.hidden !== true)
-            menu.append(createButton(group).addClass('Item'));
-        }
-      }
-      return menu;
-    }
-
-    function createText(button) {
-      let text = '';
-      if (button.icon)
-        text += '<strong>'+button.icon+'</strong>';
-      if (button.label)
-        text += button.label;
-      if (button.label && button.items)
-        text += " &#9013;";
-      return text;
-    }
-
-    function createButton(button) {
-      let attrs = { title: button.description };
-      if (button.disabled)
-        attrs.disabled = true;
-      return $('<button/>', attrs)
-            .html(createText(button))
-            .click(button.onClick)
-            .addClass('clickable');
-    }
-
-    return { createComponent: createComponent };
-  })();
-
-
 
   /**
    * An alert table is a widget that shows a table of alerts that have occured for the widget series.
@@ -1646,40 +1585,35 @@ MonitoringConsole.View.Components = (function() {
         id: model.id,
         class: 'ModalDialog' 
       };
-      const dialog = $('<div/>', config);
-      const boxConfig = {
-        class: `ModalDialogContent${(model.style ? ' ' +  model.style : '')}${(!model.fixed ? ' centered' : '')}`,
-        style: ''
-      };
-      if (typeof model.width === 'number')
-        boxConfig.style += 'width: ' + model.width + 'px;'; 
-      const box = $('<div/>', boxConfig);
+      const overlay = $('<div/>', config);
+      const dialog = $('<div/>', {
+        class: `ModalDialogContent${(model.style ? ' ' +  model.style : '')}`,
+      });
       if (model.title !== undefined && model.title != '')
-        box.append($('<h2/>').html(model.title));
+        dialog.append($('<h2/>').html(model.title));
       if (isString(model.closeProperty)) {
         const button = model.buttons.find(button => button.property == model.closeProperty);
-        box.append(createIconButton({
+        dialog.append(createIconButton({
           class: 'btn-icon btn-close', 
           icon: 'icon-cross',
           alt: button === undefined ? 'Cancel' : button.label 
         }).click(createClickHandler(model, model.closeProperty)));
       }      
-
-      const scroll = $('<div/>', { class: 'ModalDialogScroll'});
-      box.append(scroll);
+      const scrollpane = $('<div/>', { class: 'ModalDialogScroll'});
+      dialog.append(scrollpane);
       const content = isFunction(model.context) ? model.content() : model.content;
       if (Array.isArray(content)) {
-        content.forEach(e => scroll.append(e));
+        content.forEach(e => scrollpane.append(e));
       } else {
-        scroll.append(content);
+        scrollpane.append(content);
       }
       if (model.buttons) {
         const bar = $('<div/>', { class: 'ModalDialogButtons' });
         for (let button of model.buttons)
           bar.append(createButton(model, button));        
-        box.append(bar);
+        dialog.append(bar);
       }
-      return dialog.append(box);
+      return overlay.append(dialog);
     }
 
     function createButton(model, button) {
@@ -1963,7 +1897,6 @@ MonitoringConsole.View.Components = (function() {
       createSettings: model => Settings.createComponent(model),
       createLegend: model => Legend.createComponent(model),
       createIndicator: model => Indicator.createComponent(model),
-      createMenu: model => Menu.createComponent(model),
       createAlertTable: model => AlertTable.createComponent(model),
       createAnnotationTable: model => AnnotationTable.createComponent(model),
       createWatchManager: model => WatchManager.createComponent(model),

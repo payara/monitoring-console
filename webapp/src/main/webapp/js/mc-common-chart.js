@@ -52,7 +52,7 @@ MonitoringConsole.Chart.Common = (function() {
         tooltipModel.opacity = 1;
         $(tooltip).empty().append(createHtmlTooltip(tooltipModel.dataPoints));
         var position = this._chart.canvas.getBoundingClientRect(); // `this` will be the overall tooltip
-        tooltip.css({opacity: 1, left: position.left + tooltipModel.caretX, top: position.top + tooltipModel.caretY - 20});
+        tooltip.css({opacity: 1, left: position.left + (tooltipModel.caretX/2), top: position.top + tooltipModel.caretY});
       };
    }
 

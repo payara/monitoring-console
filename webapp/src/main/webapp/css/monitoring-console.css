@@ -392,20 +392,19 @@ svg.icon {
 #panel-grid {
   position: relative;
 }
-
 #panel-trace {
-  position: absolute;
-  top: 32px;
-  left: 0;
-  display: none;
-  z-index: 110;
-  padding: 10px;
   box-sizing: border-box;
+  width: 70vw;
+  display: grid;
+  grid-template-columns: 60% 40%;
+  grid-gap: 8px;
 }
+#panel-trace button {
+  margin-bottom: 8px;
+}  
 #trace-widget {
   background-color: var(--widget-bg-color);
   position: relative;
-  padding: 10px;
 }
 #trace-legend {
   position: absolute;
@@ -586,9 +585,10 @@ svg.icon {
 /* HTML Chart Tooltips */
 #chartjs-tooltip {
   position: absolute;
-  background-color: #002c3e;
-  padding: 5px;
+  background-color: var(--sidebar-bg-color);
+  padding: 12px;
   width: 400px;
+  border-radius: var(--block-radius);
 }
 table.tags {
   width: 100%;
@@ -755,66 +755,6 @@ table.tags th, table.tags td {
 .RAGIndicator .RAGIndicatorLight.RAGIndicatorRecent {
   animation: blinker 2s linear infinite;
 }
-
-/* Menus */
-.Menu {
-  float: right;
-  font-size: 14px;
-  overflow: hidden;
-}
-.Menu strong {
-  display: inline-block;
-  min-width: 20px;
-  text-align: left;
-}
-.Menu button {
-  color: white;
-  background-color: transparent;
-  padding: 0.5em 1em;
-  display: inline-block;
-  text-align: left;
-  border-radius: 0px;
-  box-shadow: none;  
-}
-.Menu .Group button:hover {
-  color: #434445;
-  background-color: #D2D8DA;
-}
-.Menu button:disabled {
-  color: #DAE0E2;
-  cursor: not-allowed;
-}
-.Menu .Item {
-  padding: 2px 0.75em;
-  float: left;
-}
-.Menu .Item a {
-  display: block;
-}
-.Menu .Group button {
-  float: none;
-  display: block;
-  white-space: nowrap;
-  width: 100%;
-}
-.Menu .Group {
-  display: none;
-  position: absolute;
-  z-index: 200;
-  background-color: #0096D6;
-  overflow: hidden;
-  padding: 0;
-}
-.Menu .Item:hover .Group {
-  display: block;
-}
-.widget .Menu .Group, .WatchList .Menu .Group {
-  margin-left: -85px;
-}
-.Menu .clickable {
-  cursor: pointer;
-}
-
 
 /* Alert Tables */
 .AlertTable {

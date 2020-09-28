@@ -424,28 +424,6 @@ background    = string
 * `status` is the state as `Status`: RAGW
 
 
-### Menu API
-Describes the model expected by the `MENU` component that is used for any of the text + icon menus or toolbars.
-
-```
-MENU         = { id, groups }
-groups       = [BUTTON_GROUP | BUTTON]
-BUTTON_GROUP = { icon, label, description, clickable, items }
-items        = [BUTTON]
-clickable    = boolean
-BUTTON       = { icon, label, description, disabled, hidden, onClick }
-icon         = string
-label        = string
-description  = string
-disabled     = boolean
-hidden       = boolean
-onClick      = fn () => ()
-```
-* `id` is optional
-* `description` is optional
-* if item in `MENU` array has `items` it is a `BUTTON_GROUP` otherwise it is a `BUTTON`
-
-
 ### Alert Table API
 Describes the model expected by the `AlertTable` component.
 This component gives a tabular overview of alerts that occurred for the widget `series`.
@@ -639,12 +617,10 @@ filter           = string | fn (string) => boolean | fn (string, string) => bool
 ### ModalDialoge API
 
 ```
-MODAL_DIALOG     = { id, style, fixed, title, content, width, buttons, results, closeProperty, onExit }
-fixed            = boolean
+MODAL_DIALOG     = { id, style, title, content, buttons, results, closeProperty, onExit }
 style            = string
 title            = string
 content          = fn () => jQuery | jQuery
-width            = number
 buttons          = [ DIALOG_BUTTON ]
 DIALOG_BUTTON    = { property, label, secondary, tooltip }
 property         = string
@@ -657,8 +633,6 @@ onExit           = fn(*) => ()
 ```
 * `style` is an optional parameter to pass a custom CSS class name that is added to the modal so custom CSS styling can be applied using that class selector
 * when a particular button is clicked the named `property` of that button is extracted from `results` and passed to `onExit` function. This value can be of any type and change while the dialog is open.
-* `width` is optional to force a certain (smaller) width
-* `top` is optional to force top position other than 0
 * `closeProperty` is an optional field refering to the property used for the window close (x) button, if it is undefined the window has no such button
 
 

@@ -224,7 +224,7 @@ MonitoringConsole.Chart.Trace = (function() {
          }
          tags.entries.push({ label: key, input: autoLink(value)});
       }
-      $('#Settings').replaceWith(Components.createSettings({id: 'Settings', groups: groups }));
+      $('#trace-properties').replaceWith(Components.createSettings({id: 'trace-properties', groups: groups }));
    }
 
 
@@ -232,20 +232,20 @@ MonitoringConsole.Chart.Trace = (function() {
       Controller.requestListOfRequestTraces(model.series, onDataUpdate);
    }
 
-   function onOpenPopup(series) {
-      $('#chart-grid').hide();
-      $('#panel-trace').show();
+   function createPopup(series) {
       model.series = series;
-      let menu = { id: 'TraceMenu', groups: [
-         { icon: '&#128472;', description: 'Refresh', onClick: onDataRefresh },
-         { label: 'Sorting', items: [
-            { icon: '&#9202;', label: 'Sort By Wall Time (past to recent)', onClick: onSortByWallTime },
-            { icon: '&#8987;', label: 'Sort By Duration (slower to faster)', onClick: onSortByDuration },
-         ]},
-         { icon: '&times;', description: 'Back to main view', onClick: onClosePopup },
-      ]};
-      $('#trace-menu').replaceWith(Components.createMenu(menu));
+      const dialog = $('<div/>', { id: 'panel-trace' });
+      const widget = $('<div/>', { id: 'trace-widget' });
+      widget.append($('<div/>', { id: 'trace-chart-box' }).append($('<canvas/>', { id: 'trace-chart'})));
+      widget.append($('<div/>', { id: 'trace-legend' }));
+      dialog.append(widget);
+      const sidebar = $('<div/>');
+      sidebar.append($('<button/>').text('Sort By Wall Time (past to recent)').click(onSortByWallTime));
+      sidebar.append($('<button/>').text('Sort By Duration (slower to faster)').click(onSortByDuration));
+      sidebar.append($('<div/>', { id: 'trace-properties' }));
+      dialog.append(sidebar);
       onDataRefresh();
+      return [ dialog, $('<div/>', { id: 'chartjs-tooltip' })];
    }
 
    function onClosePopup() {
@@ -253,8 +253,6 @@ MonitoringConsole.Chart.Trace = (function() {
          chart.destroy();
          chart = undefined;
       }
-      $('#panel-trace').hide();
-      $('#chart-grid').show();
    }
 
    function onSortByWallTime() {
@@ -271,7 +269,7 @@ MonitoringConsole.Chart.Trace = (function() {
     * Public API below:
     */
    return {
-      onOpenPopup: (series) => onOpenPopup(series),
+      createPopup: (series) => createPopup(series),
       onClosePopup: () => onClosePopup(),
       onDataRefresh: () => onDataRefresh(),
       onSortByWallTime: () => onSortByWallTime(),

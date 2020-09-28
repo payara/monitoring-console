@@ -435,7 +435,6 @@ MonitoringConsole.View = (function() {
         return {
             style: model.dangerzone ? 'danger-zone' : undefined,
             title: model.title,
-            width: 400,
             content: () => model.question.split('\n').map(par => $('<p/>').html(par)),
             buttons: [
                 { property: 'no', label: model.no, secondary: true },
@@ -483,13 +482,15 @@ MonitoringConsole.View = (function() {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Event Handlers ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     function onWidgetDelete(widget) {
-        const description = Array.isArray(widget.series)
-            ? widget.series.join(', ')
-            : widget.series;
+        let description = widget.displayName;
+        if (description === undefined || description == '')
+            description = Array.isArray(widget.series)
+                ? widget.series.join(', ')
+                : widget.series;
         showModalDialog(createYesNoModualDialog({ 
             dangerzone: true,
             title: 'Remove Widget?',
-            question: `Do you really want to remove the widget with metric series <code>${description}</code> from the page?`,
+            question: `Do you really want to remove the widget with metric series <em>${description}</em> from the page?`,
             yes: 'Remove', 
             no: 'Cancel', 
             onYes: () =>  {
@@ -617,7 +618,6 @@ MonitoringConsole.View = (function() {
         showModalDialog({
             style: model.dangerzone ? 'danger-zone' : undefined,
             title: model.title,
-            width: 400,
             content: content,
             buttons: [
                 { property: 'empty', label: 'Cancel', secondary: true },
@@ -874,7 +874,6 @@ MonitoringConsole.View = (function() {
         input.change(() => results.input = input.val());
         showModalDialog({
             title: 'Add Page',
-            width: 400,
             content: () => $('<form/>')
                 .append($('<label/>').text('Page Name')).append(' ')
                 .append(input),
@@ -1101,7 +1100,6 @@ MonitoringConsole.View = (function() {
 
         return {
             id: model.id,
-            fixed: true,
             title: model.title,
             content: () => Components.createSelectionWizard(wizard),
             buttons: [
@@ -1201,7 +1199,6 @@ MonitoringConsole.View = (function() {
             };
             showModalDialog({
                 id: 'WatchSettingsModalDialog',
-                fixed: true,
                 title: 'Manage Watches',
                 content: () => Components.createWatchManager(manager),
                 buttons: [{ property: 'close', label: 'Close', secondary: true }],
@@ -1450,6 +1447,19 @@ MonitoringConsole.View = (function() {
                     msg => showFeedback({ type: 'error', message: `Failed to delete page <em>${name}</em>. ${msg}`}));
                 }
             }));
+        },
+        onTracePopup: series => {
+            showModalDialog({
+                title: 'Request Tracing Details',
+                content: () => MonitoringConsole.Chart.Trace.createPopup(series),
+                buttons: [
+                    { label: 'Close', property: 'close' }
+                ],
+                closeProperty: 'close',
+                results: { close: [] },
+                onExit: () => MonitoringConsole.Chart.Trace.onClosePopup()
+            });
+            
         },
     };
 })();
