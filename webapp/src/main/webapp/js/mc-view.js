@@ -487,6 +487,7 @@ MonitoringConsole.View = (function() {
             ? widget.series.join(', ')
             : widget.series;
         showModalDialog(createYesNoModualDialog({ 
+            dangerzone: true,
             title: 'Remove Widget?',
             question: `Do you really want to remove the widget with metric series <code>${description}</code> from the page?`,
             yes: 'Remove', 

@@ -1080,10 +1080,10 @@ table.AnnotationTable {
   background-color: rgba(255,255,255,0.1);
   border-radius: var(--block-radius);
 }
-.SelectionWizard .Matches p {
+.SelectionWizard .SelectionWizardSelection p {
   font-style: italic;
   padding: 0;
-  margin: 2px 2em 0.5em 2em;  
+  margin: 2px 2em 0.5em 0;  
 }
 .SelectionWizard h4,
 .SelectionWizard ol {
