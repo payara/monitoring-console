@@ -208,7 +208,11 @@ MonitoringConsole.View = (function() {
                 ]},
                 { label: 'Role', input: [
                     { label: MonitoringConsole.Model.Role.name() },
-                    { input: () => $('<button />').text('Change...').click(showRoleSelectionModalDialog) },
+                    { input: () => Components.createIconButton({
+                        class: 'btn-icon',
+                        icon: 'icon-pencil',
+                        alt: 'Change User Role...'
+                    }).click(showRoleSelectionModalDialog) },
                 ]},
                 { label: 'Watches', available: watchesAvailable, input: $('<button/>').text('Go to Watch Settings').click(showWatchConfigModalDialog) },
             ]},
@@ -266,7 +270,11 @@ MonitoringConsole.View = (function() {
         } else {
             seriesInput.append(widget.series).append(' ');
         }
-        seriesInput.append($('<br/>')).append($('<button/>', { text: 'Change metric(s)...' })
+        seriesInput.append($('<br/>')).append(Components.createIconButton({
+            class: 'btn-icon',
+            icon: 'icon-pencil',
+            alt: 'Change metric(s)...'
+        })
                 .click(() => showModalDialog(createWizardModalDialogModel({
                     title: 'Edit Widget Metric Series', 
                     submit: 'Apply',
@@ -288,7 +296,10 @@ MonitoringConsole.View = (function() {
                 { label: '&nbsp;x', type: 'range', min: 1, max: 4, value: widget.grid.colspan || 1, onChange: (widget, value) => widget.grid.colspan = value},
                 { type: 'range', min: 1, max: 4, value: widget.grid.rowspan || 1, onChange: (widget, value) => widget.grid.rowspan = value},
             ]},
-            { input: $('<button/>').text('Remove Widget').click(() => onWidgetDelete(widget)) },
+            { input: Components.createIconButton({
+                icon: 'icon-delete',
+                text: 'Remove Widget'
+            }).click(() => onWidgetDelete(widget)) },
         ]});
         settings.push({ id: 'settings-data', caption: 'Data', entries: [
             { label: 'Type', type: 'dropdown', options: WIDGET_TYPE_OPTIONS, value: widget.type, onChange: (widget, selected) => widget.type = selected},

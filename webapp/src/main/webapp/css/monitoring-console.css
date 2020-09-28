@@ -1256,6 +1256,7 @@ table.AnnotationTable {
   top: 0;
   right: 0;
   fill: rgba(255,255,255,0.75);
+  transform: scale(-1, 1);
 }
 .WidgetHeader h3:hover .icon {
   fill: rgba(255,255,255,1);

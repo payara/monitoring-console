@@ -1753,7 +1753,7 @@ MonitoringConsole.View.Components = (function() {
     function createRotationButton(model) {
       return createIconButton({
         class: 'btn-icon btn-rotation', 
-        icon: model.rotationEnabled ? 'icon-pause' : 'icon-play',
+        icon: model.rotationEnabled ? 'icon-page-rotation-paused' : 'icon-page-rotation',
         title: (model.rotationEnabled ? 'stop' : 'start') + ' page rotation'
       }).click(model.onRotationToggle);
     }
@@ -1822,7 +1822,7 @@ MonitoringConsole.View.Components = (function() {
       return header
         .append($('<h3/>', { title: model.description })
           .append($('<span/>').text(model.title))
-          .append(createIcon('icon-toggle'))
+          .append(createIcon('icon-pencil'))
           .click(() => {            
             model.onClick();
             if (model.selected()) {
@@ -1907,6 +1907,7 @@ MonitoringConsole.View.Components = (function() {
       createNavSidebar: model => NavSidebar.createComponent(model),
       createFeedbackBanner: model => FeedbackBanner.createComponent(model),
       createWidgetHeader: model => WidgetHeader.createComponent(model),
+      createIconButton: model => createIconButton(model),
   };
 
 })();
