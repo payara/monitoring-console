@@ -589,6 +589,7 @@ svg.icon {
   padding: 12px;
   width: 400px;
   border-radius: var(--block-radius);
+  opacity: 0;
 }
 table.tags {
   width: 100%;
