@@ -230,7 +230,7 @@ MonitoringConsole.View = (function() {
 
     function createColorSettings() {
         function createChangeColorDefaultFn(name) {
-            return (color) => { Theme.configure(theme => theme.colors[name] = color); updateSettings(); };
+            return (color) => { Theme.configure(theme => theme.colors[name] = color); };
         }
         function createChangeOptionFn(name) {
             return (value) => { Theme.configure(theme => theme.options[name] = value); };
@@ -242,8 +242,8 @@ MonitoringConsole.View = (function() {
             return { label: label, type: 'color', value: Theme.color(name), onChange: createChangeColorDefaultFn(name) };
         }
         return { id: 'settings-appearance', type: 'app', caption: 'Appearance', entries: [
-            { label: 'Scheme', type: 'dropdown', options: Colors.schemes(), value: undefined, onChange: (name) => { Colors.scheme(name); updateSettings(); } },
-            { label: 'Data #', type: 'color', value: Theme.palette(), onChange: (colors) => Theme.palette(colors) },
+            { label: 'Scheme', input: $('<button/>').text('Switch Theme').click(showThemeSelectionModalDialog) },
+            { label: 'Data #', type: 'color', value: Theme.palette(), onChange: (colors) => Theme.configure(theme => theme.palette = colors) },
             { label: 'Defaults', input: [
                 ['error', 'missing'].map(createColorDefaultSettingMapper),
                 ['alarming', 'critical', 'waterline'].map(createColorDefaultSettingMapper),
@@ -255,6 +255,35 @@ MonitoringConsole.View = (function() {
                 { type: 'range', min: 1, max: 8, value: Theme.option('line-width'), onChange: createChangeOptionFn('line-width') },
             ]},
         ]};
+    }
+
+    function showThemeSelectionModalDialog() {
+        const options = Colors.schemes();
+        const results = { selected: options[0] };
+        showModalDialog({
+            title: 'Select Color Theme',
+            content: () => [
+                $('<p/>').text('Switching the color theme will override current default colors.'),
+                Components.createSettings({id: 'theme-properties', groups: [
+                    { id: 'settings-appearance' , entries: [
+                        { label: 'Scheme', type: 'dropdown', options: options, value: undefined, onChange: (name) => { results.selected = name; } }
+                    ]}
+                ]})
+            ],
+            buttons: [
+                { property: 'cancel', label: 'Cancel', secondary: true },
+                { property: 'selected', label: 'Switch' },
+            ],
+            closeProperty: 'cancel',
+            results: results,
+            onExit: name => {
+                if (name) {
+                    Colors.scheme(name); 
+                    updateSettings();
+                    showFeedback({ type: 'success', message: `Switched to color theme <em>${name}</em>` });
+                }
+            }
+        });
     }
 
     function createWidgetSettings(widget) {
@@ -916,9 +945,9 @@ MonitoringConsole.View = (function() {
                 .append($('<dt/>').append($('<b/>').text('Administrator')))
                 .append($('<dd/>').text('Can select for each individual page if server configuration replaces local page. Can manually update local pages with server page configuration or update server configuration with local changes. For pages with automatic synchronisation local changes do affect server page configurations.')),
             buttons: [
-                { property: 'admin', label: 'Administrator', secondary: true },
-                { property: 'user', label: 'User' },
                 { property: 'guest', label: 'Guest', secondary: true },
+                { property: 'user', label: 'User' },
+                { property: 'admin', label: 'Administrator', secondary: true },
             ],
             results: { admin: 'admin' , user: 'user', guest: 'guest', current: currentRole },
             closeProperty: 'current',
@@ -1179,7 +1208,7 @@ MonitoringConsole.View = (function() {
                     yes: 'Delete',
                     no: 'Cancel',
                     onYes: () => Controller.requestDeleteWatch(name, 
-                        wrapOnSuccess(onSuccess, `Successfully delete watch <em>${name}</em>.`), 
+                        wrapOnSuccess(onSuccess, `Successfully deleted watch <em>${name}</em>.`), 
                         wrapOnError(onError, `Failed to deleted watch <em>${name}</em>.`))
                 }));
             };

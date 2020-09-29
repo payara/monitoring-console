@@ -632,7 +632,7 @@ MonitoringConsole.Model = (function() {
 				doStore();
 			},
 
-			themePalette: function(colors) {
+			themePalette: function() {
 				return settings.theme.palette;
 			},
 

@@ -497,6 +497,8 @@ MonitoringConsole.View.Components = (function() {
       }
 
       function createHeader(group, tabs) {
+        if (!tabs && group.caption === undefined)
+          return $('<span/>');
         const config = {};
         if (group.description)
           config.title = group.description;
@@ -1747,7 +1749,7 @@ MonitoringConsole.View.Components = (function() {
       return createIconButton({
         class: 'btn-icon btn-rotation', 
         icon: model.rotationEnabled ? 'icon-page-rotation-paused' : 'icon-page-rotation',
-        title: (model.rotationEnabled ? 'stop' : 'start') + ' page rotation'
+        alt: (model.rotationEnabled ? 'stop' : 'start') + ' page rotation'
       }).click(model.onRotationToggle);
     }
 
