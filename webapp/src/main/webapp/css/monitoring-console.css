@@ -339,6 +339,32 @@ button.primary {
   background: rgb(var(--tango));
   box-shadow: 0 1px 0 0 rgba(var(--onyx), 0.6);  
 }
+button.toggle {
+  background: rgba(255,255,255, 0.2);
+  border: none;
+  border-radius: 20px;
+  color: rgb(255,255,255);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: inherit;
+  padding: 2px;
+  position: relative;
+  top: -2px;
+}
+button.toggle .toggle__off, 
+button.toggle .toggle__on {
+  border-radius: 2em;
+  display: inline-block;
+  padding: 2px 8px;
+  text-transform: uppercase;
+  line-height: 1.5em;
+}
+button.toggle[aria-checked=false] .toggle__off, 
+button.toggle[aria-checked=true] .toggle__on {
+  background: rgba(255,255,255, 0.5);
+  color: rgb(var(--onyx));
+}
 button svg.icon {
   padding: 0;
   fill: rgba(var(--onyx), 0.75);
@@ -586,7 +612,7 @@ svg.icon {
   width: 37px;
   margin-right: 3px;
 }
-.Settings table button:not([class=btn-icon]) {
+.Settings table button:not([class]) {
     padding: 4px 16px;
     margin-right: 8px;
     margin-bottom: 8px;

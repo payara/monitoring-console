@@ -173,18 +173,16 @@ MonitoringConsole.View.Components = (function() {
       }
 
       function createToggleInput(model) {
-        const toggle = $('<span/>', { class: 'toggle' });
+        let checked = model.value;
+        const toggle = $('<button/>', { id: model.id, class: 'toggle', role:'switch', 'aria-checked': checked })
+          .append($('<span/>', {'aria-hidden': true, class: 'toggle__off' }).text(model.options['false']))
+          .append($('<span/>', {'aria-hidden': true, class: 'toggle__on'}).text(model.options['true']));
         const onChange = enhancedOnChange(model.onChange);
-        const input = $('<input/>', { id: model.id, type: 'checkbox', checked: model.value });
-        input.change(function() {
-          let checked = this.checked;
+        toggle.click(function() {
+          checked = !checked;
+          toggle.attr('aria-checked', checked);
           onChange(checked);
         });
-        toggle
-          .append($('<span/>').text(model.options['false']).click(() => input.prop( "checked", false ).change()))
-          .append(input)
-          .append($('<span/>').text(model.options['true']).click(() => input.prop( "checked", true ).change()))
-          ;
         return toggle;
       }
 
