@@ -310,9 +310,9 @@ MonitoringConsole.View.Components = (function() {
         if (model.description && !model.label)
           config.title = model.description;
         let onChange = enhancedOnChange(model.onChange);
-        let input = $('<input/>', config)
-          .on('input change', function() { 
-            let val = this.value;
+        let input = $('<input/>', config);
+        input.change(function() { 
+            let val = input.val();
             if (val === model.defaultValue)
               val = undefined;
             onChange(val);

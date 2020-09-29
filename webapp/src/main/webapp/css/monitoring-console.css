@@ -351,6 +351,7 @@ button.toggle {
   padding: 2px;
   position: relative;
   top: -2px;
+  transform: none; 
 }
 button.toggle .toggle__off, 
 button.toggle .toggle__on {
