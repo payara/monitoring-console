@@ -504,24 +504,24 @@ Describes the model expected by the `WatchManager` component which combines the 
 The manager shows a configuration with a list of watches which also allows to create new watches.
 
 ```
-WATCH_LIST      = { id, items, colors, actions  }
-WATCH_BUILDER   = { id, colors, actions }
 WATCH_MANAGER	= { id, items, colors, actions }
+WATCH_LIST      = { id, items, colors, actions  }
 items           = [ WATCH ]
-actions         = { onCreate, onDelete, onDisable, onEnable, onSelect }
-onEdit          = fn (WATCH) => ()
-onCreate        = fn (WATCH, onSuccess, onFailure) => ()
+actions         = { onEdit, onDelete, onDisable, onEnable }
+onEdit          = fn (WATCH, onSuccess, onFailure) => ()
 onDelete        = fn (name, onSuccess, onFailure) => ()
 onDisable       = fn (name, onSuccess, onFailure) => ()
 onEnable        = fn (name, onSuccess, onFailure) => ()
-onSelect        = fn (id, series, onSelection) => ()
-onSelection     = fn (series) => ()
 colors          = { red, amber, green }
 red             = string
 amber           = string
 green           = string
 id              = string
 series          = string
+WATCH_BUILDER   = { id, watch, colors, onSelect }
+watch           = WATCH
+onSelect        = fn (id, series, onSelection) => ()
+onSelection     = fn (series) => ()
 ```
 * `WATCH` refers to an object as described for update data structures
 * `onDelete` is a function to call to delete the watch by its `name` (a `string`)

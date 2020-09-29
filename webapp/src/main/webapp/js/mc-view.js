@@ -195,7 +195,6 @@ MonitoringConsole.View = (function() {
     function createAppSettings() {
         const pushAvailable = MonitoringConsole.Model.Role.isAdmin();
         const pullAvailable = !MonitoringConsole.Model.Role.isGuest();
-        const watchesAvailable = !MonitoringConsole.Model.Role.isGuest();
         return [
             { id: 'settings-general', type: 'app', caption: 'General', entries: [
                 { label: 'Data Refresh', input: [
@@ -214,7 +213,7 @@ MonitoringConsole.View = (function() {
                         alt: 'Change User Role...'
                     }).click(showRoleSelectionModalDialog) },
                 ]},
-                { label: 'Watches', available: watchesAvailable, input: $('<button/>').text('Go to Watch Settings').click(showWatchConfigModalDialog) },
+                { label: 'Watches', input: $('<button/>').text('Go to Watch Settings').click(showWatchConfigModalDialog) },
             ]},
             { id: 'settings-pages', available: pushAvailable || pullAvailable, type: 'app', caption: 'Pages', entries: [
                 { label: 'Server Sync', input: [
@@ -1144,40 +1143,35 @@ MonitoringConsole.View = (function() {
         }));
     }
 
+    function wrapOnSuccess(onSuccess, message) {
+        return () => {
+            if (isFunction(onSuccess))
+                onSuccess();
+            if (message)
+                showFeedback({ type: 'success', message: message});
+            showWatchConfigModalDialog();
+        };
+    }
+
+    function wrapOnError(onError, message) {
+        return () => {
+            if (isFunction(onError))
+                onError();
+            if (message)
+                showFeedback({ type: 'error', message: message});
+            showWatchConfigModalDialog();
+        };
+    }
+
     /**
      * This function is called when the watch details settings should be opened
      */
     function showWatchConfigModalDialog() {
-        function wrapOnSuccess(name, onSuccess, message) {
-            return () => {
-                if (isFunction(onSuccess))
-                    onSuccess();
-                if (message)
-                    showFeedback({ type: 'success', message: message});
-                showWatchConfigModalDialog();
-            };
-        }
-        function wrapOnError(name, onError, message) {
-            return () => {
-                if (isFunction(onError))
-                    onError();
-                if (message)
-                    showFeedback({ type: 'error', message: message});
-                showWatchConfigModalDialog();
-            };
-        }
+
         const Role = MonitoringConsole.Model.Role;
-        const actions = { 
-            onSelect: (id, series, onSelection) => showModalDialog(createWizardModalDialogModel({
-                id: id,
-                title: 'Select Watch Metric Series', 
-                submit: 'Select',
-                series: series, 
-                onExit: series => onSelection(series[0]),
-            })),
-        };
+        const actions = {};
         if (Role.isAdmin()) {
-            actions.onDelete = (name, onSuccess, onFailure) => {
+            actions.onDelete = (name, onSuccess, onError) => {
                 showModalDialog(createYesNoModualDialog({
                     dangerzone: true,
                     title: 'Delete Watch',
@@ -1185,21 +1179,21 @@ MonitoringConsole.View = (function() {
                     yes: 'Delete',
                     no: 'Cancel',
                     onYes: () => Controller.requestDeleteWatch(name, 
-                        wrapOnSuccess(name, onSuccess, `Successfully delete watch <em>${name}</em>.`), 
-                        wrapOnError(name, onFailure, `Failed to deleted watch <em>${name}</em>.`))
+                        wrapOnSuccess(onSuccess, `Successfully delete watch <em>${name}</em>.`), 
+                        wrapOnError(onError, `Failed to deleted watch <em>${name}</em>.`))
                 }));
             };
-            actions.onDisable = (name, onSuccess, onFailure) => Controller.requestDisableWatch(name, 
-                wrapOnSuccess(name, onSuccess, `Successfully disabled watch <em>${name}</em>.`), 
-                wrapOnError(name, onFailure), `Failed to disable watch <em>${name}</em>.`);
-            actions.onEnable = (name, onSuccess, onFailure) => Controller.requestEnableWatch(name, 
-                wrapOnSuccess(name, onSuccess, `Successfully enabled watch <em>${name}</em>.`), 
-                wrapOnError(name, onFailure, `Failed to enable watch <em>${name}</em>.`));            
+            actions.onDisable = (name, onSuccess, onError) => Controller.requestDisableWatch(name, 
+                wrapOnSuccess(onSuccess, `Successfully disabled watch <em>${name}</em>.`), 
+                wrapOnError(onError), `Failed to disable watch <em>${name}</em>.`);
+            actions.onEnable = (name, onSuccess, onError) => Controller.requestEnableWatch(name, 
+                wrapOnSuccess(onSuccess, `Successfully enabled watch <em>${name}</em>.`), 
+                wrapOnError(onError, `Failed to enable watch <em>${name}</em>.`));            
         }
         if (!Role.isGuest()) {
-            actions.onCreate = (watch, onSuccess, onFailure) => Controller.requestCreateWatch(watch, 
-                wrapOnSuccess(watch.name, onSuccess, `Successfully updated watch ${watch.name}.`), 
-                wrapOnError(watch.name, onFailure), `Failed to update watch ${watch.name}.`);
+            actions.onCreate = (watch, onSuccess, onError) => showWatchBuilderModalDialog(createEditableWatch(watch), 
+                    watch === undefined || watch.programmatic, onSuccess, onError);
+            actions.onEdit = actions.onCreate;
         }
         Controller.requestListOfWatches((watches) => {
             const manager = { 
@@ -1212,10 +1206,54 @@ MonitoringConsole.View = (function() {
                 id: 'WatchSettingsModalDialog',
                 title: 'Manage Watches',
                 content: () => Components.createWatchManager(manager),
-                buttons: [{ property: 'close', label: 'Close', secondary: true }],
+                buttons: [{ property: 'close', label: 'Close' }],
                 results: { close: true },                
                 closeProperty: 'close',
             });
+        });
+    }
+
+    function createEditableWatch(watch) {
+        if (watch === undefined)
+            return { unit: 'count', name: 'New Watch' };
+        if (watch.programmatic) {
+            const editedWatch = JSON.parse(JSON.stringify(watch));
+            editedWatch.name = 'Copy of ' + watch.name;
+            editedWatch.programmatic = false;
+            return editedWatch;
+        }
+        return watch;
+    }
+
+    function showWatchBuilderModalDialog(watch, isAdd, onSuccess, onError) {
+        const builder = {
+            watch: watch,
+            colors: { red: Theme.color('red'), amber: Theme.color('amber'), green: Theme.color('green') },
+            onSelect: !isAdd ? undefined : (id, series, onSelection) => showModalDialog(createWizardModalDialogModel({
+                id: id,
+                title: 'Select Watch Metric Series', 
+                submit: 'Select',
+                series: series, 
+                onExit: series => onSelection(series[0]),
+            })),
+        };
+        showModalDialog({
+            id: 'WatchBuilder',
+            style: !isAdd ? 'danger-zone' : undefined,
+            title: isAdd ? 'Add New Watch' : 'Edit Watch',
+            content: () => Components.createWatchBuilder(builder),
+            buttons: [
+                { property: 'cancel', label: 'Cancel', secondary: true },
+                { property: 'save', label: isAdd ? 'Save' : 'Update' }
+            ],
+            results: { save: watch },
+            closeProperty: 'cancel',
+            onExit: watch => {
+                if (watch)
+                    Controller.requestCreateWatch(watch, 
+                        wrapOnSuccess(onSuccess, `Successfully saved watch <em>${watch.name}</em>.`), 
+                        wrapOnError(onError, `Failed to saved watch <em>${watch.name}</em>.`));
+            },
         });
     }
 

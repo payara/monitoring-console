@@ -1028,7 +1028,7 @@ MonitoringConsole.View.Components = (function() {
       };
       icon.click(onClick);
       label.click(onClick);
-      if (isFunction(actions.onCreate)) {
+      if (isFunction(actions.onEdit)) {
         dt.append($('<button/>').text(item.programmatic ? 'Copy' : 'Edit').click(() => actions.onEdit(item)));
       } else {
         dt.append($('<span/>'));
@@ -1039,9 +1039,9 @@ MonitoringConsole.View.Components = (function() {
         dt.append($('<span/>'));
       }
       if (item.disabled && isFunction(actions.onEnable)) {
-        dt.append($('<button/>').text('Enable').click(() => actions.onEnable(item.name)));        
+        dt.append($('<button/>', { class: 'primary' }).text('Enable').click(() => actions.onEnable(item.name)));        
       } else if (!item.disabled && isFunction(actions.onDisable)) {
-        dt.append($('<button/>').text('Disable').click(() => actions.onDisable(item.name)));        
+        dt.append($('<button/>', { class: 'primary' }).text('Disable').click(() => actions.onDisable(item.name)));        
       } else {
         dt.append($('<span/>')); 
       }
@@ -1075,23 +1075,19 @@ MonitoringConsole.View.Components = (function() {
    */
   const WatchBuilder = (function() {
     
-    function createComponent(model, watch) {
+    function createComponent(model) {
       const config = { class: 'WatchBuilder' };
       if (model.id)
         config.id = model.id;
-      let editedWatch = watch || { unit: 'count', name: 'New Watch' };
-      if (editedWatch.programmatic) {
-        editedWatch = JSON.parse(JSON.stringify(watch));
-        editedWatch.name = 'Copy of ' + watch.name;
-        editedWatch.programmatic = false;
-      }
+      const editedWatch = model.watch;
+      const readonly = model.onSelect === undefined;
       const builder = $('<div/>', config);
       const conditionText = $('<span/>');
       const updateText = () => conditionText.html('If <b>' + (editedWatch.series === undefined ? '?' : editedWatch.series) + '</b> in <b>' + (editedWatch.unit === undefined ? '?' : Units.names()[editedWatch.unit]) + '</b>...');
       updateText();
       const nameInput = Settings.createInput({ type: 'text', value: editedWatch.name, onChange: (name) => editedWatch.name = name});
       const unitDropdown = Settings.createInput({ type: 'dropdown', value: editedWatch.unit, options: Units.names(), onChange: (selected) => { editedWatch.unit = selected; updateText(); }});
-      const seriesInput = Settings.createInput({ type: 'text', value: editedWatch.series, onChange: (series) => { editedWatch.series = series; updateText(); }});
+      const seriesInput = Settings.createInput({ type: 'text', value: editedWatch.series, onChange: readonly ? undefined : (series) => { editedWatch.series = series; updateText(); }});
       const popupId = 'popup-popup';
 
       const form = $('<div/>', {class: 'WatchBuilderForm'})
@@ -1101,8 +1097,9 @@ MonitoringConsole.View.Components = (function() {
         .append($('<div/>')
           .append($('<label/>').text('Series'))
           .append(seriesInput)
-          .append($('<button/>').text('Select...').click(() => model.actions.onSelect(popupId, editedWatch.series, 
-            (series) => seriesInput.val(series).change()))))
+          .append(readonly ? "" : $('<button/>').text('Select...').click(
+            () => model.onSelect(popupId, editedWatch.series, 
+              (series) => seriesInput.val(series).change()))))
         .append($('<div/>')
           .append($('<label/>').text('Unit'))
           .append(unitDropdown))
@@ -1115,7 +1112,6 @@ MonitoringConsole.View.Components = (function() {
       for (let level of ['red', 'amber', 'green']) {
         builder.append(createLevelBuilder(level, editedWatch, model.colors[level]));
       }
-      builder.append($('<button/>').text('Save or Update').click(() => model.actions.onCreate(editedWatch)));
       return builder;
     }
 
@@ -1227,15 +1223,14 @@ MonitoringConsole.View.Components = (function() {
         config.id = model.id;
       const manager = $('<div/>', config);
       model.id = undefined; // id should not be set by sub-components
-      let builder = WatchBuilder.createComponent(model);
-      const list = WatchList.createComponent(model);
-      model.actions.onEdit = (watch) => {
-        const newBuilder = WatchBuilder.createComponent(model, watch);
-        builder.replaceWith(newBuilder);
-        builder = newBuilder;
-      };
-      manager.append(builder);
-      manager.append(list);
+      manager.append($('<div/>', {id: 'WatchBuilder'}));
+      if (isFunction(model.actions.onCreate))
+        manager.append(createIconButton({
+          icon: 'icon-plus',
+          text: 'Add New Watch',
+          alt: 'Create a new watch...'
+        }).click(() => model.actions.onCreate()));
+      manager.append(WatchList.createComponent(model));
       return manager;
     }
 
@@ -1900,6 +1895,7 @@ MonitoringConsole.View.Components = (function() {
       createAlertTable: model => AlertTable.createComponent(model),
       createAnnotationTable: model => AnnotationTable.createComponent(model),
       createWatchManager: model => WatchManager.createComponent(model),
+      createWatchBuilder: (model, watch) => WatchBuilder.createComponent(model, watch),
       createPageManager: model => PageManager.createComponent(model),
       createModalDialog: model => ModalDialog.createComponent(model),
       createSelectionWizard: model => SelectionWizard.createComponent(model),
