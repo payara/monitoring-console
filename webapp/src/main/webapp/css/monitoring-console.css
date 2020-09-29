@@ -318,6 +318,7 @@ button {
   padding: 8px 20px; 
   text-align: center;
   text-decoration: none; 
+  cursor: pointer;
 }
 button[class] {
   cursor: pointer;
@@ -496,13 +497,13 @@ svg.icon {
 .SettingsList {
   position: relative;
   margin: 8px 0;
-  background: rgba(255,255,255, 0.1);
+  background: rgba(var(--smurf), 0.15);
   border-radius: var(--block-radius);
 }
 .SettingsTabs.SettingsApp {
 }
 .Settings .SettingsTabs > div > button {
-  background: rgba(255,255,255, 0.2);
+  background: rgba(var(--smurf), 0.35);
   border-radius: var(--button-radius) var(--button-radius) 0 0;
   display: inline-block;
   border: none;
@@ -515,7 +516,7 @@ svg.icon {
   outline: none;
 }
 .Settings .SettingsTabs > div > button:hover {
-  background: rgba(255,255,255, 0.15);
+  background: rgba(var(--smurf), 0.3);
   opacity: 1;
   transform: none;
 }
@@ -523,13 +524,13 @@ svg.icon {
   margin-left: 4px;
 }
 .Settings .SettingsTabs > div > button.state-active {
-  background: rgba(255,255,255, 0.1);
+  background: rgba(var(--smurf), 0.2);
 }
 .SettingsGroup {
   padding: 12px;
 }
 .SettingsTabs .SettingsGroup {
-  background: rgba(255,255,255, 0.1);
+  background: rgba(var(--smurf), 0.2);
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
@@ -578,6 +579,11 @@ svg.icon {
 .Settings table div input[type=text] {
   width: 37px;
   margin-right: 3px;
+}
+.Settings table button:not([class=btn-icon]) {
+    padding: 4px 16px;
+    margin-right: 8px;
+    margin-bottom: 8px;
 }
 
 

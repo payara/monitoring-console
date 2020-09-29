@@ -240,7 +240,7 @@ MonitoringConsole.Chart.Trace = (function() {
       widget.append($('<div/>', { id: 'trace-legend' }));
       dialog.append(widget);
       const sidebar = $('<div/>');
-      sidebar.append($('<button/>').text('Sort By Wall Time (past to recent)').click(onSortByWallTime));
+      sidebar.append($('<button/>').text('Sort By Wall Time (past to present)').click(onSortByWallTime));
       sidebar.append($('<button/>').text('Sort By Duration (slower to faster)').click(onSortByDuration));
       sidebar.append($('<div/>', { id: 'trace-properties' }));
       dialog.append(sidebar);
