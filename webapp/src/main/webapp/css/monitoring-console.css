@@ -711,7 +711,8 @@ table.tags th, table.tags td {
 }
 .Legend li span:first-child {
   display: block;
-  font-weight: 300;
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
 }
 .Legend li.status-missing strong {
   color: #0096D6;
