@@ -596,7 +596,7 @@ svg.icon {
   width: 150px;
   vertical-align: top;
   padding-left: 4px;
-  color: rgba(255,255,255,0.75);
+  color: white;
 }
 .Settings a, .Settings a:visited {
   color: white;
@@ -1315,6 +1315,8 @@ table.AnnotationTable {
   padding: 1px 5px;
   text-align: center;
   color: #F0981B;
+  position: relative;
+  z-index: 101;
 }
 .WidgetHeader h3 .icon {
   padding: 4px;
