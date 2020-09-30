@@ -1406,6 +1406,8 @@ MonitoringConsole.View = (function() {
 
     function showPageSyncModalDialog(autosync) {
         MonitoringConsole.Model.Page.Sync.providePullRemoteModel(model => {
+            if (model.pages.length == 0)
+                return;
             // abses the object properties as a set of ids
             const onExit = async function(pageIds) {
                 if (pageIds.length > 0) {
@@ -1518,7 +1520,8 @@ MonitoringConsole.View = (function() {
                     MonitoringConsole.Model.Page.erase(page.id, () => {
                         onPageUpdate(MonitoringConsole.Model.Page.arrange());    
                         showFeedback({ type: 'success', message: `Your page <em>${name}</em> has been deleted.` });             
-                        updatePageNavigation();                        
+                        updatePageNavigation();
+                        updateSettings();                 
                     }, 
                     msg => showFeedback({ type: 'error', message: `Failed to delete page <em>${name}</em>. ${msg}`}));
                 }
