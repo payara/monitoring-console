@@ -350,7 +350,6 @@ button.toggle {
   line-height: inherit;
   padding: 2px;
   position: relative;
-  top: -2px;
   transform: none; 
 }
 button.toggle .toggle__off, 
@@ -596,7 +595,7 @@ svg.icon {
 .Settings table td:first-child {
   width: 150px;
   vertical-align: top;
-  padding-left: 5px;
+  padding-left: 4px;
   color: rgba(255,255,255,0.75);
 }
 .Settings a, .Settings a:visited {
@@ -618,6 +617,35 @@ svg.icon {
     margin-right: 8px;
     margin-bottom: 8px;
 }
+.Settings table button:not(.toggle) {
+  padding: 2px 8px;
+}
+.Settings table input[type=text],
+.Settings table input[type=number] {
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: none;
+  font-size: inherit;
+  line-height: inherit;
+}
+.Settings table select {
+  padding: 4px 8px;
+  font-size: inherit;
+}
+.Settings table .btn-icon {
+  height: 28px;
+  width: 28px;
+}
+.Settings table td {
+  font-size: 14px;
+}
+.Settings table td:first-child {
+  padding-right: 4px;
+}
+.Settings table td .x-input div {
+  margin-top: 2px;
+}
+
 
 
 
@@ -984,8 +1012,7 @@ table.AnnotationTable {
 .WatchCondition select, 
 .WatchCondition input {
   width: auto;
-  max-width: auto;
-  color: inherit;
+  max-width: none;
   font-family: monospace;
 }
 .WatchCondition input {
