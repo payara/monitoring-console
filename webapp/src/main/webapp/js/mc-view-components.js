@@ -1749,7 +1749,7 @@ MonitoringConsole.View.Components = (function() {
       return createIconButton({
         class: 'btn-icon btn-rotation', 
         icon: model.rotationEnabled ? 'icon-page-rotation-paused' : 'icon-page-rotation',
-        alt: (model.rotationEnabled ? 'stop' : 'start') + ' page rotation'
+        alt: (model.rotationEnabled ? 'Stop' : 'Start') + ' page rotation'
       }).click(model.onRotationToggle);
     }
 
@@ -1757,7 +1757,7 @@ MonitoringConsole.View.Components = (function() {
       return createIconButton({
         class: 'btn-icon',
         icon: model.refreshEnabled ? 'icon-pause' : 'icon-play',
-        alt: (model.refreshEnabled ? 'pause' : 'unpause') + ' data updates'
+        alt: (model.refreshEnabled ? 'Pause' : 'Unpause') + ' data updates'
       }).click(model.onRefreshToggle);
     }
 

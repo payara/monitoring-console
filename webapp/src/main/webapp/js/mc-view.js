@@ -218,7 +218,7 @@ MonitoringConsole.View = (function() {
             { id: 'settings-pages', available: pushAvailable || pullAvailable, type: 'app', caption: 'Pages', entries: [
                 { label: 'Server Sync', input: [
                     { available: pushAvailable, input: () => $('<button />', { text: 'Update Server...', title: 'Push local state of all know remote pages to server'}).click(showPagePushModalDialog) },
-                    { available: pullAvailable, input: () => $('<button/>', { text: 'Update Local...', title: 'Open Page synchronisation dialoge'}).click(showPageSyncModalDialog) }, 
+                    { available: pullAvailable, input: () => $('<button/>', { text: 'Update Local...', title: 'Open page synchronisation dialogue'}).click(showPageSyncModalDialog) }, 
                 ]},
                 { label: 'Manual Sync', input: [
                     { input: () => $('<button />', { text: 'Import...'}).click(showImportPagesModalDialog) },
@@ -337,7 +337,7 @@ MonitoringConsole.View = (function() {
                 { type: 'dropdown', options: Units.names(), value: widget.unit, onChange: function(widget, selected) { widget.unit = selected; updateSettings(); }},
                 { label: '1/sec', type: 'checkbox', value: options.perSec, onChange: (widget, checked) => widget.options.perSec = checked},
             ]},
-            { label: 'Upscaling', description: 'Upscaling is sometimes needed to convert the original value range to a more user freindly display value range', input: [
+            { label: 'Upscaling', description: 'Upscaling is sometimes needed to convert the original value range to a more user friendly display value range', input: [
                 { type: 'range', min: 1, value: widget.scaleFactor, onChange: (widget, value) => widget.scaleFactor = value, 
                     description: 'A factor multiplied with each value to upscale original values in a graph, e.g. to move a range 0-1 to 0-100%'},
                 { label: 'decimal value', type: 'checkbox', value: options.decimalMetric, onChange: (widget, checked) => widget.options.decimalMetric = checked,
