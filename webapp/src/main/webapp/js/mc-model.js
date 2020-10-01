@@ -749,6 +749,7 @@ MonitoringConsole.Model = (function() {
 				let presets = Data.PAGES;
 				if (presets && presets[pageId]) {
 					let preset = presets[pageId];
+					preset.id = pageId; // make sure the preset itself has the ID set
 					pages[pageId] = sanityCheckPage(JSON.parse(JSON.stringify(preset)));
 					doStore(true);
 					return true;
