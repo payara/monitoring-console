@@ -68,7 +68,7 @@ MonitoringConsole.Data = (function() {
      */
 	const TEXT_HTTP_HIGH = "Requires *HTTP monitoring* to be enabled: Goto _Configurations_ => _Monitoring_ and set *HTTP Service* to *HIGH*.";
 	const TEXT_WEB_HIGH = "Requires *WEB monitoring* to be enabled: Goto _Configurations_ => _Monitoring_ and set *Web Container* to *HIGH*.";
-	const TEXT_REQUEST_TRACING = "If you did enable request tracing at _Configurations_ => _Request Tracing_ not seeing any data means no requests passed the tracing threshold which is a good thing.";
+	const TEXT_REQUEST_TRACING = "If you enabled request tracing at _Configurations_ => _Request Tracing_, not seeing any data means no requests passed the tracing threshold which is a good thing.";
 
 	const TEXT_CPU_USAGE = "Requires *CPU Usage HealthCheck* to be enabled: Goto _Configurations_ => _HealthCheck_ => _CPU Usage_ tab and check *enabled*";
 	const TEXT_HEAP_USAGE = "Requires *Heap Usage HealthCheck* to be enabled: Goto _Configurations_ => _HealthCheck_ => _Heap Usage_ tab and check *enabled*";
