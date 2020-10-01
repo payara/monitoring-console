@@ -70,12 +70,12 @@ MonitoringConsole.Data = (function() {
 	const TEXT_WEB_HIGH = "Requires *WEB monitoring* to be enabled: Goto _Configurations_ => _Monitoring_ and set *Web Container* to *HIGH*.";
 	const TEXT_REQUEST_TRACING = "If you enabled request tracing at _Configurations_ => _Request Tracing_, not seeing any data means no requests passed the tracing threshold which is a good thing.";
 
-	const TEXT_CPU_USAGE = "Requires *CPU Usage HealthCheck* to be enabled: Goto _Configurations_ => _HealthCheck_ => _CPU Usage_ tab and check *enabled*";
-	const TEXT_HEAP_USAGE = "Requires *Heap Usage HealthCheck* to be enabled: Goto _Configurations_ => _HealthCheck_ => _Heap Usage_ tab and check *enabled*";
-	const TEXT_GC_PERCENTAGE = "Requires *Garbage Collector HealthCheck* to be enabled: Goto _Configurations_ => _HealthCheck_ => _Garbage Collector_ tab and check *enabled*";
-	const TEXT_MEM_USAGE = "Requires *Machine Memory HealthCheck* to be enabled: Goto _Configurations_ => _HealthCheck_ => _Machine Memory Usage_ tab and check *enabled*";
-	const TEXT_POOL_USAGE = "Requires *Connection Pool HealthCheck* to be enabled: Goto _Configurations_ => _HealthCheck_ => _Connection Pool_ tab and check *enabled*";
-	const TEXT_LIVELINESS = "Requires *MicroProfile HealthCheck Checker* to be enabled: Goto _Configurations_ => _HealthCheck_ => _MicroProfile HealthCheck Checker_ tab and check *enabled*";
+	const TEXT_CPU_USAGE = "Requires *CPU Usage HealthCheck* to be enabled: Go to _Configurations_ => _HealthCheck_ => _CPU Usage_ tab and check *enabled*";
+	const TEXT_HEAP_USAGE = "Requires *Heap Usage HealthCheck* to be enabled: Go to _Configurations_ => _HealthCheck_ => _Heap Usage_ tab and check *enabled*";
+	const TEXT_GC_PERCENTAGE = "Requires *Garbage Collector HealthCheck* to be enabled: Go to _Configurations_ => _HealthCheck_ => _Garbage Collector_ tab and check *enabled*";
+	const TEXT_MEM_USAGE = "Requires *Machine Memory HealthCheck* to be enabled: Go to _Configurations_ => _HealthCheck_ => _Machine Memory Usage_ tab and check *enabled*";
+	const TEXT_POOL_USAGE = "Requires *Connection Pool HealthCheck* to be enabled: Go to _Configurations_ => _HealthCheck_ => _Connection Pool_ tab and check *enabled*";
+	const TEXT_LIVELINESS = "Requires *MicroProfile HealthCheck Checker* to be enabled: Go to _Configurations_ => _HealthCheck_ => _MicroProfile HealthCheck Checker_ tab and check *enabled*";
 
 	/**
 	 * Page preset information improted on page load.
