@@ -669,26 +669,6 @@ table.tags th, table.tags td {
   background-color: var(--widget-bg-color);
 }
 
-/* Widget Settings Toolbar */
-.widget-settings-bar {
-  display:none; 
-  position: absolute; 
-  background-color: #002c3e;
-  white-space: nowrap;
-  padding: 10px;
-  z-index: 150;
-  width: 120px;
-  margin-left: -140px;
-  margin-top: 20px;    
-}
-.widget-settings-bar button {
-  float: left;
-  margin-bottom: 5px;
-}
-.widget-settings-bar button::first-letter {
-  margin-right: 5px;
-}
-
 /* Widget Legend */
 .Legend {
   margin: 0;
@@ -1316,7 +1296,7 @@ table.AnnotationTable {
   text-align: center;
   color: #F0981B;
   position: relative;
-  z-index: 101;
+  z-index: 102;
 }
 .WidgetHeader h3 .icon {
   padding: 4px;
@@ -1398,7 +1378,7 @@ table.AnnotationTable {
   position: fixed;
   right: 0;
   top: 0;
-  z-index: 100;
+  z-index: 110;
 }
 .ModalDialog .ModalDialogContent {
   background: rgba(var(--basalt, 0.8));
