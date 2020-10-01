@@ -57,49 +57,56 @@ MonitoringConsole.View.Components = (function() {
   const Colors = MonitoringConsole.View.Colors;
   const Selection = MonitoringConsole.Model.Page.Widgets.Selection;
 
+  function isFunction(obj) {
+    return typeof obj === 'function';
+  }
+
+  function isString(obj) {
+    return typeof obj === 'string';
+  }
+
+  function createIcon(icon) {
+    const svgElem = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const useElem = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    useElem.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', 'images/icons.svg#' + icon);
+    svgElem.appendChild(useElem);
+    return $(svgElem)
+      .attr('class', 'icon ' + icon)
+      .attr('viewBox', [0, 0, 16, 16])
+      .attr('aria-hidden', true)
+      .attr('focusable', false)
+      .attr('width', '16px')
+      .attr('height', '16px');
+  }
+
+  /**
+   * Model: { class, icon, alt, text }
+   */
+  function createIconButton(model) {
+    const btn = $('<button/>', { class: model.class, title: model.alt })
+      .append(createIcon( model.icon));
+    if (model.text) {
+      btn.append($('<span/>').text(model.text));
+    } else if (model.alt) {
+      btn.append($('<span/>', { class: 'visually-hidden'}).text(model.alt)); 
+    }
+    return btn;
+  }
+
    /**
     * This is the side panel showing the details and settings of widgets
     */
    let Settings = (function() {
 
-      function createHeaderRow(model) {
-        let caption = model.label;
-        let config = {colspan: 2};
-        if (model.description)
-          config.title = model.description;
-        let th = $('<th/>', config);
-        let showHide = function() {
-          let tr = th.closest('tr').next();
-          let toggleAll = tr.children('th').length > 0;
-          while (tr.length > 0 && (toggleAll || tr.children('th').length == 0)) {
-              if (tr.children('th').length == 0) {
-                  tr.toggle();                    
-              }
-              tr = tr.next();
-          }
-        };
-        return $('<tr/>').append(
-            th.html(caption).click(showHide));
-      }
-
-      function createTable(model) {
-        let table = $('<table />', { id: model.id });
-        if (model.caption)
-          table.append(createHeaderRow({ label: model.caption, description: model.description, collapsed: model.collapsed }));
-        return table;
-      }
-
       function createRow(model, inputs) {
         let components = $.isFunction(inputs) ? inputs() : inputs;
-        if (typeof components === 'string')
+        if (isString(components))
             components = document.createTextNode(components);
         let config = {};
         if (model.description)
           config.title = model.description;
         let tr = $('<tr/>');
         tr.append($('<td/>', config).text(model.label)).append($('<td/>').append(components));
-        if (model.collapsed)
-          tr.css('display', 'none');
         return tr;
       }
 
@@ -158,13 +165,30 @@ MonitoringConsole.View.Components = (function() {
             { text:model.options[option], value:option, selected: model.value === option})));          
         }
         let onChange = enhancedOnChange(model.onChange, true);
-        dropdown.change(() => onChange(dropdown.val()));
+        dropdown.change(() => {
+          const val = dropdown.val(); 
+          onChange(val == '_' ? undefined : val);
+        });
         return dropdown;
+      }
+
+      function createToggleInput(model) {
+        let checked = model.value;
+        const toggle = $('<button/>', { id: model.id, class: 'toggle', role:'switch', 'aria-checked': checked })
+          .append($('<span/>', {'aria-hidden': true, class: 'toggle__off' }).text(model.options['false']))
+          .append($('<span/>', {'aria-hidden': true, class: 'toggle__on'}).text(model.options['true']));
+        const onChange = enhancedOnChange(model.onChange);
+        toggle.click(function() {
+          checked = !checked;
+          toggle.attr('aria-checked', checked);
+          onChange(checked);
+        });
+        return toggle;
       }
 
       function createValueInput(model) {
         let unit = model.unit;
-        if (typeof unit === 'string') {
+        if (isString(unit)) {
           if (unit === 'percent')
             return createRangeInput({id: model.id, min: 0, max: 100, value: model.value, onChange: model.onChange });
           if (unit === 'count')
@@ -173,11 +197,31 @@ MonitoringConsole.View.Components = (function() {
         return createTextInput(model);
       }
 
+      function createTextAreaInput(model) {
+        const config = { rows: 3 };
+        let readonly = model.onChange === undefined;
+        if (readonly)
+          config.readonly = true;
+        if (model.placeholder)
+          config.placeholder = model.placeholder;
+        const input = $('<textarea/>', config);
+        if (model.value)
+          input.append(model.value);
+        if (!readonly) {
+          let onChange = enhancedOnChange(model.onChange, false);
+          input.on('input change', function() {
+            const val = input.val();
+            onChange(val == '' ? undefined : val);
+          });
+        }
+        return input;
+      }
+
       function createTextInput(model) {
         function getConverter() {
           if (model.unit === undefined)
             return { format: (str) => str, parse: (str) => str };
-          if (typeof model.unit === 'function')
+          if (isFunction(model.unit))
             return Units.converter(model.unit());
           return Units.converter(model.unit);
         }
@@ -189,17 +233,19 @@ MonitoringConsole.View.Components = (function() {
           id: model.id,
           type: 'text', 
           value: converter.format(model.value), 
-          'class': 'input-' + model.type,
+          class: `input-${model.type}`,
         };
         if (model.description && !model.label)
-          config.title = description;
+          config.title = model.description;
         let readonly = model.onChange === undefined;
-        if (!readonly && typeof model.unit === 'string') {
+        if (!readonly && isString(model.unit)) {
           if (converter.pattern !== undefined)
             config.pattern = converter.pattern();
           if (converter.patternHint !== undefined)
             config.title = (config.title ? config.title + ' ' : '') + converter.patternHint();
         }
+        if (model.placeholder)
+          config.placeholder = model.placeholder;
         let input = $('<input/>', config);
         if (!readonly) {
           let onChange = enhancedOnChange(model.onChange, true);
@@ -264,14 +310,14 @@ MonitoringConsole.View.Components = (function() {
         if (model.description && !model.label)
           config.title = model.description;
         let onChange = enhancedOnChange(model.onChange);
-        let input = $('<input/>', config)
-          .on('input change', function() { 
-            let val = this.value;
+        let input = $('<input/>', config);
+        input.change(function() { 
+            let val = input.val();
             if (val === model.defaultValue)
               val = undefined;
             onChange(val);
           });
-        let wrapper = $('<span/>', {'class': 'color-picker'}).append(input);
+        let wrapper = $('<span/>', {class: 'color-picker'}).append(input);
         if (model.defaultValue === undefined)
           return wrapper;
         return $('<span/>').append(wrapper).append($('<input/>', { 
@@ -279,7 +325,7 @@ MonitoringConsole.View.Components = (function() {
           value: ' ',
           title: 'Reset to default color', 
           style: 'background-color: ' + model.defaultValue,
-          'class': 'color-reset',
+          class: 'color-reset',
         }).click(() => {
           onChange(undefined);
           input.val(model.defaultValue);
@@ -299,13 +345,13 @@ MonitoringConsole.View.Components = (function() {
         for (let i = 0; i < value.length; i++) {
           list.append(createMultiColorItemInput(colors, i, onChange));
         }
-        let add = $('<button/>', {text: '+', 'class': 'color-list'});
+        let add = $('<button/>', {text: '+', class: 'color-list'});
         add.click(() => {
           colors.push(Colors.random(colors));
           createMultiColorItemInput(colors, colors.length-1, onChange).insertBefore(add);
           onChange(colors);
         });
-        let remove = $('<button/>', {text: '-', 'class': 'color-list'});
+        let remove = $('<button/>', {text: '-', class: 'color-list'});
         remove.click(() => {
           if (colors.length > 1) {
             colors.length -= 1;
@@ -332,63 +378,171 @@ MonitoringConsole.View.Components = (function() {
             case 'range'   : return createRangeInput(model);
             case 'value'   : return createValueInput(model);
             case 'text'    : return createTextInput(model);
+            case 'textarea': return createTextAreaInput(model);
             case 'color'   : return createColorInput(model);
+            case 'toggle'  : return createToggleInput(model);
             default        : return model.input;
          }
       }
 
       function createComponent(model) {
-         let panel = $('<div/>', { id: model.id });
-         let syntheticId = 0;
-         let collapsed = false;
-         for (let t = 0; t < model.groups.length; t++) {
-            let group = model.groups[t];
-            if (group.available !== false) {
-              let table = createTable(group);
-              collapsed = group.collapsed === true;
-              panel.append(table);
-              for (let r = 0; r < group.entries.length; r++) {
-                 syntheticId++;
-                 let entry = group.entries[r];
-                 if (entry.available !== false) {
-                   let type = entry.type;
-                   let auto = type === undefined;
-                   let input = entry.input;
-                   if (entry.id === undefined)
-                     entry.id = 'setting_' + syntheticId;
-                   entry.collapsed = collapsed;
-                   if (type == 'header' || auto && input === undefined) {
-                      collapsed = entry.collapsed === true;
-                      table.append(createHeaderRow(entry));
-                   } else if (!auto) {
-                      table.append(createRow(entry, createInput(entry)));
-                   } else {
-                      if (Array.isArray(input)) {
-                        let [innerInput, innerSyntheticId] = createMultiInput(input, syntheticId, 'x-input');
-                        input = innerInput;
-                        syntheticId = innerSyntheticId;
-                      }
-                      table.append(createRow(entry, input));
-                   }
-                }
-              }
-            }
-         }
-         return panel;
+        const config = { id: model.id, class: 'Settings' };
+        const hasToggle = isFunction(model.onSidebarToggle);
+        if (hasToggle)
+          config.class += model.collapsed ? ' SettingsCollapsed' : ' SettingsExpanded';
+        const sidebar = $('<aside/>', config);
+        const header = $('<header/>');
+        sidebar.append(header);
+        if (hasToggle)
+          header.append(createIconButton({
+              class: 'btn-icon btn-toggle',
+              icon: 'icon-toggle',
+              alt: model.collapsed ? 'Open Settings' : 'Hide Settings'
+            })
+            .click(model.onSidebarToggle));
+        if (hasToggle && model.onWidgetAdd)
+          header.append(createIconButton({ 
+            class: model.collapsed ? 'btn-icon btn-add' : 'btn-add',
+            icon: 'icon-plus',
+            text: model.collapsed ? undefined : 'Add New Chart',
+            alt: 'Add a widget to this page...' })
+            .click(model.onWidgetAdd));
+        if (hasToggle && model.collapsed) 
+          return sidebar;
+        const SyntheticId = (function() {
+          let nextId = 0;
+          return { next: () => nextId++ };
+        })();
+        if (!hasToggle) {
+          sidebar.append(createGroupList(model.groups, SyntheticId, false));
+          return sidebar;
+        }
+        const groups = model.groups.filter(g => g.available !== false);
+        const appGroups = groups.filter(g => g.type == 'app');
+        const pageGroups = groups.filter(g => g.type == 'page');
+        const widgetGroups = groups.filter(g => g.type === undefined || g.type == 'widget');
+        const groupPanels = $('<div/>', { class: 'SettingsGroups'});
+        if (appGroups.length > 0)
+          groupPanels.append(createGroupList(appGroups, SyntheticId, true, 'App Settings', 'icon-global'));
+        if (pageGroups.length > 0) 
+          groupPanels.append(createGroupList(pageGroups, SyntheticId, false, '', 'icon-page'));  
+        if (widgetGroups.length > 0) 
+          groupPanels.append(createGroupList(widgetGroups, SyntheticId, true, 'Widget Settings'));  
+        return sidebar.append(groupPanels);
       }
 
-      function createMultiInput(inputs, syntheticId, css) {
-        let box = $('<div/>', {'class': css});
+      function createGroupList(groups, idProvider, tabs = false, name = "", icon = undefined) {
+        function upper(str) {
+          return str.charAt(0).toUpperCase() + str.slice(1);      
+        }
+
+        const box = $('<div/>', {class: 'Settings' + upper(groups[0].type || 'Widget') + (tabs ? ' SettingsTabs' : ' SettingsList')});
+        const list = $('<div/>');
+        if (tabs && name != "") {
+          const caption = $('<h4/>').append(createIcon('icon-menu-arrow')).append($('<span/>').text(name));
+          if (icon)
+            caption.append(createIcon(icon));
+          caption.click(() => { 
+            list.toggle();
+            caption.toggleClass('state-collapsed');
+          });
+          box.append(caption);
+        }
+        box.append(list);
+        const containers = [];
+        for (let group of groups) {          
+          const container = $('<div/>', { id: group.id, class: 'SettingsGroup' });
+          if (!tabs && group.collapsed === true)
+            container.css('display', 'none');
+          const table = createGroup(group, idProvider);
+          containers.push(container.append(table));
+        }
+        const headers = [];
+        for (let group of groups) {
+          if (!tabs && icon)
+            group.icon = icon;
+          headers.push(createHeader(group, tabs));
+        }
+        for (let i = 0; i < groups.length; i++) {
+          const container = containers[i];
+          const header = headers[i];
+          if (tabs) {
+            header.click(() => {
+              containers.forEach(c => c.hide());
+              container.show();
+              headers.forEach(h => h.removeClass('state-active'));
+              header.addClass('state-active');
+            });
+            if (i == 0) {
+              header.addClass('state-active');
+            } else {
+              container.css('display', 'none');
+            }
+            list.append(header);
+          } else {
+            const group = groups[i];
+            if (group.collapsed)
+              header.addClass('state-collapsed');
+            list.append(header.click(() => {
+              container.toggle();
+              header.toggleClass('state-collapsed');
+            }));
+            list.append(container);
+          }
+        }
+        if (tabs) // when using tabs containers are appended last
+          for (let container of containers)
+            list.append(container);
+        return box;
+      }
+
+      function createHeader(group, tabs) {
+        if (!tabs && group.caption === undefined)
+          return $('<span/>');
+        const config = {};
+        if (group.description)
+          config.title = group.description;
+        if (tabs)
+          return $('<button/>').text(group.caption);
+        const header = $('<h4/>', config)
+          .append(createIcon('icon-menu-arrow'))
+          .append($('<span/>').text(group.caption));
+        if (group.icon)
+          header.append(createIcon(group.icon));
+        return header;
+      }
+
+      function createGroup(group, idProvider) {
+        const table = $('<table />');
+        for (let entry of group.entries) {
+           if (entry.available !== false) {
+             let type = entry.type;
+             let auto = type === undefined;
+             let input = entry.input;
+             if (entry.id === undefined)
+               entry.id = 'setting_' + idProvider.next();
+            if (!auto) {
+                table.append(createRow(entry, createInput(entry)));
+             } else {
+                if (Array.isArray(input)) {
+                  input = createMultiInput(input, idProvider, 'x-input');
+                }
+                table.append(createRow(entry, input));
+             }
+          }
+        }
+        return table;
+      }
+
+      function createMultiInput(inputs, idProvider, css) {
+        let box = $('<div/>', {class: css});
         for (let i = 0; i < inputs.length; i++) {
           let entry = inputs[i];
           if (Array.isArray(entry)) {
-            let [innerBox, innerSyntheticId] = createMultiInput(entry, syntheticId);
-            box.append(innerBox);
-            syntheticId = innerSyntheticId;
+            box.append(createMultiInput(entry, idProvider));
           } else if (entry.available !== false) {
-            syntheticId++;
             if (entry.id === undefined)
-              entry.id = 'setting_' + syntheticId;
+              entry.id = 'setting_' + idProvider.next();
             let input = createInput(entry);
             if (entry.label) {
               let config = { 'for': entry.id };
@@ -400,7 +554,7 @@ MonitoringConsole.View.Components = (function() {
             }
           }                    
         }
-        return [box, syntheticId];
+        return box;
       }
 
       return { 
@@ -420,7 +574,7 @@ MonitoringConsole.View.Components = (function() {
       let color = item.color;
       let strong = value;
       let normal = '';
-      if (typeof value === 'string' && value.indexOf(' ') > 0) {
+      if (isString(value) && value.indexOf(' ') > 0) {
         strong = value.substring(0, value.indexOf(' '));
         normal = value.substring(value.indexOf(' '));
       }
@@ -450,7 +604,7 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createComponent(model) {
-      let legend = $('<ol/>',  {'class': 'Legend'});
+      let legend = $('<ol/>',  {class: 'Legend'});
       for (let item of model) {
         legend.append(createItem(item));
       }
@@ -466,11 +620,25 @@ MonitoringConsole.View.Components = (function() {
   const Indicator = (function() {
 
     function createComponent(model) {
-       if (!model.text) {
-          return $('<div/>', {'class': 'Indicator', style: 'display: none;'});
-       }
-       let html = model.text.replace(/\*([^*]+)\*/g, '<b>$1</b>').replace(/_([^_]+)_/g, '<i>$1</i>');
-       return $('<div/>', { 'class': 'Indicator status-' + model.status, style: 'color: ' + model.color + ';' }).html(html);
+      if (!model.text) {
+        return $('<div/>', {class: 'Indicator', style: 'display: none;'});
+      }
+      let title;
+      if (model.status == 'missing') {
+        title = model.text.replace(/\*([^*]+)\*/g, '$1').replace(/_([^_]+)_/g, '$1');
+      }
+      const indicator = $('<div/>', { 
+        class: 'Indicator status-' + model.status, 
+        style: 'color: ' + model.color + ';',
+        title: title,
+      });
+      if (model.status == 'missing') {
+        indicator.prepend($('<p/>').html('&#128268;'));
+      } else {
+        let html = model.text.replace(/\*([^*]+)\*/g, '<b>$1</b>').replace(/_([^_]+)_/g, '<i>$1</i>');
+        indicator.html(html);
+      }
+      return indicator;
     }
 
     return { createComponent: createComponent };
@@ -480,17 +648,27 @@ MonitoringConsole.View.Components = (function() {
   const RAGIndicator = (function() {
 
     function createComponent(model) {
-      const indicator = $('<div/>', { 'class': 'RAGIndicator' });
+      const indicator = $('<div/>', { class: 'RAGIndicator' });
       const itemHeight = Math.floor(100 / model.items.length);
       for (let item of model.items) {
+        const diffMs = item.since === undefined ? undefined : new Date() - item.since;
         let text = item.label;
         if (text == 'server')
           text = 'DAS';
         indicator.append($('<div/>', { 
-          title: item.state, 
-          'class': 'Item', 
-          style: 'background-color: '+item.background+ '; height: '+itemHeight+'%; border-left-color: '+item.color+';' })
-        .append($('<span/>').text(text)));
+          class: 'Item',
+          style: `border-left-color: ${item.color};`,
+        })
+        .append($('<span/>', { 
+          class: `RAGIndicatorLight ${diffMs === undefined || diffMs > 60000 ? '' : 'RAGIndicatorRecent'}`,
+          style: `background-color: ${item.background};`,
+        }))
+
+        .append($('<div/>')
+          .append($('<strong/>').text(item.value))
+          .append($('<span/>').text(text))
+          .append($('<span/>').text(item.since === undefined || item.since <= 0 ? '' : `Since ${Units.formatDateTime(item.since)}`))
+        ));
       }
       return indicator;
     }
@@ -500,78 +678,13 @@ MonitoringConsole.View.Components = (function() {
   })();
 
   /**
-   * Component for any of the text+icon menus/toolbars.
-   */
-  const Menu = (function() {
-
-    function createComponent(model) {
-      let attrs = { 'class': 'Menu' };
-      if (model.id)
-        attrs.id = model.id;
-      let menu = $('<span/>', attrs);
-      let groups = model.groups;
-      for (let g = 0; g < groups.length; g++) {
-        let group = groups[g];
-        if (group.items) {
-          let groupBox = $('<span/>', { class: 'Group' });
-          let groupLabel = $('<a/>').html(createText(group));
-          let groupItem = $('<span/>', { class: 'Item' })
-            .append(groupLabel)
-            .append(groupBox)
-            ;
-          if (group.clickable) {
-            groupLabel
-              .click(group.items.find(e => e.hidden !== true && e.disabled !== true).onClick)
-              .addClass('clickable');
-          }
-          menu.append(groupItem);
-          for (let i = 0; i < group.items.length; i++) {
-            let item = group.items[i];
-            if (item.hidden !== true)
-              groupBox.append(createButton(item));
-          }          
-        } else {
-          if (group.hidden !== true)
-            menu.append(createButton(group).addClass('Item'));
-        }
-      }
-      return menu;
-    }
-
-    function createText(button) {
-      let text = '';
-      if (button.icon)
-        text += '<strong>'+button.icon+'</strong>';
-      if (button.label)
-        text += button.label;
-      if (button.label && button.items)
-        text += " &#9013;";
-      return text;
-    }
-
-    function createButton(button) {
-      let attrs = { title: button.description };
-      if (button.disabled)
-        attrs.disabled = true;
-      return $('<button/>', attrs)
-            .html(createText(button))
-            .click(button.onClick)
-            .addClass('clickable');
-    }
-
-    return { createComponent: createComponent };
-  })();
-
-
-
-  /**
    * An alert table is a widget that shows a table of alerts that have occured for the widget series.
    */
   let AlertTable = (function() {
 
     function createComponent(model) {
       let items = model.items === undefined ? [] : model.items.sort(sortMostUrgetFirst);
-      config = { 'class': 'AlertTable' };
+      config = { class: 'AlertTable' };
       if (model.id)
         config.id = model.id;
       if (items.length == 0)
@@ -589,7 +702,7 @@ MonitoringConsole.View.Components = (function() {
       let ongoing = endFrame.until === undefined;
       let level = endFrame.level;
       let color = ongoing ? endFrame.color : Colors.hex2rgba(endFrame.color, 0.6);
-      let box = $('<div/>', { style: 'border-color:' + color + ';' });
+      let box = $('<div/>', { style: `border-color: ${color};` });
       box.append($('<input/>', { type: 'checkbox', checked: item.acknowledged, disabled: item.acknowledged })
         .change(() => acknowledge(item)));
       box.append(createGeneralGroup(item, verbose));
@@ -598,7 +711,7 @@ MonitoringConsole.View.Components = (function() {
         box.append(createConditionGroup(item));
       if (verbose && Array.isArray(item.annotations) && item.annotations.length > 0)
         box.append(createAnnotationGroup(item));
-      let row = $('<div/>', { id: 'Alert-' + item.serial, class: 'Item ' + level, style: 'border-color:'+item.color+';' });
+      let row = $('<div/>', { id: `Alert-${item.serial}` , class: `Item ${level}` , style: `border-color: ${item.color};` });
       row.append(box);
       return row;
     }
@@ -608,7 +721,7 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createAnnotationGroup(item) {
-      let id = 'Alert-' + item.serial + '-Annotations';
+      let id = `Alert-${item.serial}-Annotations`;
       let element = $('#' + id); 
       let display = element.length == 0 || element.is(":visible") ? 'block' : 'none';
       let groups = $('<div/>', { id: id, style: 'display: ' + display + ';' });
@@ -634,7 +747,7 @@ MonitoringConsole.View.Components = (function() {
     function createConditionGroup(item) {
       let endFrame = item.frames[0];
       let circumstance = item.watch[endFrame.level];
-      let group = $('<div/>', { 'class': 'Group' });
+      let group = $('<div/>', { class: 'Group' });
       appendProperty(group, 'Start', formatCondition(circumstance.start, item.unit));
       if (circumstance.stop) {
         appendProperty(group, 'Stop', formatCondition(circumstance.stop, item.unit));
@@ -648,7 +761,7 @@ MonitoringConsole.View.Components = (function() {
         let duration = durationMs(startFrame, endFrame);
         let amberStats = computeStatistics(item, 'amber');
         let redStats = computeStatistics(item, 'red');
-        let group = $('<div/>', { 'class': 'Group' });
+        let group = $('<div/>', { class: 'Group' });
         appendProperty(group, 'Since', Units.formatTime(startFrame.since));
         appendProperty(group, 'For', formatDuration(duration));
         if (redStats.count > 0 && verbose)
@@ -659,7 +772,7 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createGeneralGroup(item, verbose) {
-      let group = $('<div/>', { 'class': 'Group' });
+      let group = $('<div/>', { class: 'Group' });
       appendProperty(group, 'Alert', item.serial);
       appendProperty(group, 'Watch', item.name);
       if (item.series)
@@ -774,7 +887,7 @@ MonitoringConsole.View.Components = (function() {
 
     function createComponent(model) {
       let items = model.items || [];
-      config = { 'class': 'AnnotationTable' };
+      config = { class: 'AnnotationTable' };
       if (model.id)
         config.id = model.id;
       if (items.length == 0)
@@ -804,7 +917,7 @@ MonitoringConsole.View.Components = (function() {
 
     function createListEntry(item) {      
       let attrs = createAttributesModel(item);
-      let group = $('<div/>', { 'class': 'Group Annotation', style: 'border-color:' + item.color + ';' });
+      let group = $('<div/>', { class: 'Group Annotation', style: `border-color: ${item.color};` });
       for (let [key, entry] of Object.entries(attrs)) {
         appendProperty(group, key, entry.value, entry.type);
       }      
@@ -813,8 +926,8 @@ MonitoringConsole.View.Components = (function() {
 
     function createTableEntry(item) {
       let attrs = createAttributesModel(item);
-      let row = $('<tr/>', { 'class': 'Annotation' });
-      let style = { 'style': 'border-left-color: ' + item.color + ';' };
+      let row = $('<tr/>', { class: 'Annotation' });
+      let style = { 'style': `border-left-color: ${item.color};` };
       for (let entry of Object.values(attrs)) {
         let td = $('<td/>', style);
         style = {}; // clear after 1. column
@@ -874,44 +987,68 @@ MonitoringConsole.View.Components = (function() {
   const WatchList = (function() {
 
     function createComponent(model) {
-      const config = { 'class': 'WatchList' };
+      const config = { class: 'WatchListContainer' };
       if (model.id)
         config.id = model.id;
-      const list = $('<div/>', config);
-      for (let item of model.items) {
-        list.append(createItem(item, model.colors, model.actions));
+      const container = $('<div/>', config);
+      let items = model.items.filter(watch => watch.programmatic);
+      if (items.length > 0) {
+        container.append($('<h3>').html('System Watches'));
+        container.append(createList(items, model));
       }
-      return list;
+      items = model.items.filter(watch => !watch.programmatic);
+      if (items.length > 0) {
+        container.append($('<h3>').html('User Watches'));
+        container.append(createList(items, model));
+      }      
+      return container;
     }
 
-    function createItem(item, colors, actions) {
-      const watch = $('<div/>', { 'class': 'WatchItem ' + 'state-' + (item.disabled || item.stopped ? 'disabled' : 'enabled') });
-      const disableButton = Settings.createInput({ type: 'checkbox', value: !item.disabled, onChange: (checked) => {
-        if (checked) {
-          actions.onEnable(item.name);
-        } else {
-          actions.onDisable(item.name);
-        }
-      }});
-      const menu = [
-        { icon: '&#128295;', label: item.programmatic ? 'Duplicate' : 'Edit', onClick: () => actions.onEdit(item) }
-      ];
-      if (item.disabled) {
-        menu.push({ icon: '&#9745;', label: 'Enable', onClick: () => actions.onEnable(item.name) });        
+    function createList(items, model) {
+        const list = $('<dl/>', { class: 'WatchList' });
+        for (let item of items)
+          createItem(list, item, model.colors, model.actions);
+        return list;
+    }
+
+    function createItem(list, item, colors, actions) {
+      const label = $('<b/>').text(item.name + (item.stopped ? ' (stopped)' : ''));
+      const icon = createIconButton({
+          class: 'btn-icon',
+          icon: 'icon-menu-arrow',
+          alt: 'Expand/Collapse Details'
+      });
+      const dt = $('<dt/>', { class: 'state-collapsed state-' + (item.disabled || item.stopped ? 'disabled' : 'enabled') })
+        .append(icon)
+        .append(label)
+        .append($('<code/>').text(item.series));
+      const onClick = () =>  {
+        dt.nextUntil('dt').toggle();
+        dt.toggleClass('state-collapsed');
+      };
+      icon.click(onClick);
+      label.click(onClick);
+      if (isFunction(actions.onEdit)) {
+        dt.append($('<button/>').text(item.programmatic ? 'Copy' : 'Edit').click(() => actions.onEdit(item)));
       } else {
-        menu.push({ icon: '&#9746;', label: 'Disable', onClick: () => actions.onDisable(item.name) });        
+        dt.append($('<span/>'));
       }
-      if (!item.programmatic) {
-        menu.push({ icon: '&times;', label: 'Delete', onClick: () => actions.onDelete(item.name) });
+      if (!item.programmatic && isFunction(actions.onDelete)) {
+        dt.append($('<button/>').text('Delete').click(() => actions.onDelete(item.name)));
+      } else {
+        dt.append($('<span/>'));
       }
-      const general = $('<h3/>').append(disableButton).append(item.name + (item.stopped ? ' (stopped)' : '')).click(() => actions.onEdit(item));
-      watch
-        .append(Menu.createComponent({ groups: [{ icon: '&#9881;', items: menu }]}))
-        .append(general);
+      if (item.disabled && isFunction(actions.onEnable)) {
+        dt.append($('<button/>', { class: 'primary' }).text('Enable').click(() => actions.onEnable(item.name)));        
+      } else if (!item.disabled && isFunction(actions.onDisable)) {
+        dt.append($('<button/>', { class: 'primary' }).text('Disable').click(() => actions.onDisable(item.name)));        
+      } else {
+        dt.append($('<span/>')); 
+      }
+      list.append(dt);
       for (let level of ['red', 'amber', 'green'])
         if (item[level])
-          watch.append(createCircumstance(level, item[level], item.unit, item.series, colors[level]));
-      return watch;
+          list.append(createCircumstance(level, item[level], item.unit, item.series, colors[level]));
     }
 
     function createCircumstance(level, model, unit, series, color) {
@@ -919,14 +1056,14 @@ MonitoringConsole.View.Components = (function() {
         let text = condition.text();
         return text.substring(text.indexOf('value') + 5);
       }
-      const circumstance = $('<div/>', { 'class': 'WatchCondition', style: 'color: '+ color +';'});
+      const circumstance = $('<dd/>', { class: 'WatchCondition', style: `color: ${color}; display: none;`});
       let levelText = paddedLeftWith('&nbsp;', Units.Alerts.name(level), 'Unhealthy'.length);
-      let text = '<b>' + levelText + ':</b> <em>If</em> ' + series + ' <em>in</em> ' + Units.names()[unit] + ' <em>is</em> ';
+      let text = `<b>${levelText}:</b> <em>If</em> ${series} <em>in</em> ${Units.names()[unit]} <em>is</em> `;
       text += plainText(formatCondition(model.start, unit));
       if (model.suppress)
-        text += ' <em>unless</em> ' + model.surpressingSeries + ' ' + plainText(formatCondition(model.suppress, model.surpressingUnit));
+        text += ` <em>unless</em> ${model.surpressingSeries} ${plainText(formatCondition(model.suppress, model.surpressingUnit))}`;
       if (model.stop)
-        text += ' <em>until</em> ' + plainText(formatCondition(model.stop, unit));
+        text += ` <em>until</em> ${plainText(formatCondition(model.stop, unit))}`;
       return circumstance.html(text);
     }
 
@@ -938,29 +1075,47 @@ MonitoringConsole.View.Components = (function() {
    */
   const WatchBuilder = (function() {
     
-    function createComponent(model, watch) {
-      const config = { 'class': 'WatchBuilder WatchItem' };
+    function createComponent(model) {
+      const config = { class: 'WatchBuilder' };
       if (model.id)
         config.id = model.id;
-      let editedWatch = watch || { unit: 'count', name: 'New Watch' };
-      if (editedWatch.programmatic) {
-        editedWatch = JSON.parse(JSON.stringify(watch));
-        editedWatch.name = 'Copy of ' + watch.name;
-        editedWatch.programmatic = false;
-      }
+      const editedWatch = model.watch;
+      const readonly = model.onSelect === undefined;
       const builder = $('<div/>', config);
-      const nameInput = Settings.createInput({ type: 'text', value: editedWatch.name, onChange: (name) => editedWatch.name = name });
-      builder.append($('<h3/>').append(nameInput));
-      const unitDropdowns = [];
-      const seriesInputs = [];
+      const conditionText = $('<span/>');
+      const updateText = () => conditionText.html('If <b>' + (editedWatch.series === undefined ? '?' : editedWatch.series) + '</b> in <b>' + (editedWatch.unit === undefined ? '?' : Units.names()[editedWatch.unit]) + '</b>...');
+      updateText();
+      const nameInput = Settings.createInput({ type: 'text', value: editedWatch.name, onChange: (name) => editedWatch.name = name});
+      const unitDropdown = Settings.createInput({ type: 'dropdown', value: editedWatch.unit, options: Units.names(), onChange: (selected) => { editedWatch.unit = selected; updateText(); }});
+      const seriesInput = Settings.createInput({ type: 'text', value: editedWatch.series, onChange: readonly ? undefined : (series) => { editedWatch.series = series; updateText(); }});
+      const popupId = 'popup-popup';
+
+      const form = $('<div/>', {class: 'WatchBuilderForm'})
+        .append($('<div/>')
+          .append($('<label/>').text('Name'))
+          .append(nameInput))
+        .append($('<div/>')
+          .append($('<label/>').text('Series'))
+          .append(seriesInput)
+          .append(readonly ? "" : $('<button/>').text('Select...').click(
+            () => model.onSelect(popupId, editedWatch.series, 
+              (series) => seriesInput.val(series).change()))))
+        .append($('<div/>')
+          .append($('<label/>').text('Unit'))
+          .append(unitDropdown))
+        .append($('<div/>')
+          .append($('<label/>').text('Condition'))
+          .append(conditionText))
+        .append($('<div/>', { id: popupId }));
+
+      builder.append(form);
       for (let level of ['red', 'amber', 'green']) {
-        builder.append(createLevelBuilder(level, editedWatch, model.colors[level], unitDropdowns, seriesInputs));
+        builder.append(createLevelBuilder(level, editedWatch, model.colors[level]));
       }
-      builder.append($('<button/>').text('Save or Update').click(() => model.actions.onCreate(editedWatch)));
       return builder;
     }
 
-    function createLevelBuilder(level, editedWatch, color, unitDropdowns, seriesInputs) {
+    function createLevelBuilder(level, editedWatch, color) {
       const editedCircumstance = editedWatch[level] || { level: level };
       const editedStartCondition = editedCircumstance.start || { operator: '>', forTimes: 1 };
       const editedStopCondition = editedCircumstance.stop || { operator: '<', forTimes: 1 };
@@ -976,16 +1131,6 @@ MonitoringConsole.View.Components = (function() {
           editedWatch[level] = undefined;
         }
       }});
-      const unitDropdown = Settings.createInput({ type: 'dropdown', value: editedWatch.unit, options: Units.names(), onChange: (selected) => {
-        editedWatch.unit = selected;
-        unitDropdowns.forEach(dropdown => dropdown.val(selected));
-      }});
-      unitDropdowns.push(unitDropdown);
-      const seriesInput = Settings.createInput({ type: 'text', value: editedWatch.series, onChange: (series) => {
-        editedWatch.series = series;
-        seriesInputs.forEach(input => input.val(series));
-      }});
-      seriesInputs.push(seriesInput);
       const isUntilDefined = editedCircumstance.stop !== undefined;
       const untilBox = $('<span/>', isUntilDefined ? {} : { style: 'display: none;'})
         .append(createConditionBuilder(editedWatch, editedCircumstance, editedStopCondition));      
@@ -999,12 +1144,10 @@ MonitoringConsole.View.Components = (function() {
         }
       }});
       levelBox
-        .append(' <em>If</em> ').append(seriesInput)
-        .append(' <em>in</em> ').append(unitDropdown)
         .append(' <em>is<em/> ').append(createConditionBuilder(editedWatch, editedCircumstance, editedStartCondition))
         .append(' <em>until</em> ').append(untilCheckbox).append(untilBox);
-      return $('<div/>', {'class': 'WatchCondition', style: 'color: ' + color + ';' })
-        .append(enableCheckbox).append('<b>' + paddedLeftWith('&nbsp;', Units.Alerts.name(level), 'Unhealthy'.length) + ':</b>')
+      return $('<div/>', { class: 'WatchCondition', style: `color: ${color};` })
+        .append(enableCheckbox).append(`<b>${paddedLeftWith('&nbsp;', Units.Alerts.name(level), 'Unhealthy'.length)}</b>`)
         .append(levelBox);
     }
 
@@ -1075,20 +1218,19 @@ MonitoringConsole.View.Components = (function() {
   const WatchManager = (function() {
 
     function createComponent(model) {
-      const config = { 'class': 'WatchManager' };
+      const config = { class: 'WatchManager' };
       if (model.id)
         config.id = model.id;
       const manager = $('<div/>', config);
       model.id = undefined; // id should not be set by sub-components
-      let builder = WatchBuilder.createComponent(model);
-      const list = WatchList.createComponent(model);
-      model.actions.onEdit = (watch) => {
-        const newBuilder = WatchBuilder.createComponent(model, watch);
-        builder.replaceWith(newBuilder);
-        builder = newBuilder;
-      };
-      manager.append(list);
-      manager.append(builder);
+      manager.append($('<div/>', {id: 'WatchBuilder'}));
+      if (isFunction(model.actions.onCreate))
+        manager.append(createIconButton({
+          icon: 'icon-plus',
+          text: 'Add New Watch',
+          alt: 'Create a new watch...'
+        }).click(() => model.actions.onCreate()));
+      manager.append(WatchList.createComponent(model));
       return manager;
     }
 
@@ -1103,85 +1245,46 @@ MonitoringConsole.View.Components = (function() {
   const PageManager = (function() {
 
     function createComponent(model) {
-      const config = { 'class': 'PageManager' };
+      const config = { class: 'PageManager' };
       if (model.id)
         config.id = model.id;
       const manager = $('<div/>', config);
       const list = $('<table/>').append($('<tr/>')
-        .append($('<th/>'))
         .append($('<th/>').text('Page'))
-        .append($('<th/>').text('Local Version'))
-        .append($('<th/>').text('Based on Remote Version'))
-        .append($('<th/>').text('Remote Version'))
+        .append($('<th/>').append($('<div/>').append($('<span/>').text('Local Version')).append($('<span/>').text('Based on Server Version'))))
+        .append($('<th/>').text('Latest Server Version'))
       );
-      const selection = {};
-      model.pages.forEach(page => list.append(createItem(page, selection)));
-      const updateBtn = $('<button/>', { text: 'Update', title: 'Updates checked pages locally with the remote configuration for these pages'})
-        .click(() => model.onUpdate(Object.keys(selection)));
-      const cancelBtn = $('<button/>', { text: 'Cancel'}).click(model.onCancel);
-      return manager.append($('<div/>', {'class': 'content'})
-        .append($('<h3/>').text('Page Synchronisation'))
-        .append($('<p/>').text('Please select the pages that should be updated with their server (remote) configuration (newest highlighted in green):'))
-        .append(list)
-        .append(updateBtn)
-        .append(cancelBtn)
-      );
+      model.pages.forEach(page => list.append(createItem(model, page)));
+      return manager
+        .append($('<p/>').text('Please select the pages that should be updated with their server configuration.'))
+        .append($('<span/>', { class: 'recent' }).text('Newest Version'))
+        .append(list);
     }
 
-    function createItem(page, selection) {
+    function createItem(model, page) {
       if (page.checked)
-        selection[page.id] = true;
-      const onChange = (checked) => { selection[page.id] = checked; };
-      const checkbox = $('<input/>', { type: 'checkbox', checked: page.checked })
+        model.onSelection(page.id);
+      const id = `select-${page.id}`;
+      const checkbox = $('<input/>', { id: id, type: 'checkbox', checked: page.checked })
         .on('change', function() {
           if (this.checked) {
-            selection[page.id] = true;
+            model.onSelection(page.id);
           } else {
-            delete selection[page.id];
+            model.onDeselection(page.id);
           }
         });
-      const localAttrs = page.lastLocalChange >= page.lastRemoteChange ? {'class': 'recent'} : {};
-      const remoteAttrs = page.lastLocalChange == undefined || page.lastLocalChange <= page.lastRemoteChange ? {'class': 'recent'} : {};
-      const baseAttrs = page.lastRemoteUpdate != undefined && page.lastRemoteUpdate == page.lastRemoteChange ? {'class': 'recent'} : {};
-      const localText = page.lastLocalChange === undefined && page.lastRemoteUpdate !== undefined ? '(not modified)' : Units.formatDateTime(page.lastLocalChange);
+      const localIsMostRecent = page.lastLocalChange > page.lastRemoteChange;
+      const remoteIsMostRecent = page.lastLocalChange === undefined || page.lastLocalChange <= page.lastRemoteChange;
+      const baseIsMostRecent = remoteIsMostRecent && page.lastRemoteUpdate !== undefined && page.lastRemoteUpdate == page.lastRemoteChange;
+      const remoteNotModified = page.lastRemoteUpdate !== undefined && page.lastLocalChange === undefined;
+      const localAttrs = localIsMostRecent ? {class: 'recent'} : {};
+      const remoteAttrs = remoteIsMostRecent ? {class: 'recent'} : {};
+      const baseAttrs =  baseIsMostRecent ? {class: 'recent'} : {};
+      const localText =  remoteNotModified ? '(unmodified server version)' : Units.formatDateTime(page.lastLocalChange);
       return $('<tr/>')
-        .append($('<td/>').append(checkbox))
-        .append($('<th/>').text(page.name))
-        .append($('<td/>', localAttrs).text(localText))
-        .append($('<td/>', baseAttrs).text(Units.formatDateTime(page.lastRemoteUpdate)))
-        .append($('<td/>', remoteAttrs).text(Units.formatDateTime(page.lastRemoteChange)));
-    }
-
-    return { createComponent: createComponent };
-  })();
-
-
-  /**
-   * A component that creates a panel (for modal dialogue) that presents possible roles for user to select one.
-   */
-  const RoleSelector = (function(){
-
-    function createComponent(model) {
-      const config = { 'class': 'RoleSelector' };
-      if (model.id)
-        config.id = model.id;
-      const selector = $('<div/>', config);
-      const box = $('<div/>', {'class': 'content'}).append($('<h3/>').text('Select User Role'));
-      const list = $('<ul/>');
-      box.append(list);
-      let seletion = [undefined];
-      model.items.forEach(role => list.append(createItem(role, seletion)));
-      box.append($('<button/>', { text: 'Select' }).click(() => model.onChange(seletion[0])));
-      return selector.append(box);
-    }
-
-    function createItem(role, seletion) {
-      const id = 'role-'+role.name;
-      return $('<li/>')
-        .append($('<input/>', { type: 'radio', name: 'role', value: role.name, id: id }).change(function() {
-            seletion[0] = this.value;
-          }))
-        .append($('<label/>', { for: id }).append($('<b/>').text(role.label)).append('<br/>').append(role.description));
+        .append($('<td/>').append(checkbox).append(' ').append($('<label/>', { for: id }).text(page.name)))
+        .append($('<td/>').append($('<div/>').append($('<span/>', localAttrs).text(localText)).append($('<span/>', baseAttrs).text(Units.formatDateTime(page.lastRemoteUpdate)))))
+        .append($('<td/>').append($('<span/>', remoteAttrs).text(Units.formatDateTime(page.lastRemoteChange))));
     }
 
     return { createComponent: createComponent };
@@ -1195,7 +1298,7 @@ MonitoringConsole.View.Components = (function() {
   const SelectionWizard = (function() {
 
     function createComponent(model) {
-      const config = { 'class': 'SelectionWizard'};
+      const config = { class: 'SelectionWizard'};
       if (model.id)
         config.id = model.id;
       const wizard = $('<div/>', config);
@@ -1211,11 +1314,6 @@ MonitoringConsole.View.Components = (function() {
       for (let i = 0; i < model.filters.length; i++)
         model.filters[i].id = i;
 
-      // fixed UI state
-      const searchBox = $('<div/>', { 'class': 'Search' });
-      const filterBox = $('<div/>', { 'class': 'Filters' });
-      const matchList = $('<div/>', { 'class': 'Matches'});
-      
       // applying the state to the UI
       let matches;
 
@@ -1224,55 +1322,67 @@ MonitoringConsole.View.Components = (function() {
           matches = (await model.onSearch(state.properties))
             .sort((a, b) => a[model.key].localeCompare(b[model.key]));
           if (model.selection)
-            for (let key of model.selection)
-              state.selection[key] = matchForKey(key, model.key, matches);
+            for (let key of model.selection) {
+              const match = matchForKey(key, model.key, matches);
+              if (match !== undefined)
+                state.selection[key] = match;
+            }
 
         } else {
-          model.onChange(Object.keys(state.selection));
+          model.onChange(Object.keys(state.selection), state.selection);
         }
         matches.forEach(match => match.filtered = false);
-        filterBox.empty();
-        for (let filter of model.filters)
-          filterBox.append(createFilter(model, filter, matches, state));
-        recreateMatchList(model, state, matchList, matches);
+        populateWizard(model, wizard, state, matches);
       };
       state.changed = update;
       update();
-      searchBox.append(filterBox);
-      return wizard.append(searchBox).append(matchList);
+      return wizard;
+    }
+
+    function populateWizard(model, wizard, state, matches) {
+      wizard.empty();
+
+      const searchBox = $('<header/>', { class: 'SelectionWizardSearch' });
+        for (let filter of model.filters)
+          searchBox.append(createFilter(model, filter, matches, state));
+      wizard.append(searchBox);
+
+      const matchesCount = countTotalMatches(matches);
+      const noFilter = matchesCount == matches.length;
+      const selectionCount = Object.keys(state.selection).length;
+      wizard.append($('<h4/>').text(noFilter 
+        ? 'Please select a filter...' 
+        : `${matchesCount} matches for total of ${matches.length} metrics`));
+      wizard.append($('<h4/>').text(selectionCount + ' Selected'));
+      wizard.append(noFilter ? $('<ol/>') : createMatchList(model, state, matches));
+      wizard.append(selectionCount == 0 ? $('<ol/>') : createSelectionList(model, state, matches));
     }
 
     function matchForKey(key, keyProperty, matches) {
       return matches.find(match => match[keyProperty] == key);
     }
 
-    function recreateMatchList(model, state, list, matches) {
-      list.empty();
-
-      const selectionCount = Object.keys(state.selection).length;
-      if (selectionCount > 0) {
-        const selection = $('<div/>', { 'class': 'Selection' });
-        selection.append($('<b/>').text(selectionCount + ' Selected'));
-        for (let match of Object.values(state.selection))
-          selection.append(createMatchEntry(model, state, match, true));
-        list.append(selection);
-      }
-
+    function countTotalMatches(matches) {
       let c = 0;
       for (let match of matches)
         if (!match.filtered)
           c++;
+      return c;
+    }
 
-      if (c == matches.length) {
-        list.append($('<b/>').text('Please select a filter...'));
-        return;
-      }
+    function createSelectionList(model, state, matches) {
+      const list = $('<ol/>', { class: 'SelectionWizardSelection' });
+      for (let match of Object.values(state.selection))
+        list.append(createMatchEntry(model, state, match, true));
+      return list;
+    }
 
-      list.append($('<b/>').text(c + ' matches')).append($('<span/>').text(' for total of ' + matches.length + ' metrics'));
+    function createMatchList(model, state, matches) {
+      const list = $('<ol/>', { class: 'SelectionWizardMatches' });
       for (let match of matches)
         if (!match.filtered)
           list.append(createMatchEntry(model, state, match, false));
-      list.append($('<div/>', { style: 'clear:both;' }));
+      return list;
     }
 
     function createMatchEntry(model, state, match, describe) {
@@ -1293,7 +1403,7 @@ MonitoringConsole.View.Components = (function() {
         entry[property] = model.properties[property].call(this, match);
       entry.selected = state.selection[key] !== undefined;
       entry.describe = describe;
-      return $('<div/>').append(input).append($('<label/>', { for: id }).append(model.render(entry)));
+      return $('<li/>').append(input).append($('<label/>', { for: id }).append(model.render(entry)));
     }
 
     function createFilter(model, filter, matches, state) {
@@ -1302,7 +1412,7 @@ MonitoringConsole.View.Components = (function() {
       }
       filter.type = computeFilterType(filter);
       
-      const label = $('<label/>', { for: 'filter-' + filter.id, text: filter.label });
+      const label = $('<label/>', { for: `filter-${filter.id}`, text: filter.label });
       const filterInput = createFilterInput(model, filter, state, matches);
 
       const filterState = state.filters[filter.id];
@@ -1310,7 +1420,7 @@ MonitoringConsole.View.Components = (function() {
       if (active) {
         applyFilter(model, filter, state, matches);
       }
-      return $('<div/>', { 'class': 'Filter' })
+      return $('<div/>', { class: 'SelectionWizardFilter' })
         .append(label)
         .append(filterInput);
     }
@@ -1333,9 +1443,9 @@ MonitoringConsole.View.Components = (function() {
       }
       const optionFilter = option === undefined ? filterState.filter : option.filter;                 
       // type 'list' and 'auto' below
-      if (typeof optionFilter === 'string') // option uses a constant value
+      if (isString(optionFilter)) // option uses a constant value
         return propertyValue == optionFilter;
-      if (typeof optionFilter === 'function') // option uses a predicate function              
+      if (isFunction(optionFilter)) // option uses a predicate function              
         return optionFilter(propertyValue);
       return true;
     }
@@ -1349,7 +1459,7 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function computeFilterType(filter) {
-      if (typeof filter.filter === "function")
+      if (isFunction(filter.filter))
         return 'text';
       if (filter.options !== undefined)
         return 'list';
@@ -1383,7 +1493,7 @@ MonitoringConsole.View.Components = (function() {
 
     function createFilterWithListInput(model, filter, state, matches) {
       const filterState = state.filters[filter.id];
-      const options = typeof filter.options === 'function' ? filter.options() : filter.options;
+      const options = isFunction(filter.options) ? filter.options() : filter.options;
       const selectField = $('<select/>');
       selectField.change(() => {
         let index = selectField.val();
@@ -1391,7 +1501,7 @@ MonitoringConsole.View.Components = (function() {
           let f = options[index].filter;
           state.filters[filter.id].filter = f;
           state.filters[filter.id].selected = index;
-          state.properties[filter.property] = typeof f === 'string' ? f : undefined;          
+          state.properties[filter.property] = isString(f) ? f : undefined;          
         } else {
           state.filters[filter.id] = {};
           state.properties[filter.property] = undefined;
@@ -1442,10 +1552,10 @@ MonitoringConsole.View.Components = (function() {
         return true;
       for (let [property, required] of Object.entries(requires)) {
         let bound = state.properties[property];
-        if (typeof required === 'string') {
+        if (isString(required)) {
           if (bound != required)
             return false;          
-        } else if (typeof required === 'function') {
+        } else if (isFunction(required)) {
           if (!required(bound))
             return false;
         }
@@ -1464,35 +1574,263 @@ MonitoringConsole.View.Components = (function() {
   const ModalDialog = (function() {
 
     function createComponent(model) {
-      const config = { 'class' : 'ModalDialog' };
-      if (model.id)
-        config.id = model.id;
-      const dialog = $('<div/>', config);
-      const box = $('<div/>', {'class': 'content'});
-      if (model.title !== undefined && model.title != '') {
-        box.append($('<h3/>', { text: model.title }));
+      if (model.id === undefined)
+        model.id = 'ModalDialog';
+      const config = { 
+        id: model.id,
+        class: 'ModalDialog' 
+      };
+      const overlay = $('<div/>', config);
+      const dialog = $('<div/>', {
+        class: `ModalDialogContent${(model.style ? ' ' +  model.style : '')}`,
+      });
+      if (model.title !== undefined && model.title != '')
+        dialog.append($('<h2/>').html(model.title));
+      if (isString(model.closeProperty)) {
+        const button = model.buttons.find(button => button.property == model.closeProperty);
+        dialog.append(createIconButton({
+          class: 'btn-icon btn-close', 
+          icon: 'icon-cross',
+          alt: button === undefined ? 'Cancel' : button.label 
+        }).click(createClickHandler(model, model.closeProperty)));
+      }      
+      const scrollpane = $('<div/>', { class: 'ModalDialogScroll'});
+      dialog.append(scrollpane);
+      const content = isFunction(model.context) ? model.content() : model.content;
+      if (Array.isArray(content)) {
+        content.forEach(e => scrollpane.append(e));
+      } else {
+        scrollpane.append(content);
       }
-      const content = model.content();
-      box.append(content);
       if (model.buttons) {
-        const bar = $('<div/>', { 'class': 'Buttons' });
+        const bar = $('<div/>', { class: 'ModalDialogButtons' });
         for (let button of model.buttons)
           bar.append(createButton(model, button));        
-        box.append(bar);
+        dialog.append(bar);
       }
-      return dialog.append(box);
+      return overlay.append(dialog);
     }
 
     function createButton(model, button) {
-      return $('<button/>', { text: button.label }).click(() => {
+      const config = { text: button.label };
+      if (!button.secondary)
+        config['class'] = 'primary';
+      return $('<button/>', config).click(createClickHandler(model, button.property));
+    }
+
+    function createClickHandler(model, property) {
+      return () => {
         $('#' + model.id).hide();
-        if (typeof model.onExit === 'function')
-          model.onExit(model.results[button.property]);
-      });
+        if (isFunction(model.onExit))
+          model.onExit(model.results[property], property);
+      };
     }
 
     return { createComponent: createComponent };
   })();
+
+
+  /**
+   * A component that creates left navgation sidebar. 
+   *
+   * Main task of the sidebar is to manage and switch pages.
+   * It also gives access to data refresh speed and page rotation start/stop.
+   * The bar has a collapse and an expanded state. 
+   */ 
+  const NavSidebar = (function() {
+
+    function createComponent(model) {
+      const collapsed = model.collapsed === true; // false is default
+      const config = { class: 'NavSidebar' + (collapsed ? ' NavCollapsed' : ' NavExpanded') };
+      if (model.id)
+        config.id = model.id;
+
+      const sidebar = $('<aside/>', config);
+      const header = $('<header/>');
+      sidebar.append(header);
+      header.append(createIconButton({ 
+        class: 'btn-icon btn-toggle',
+        icon: 'icon-toggle',
+        alt: 'Toggle Sidebar',
+      }).click(model.onSidebarToggle));
+      if (model.logo !== undefined)
+        header.append($('<a/>', { class: 'NavLogo' }).click(model.onLogoClick).append($('<img/>', { src: model.logo, alt: 'Payara' })));      
+      const controls = $('<dl/>', {class: 'NavControls'});
+      if (collapsed) {
+        const page = model.pages.filter(page => page.selected)[0];
+        sidebar.append($('<div/>', {class: 'NavTitle'}).append($('<h1/>').text(page.label).click(model.onSidebarToggle)));
+        for (let i = 1; i <= 4; i++)
+          controls.append($('<dd/>').append(createLayoutButton(model, i)));
+        controls.append($('<dt/>'));
+        controls.append($('<dd/>').append(createRefreshButton(model)));
+        controls.append($('<dt/>'));
+        controls.append($('<dd/>').append(createRotationButton(model)));
+      } else {
+        sidebar.append(createPageList(model));
+        sidebar.append(createAddPagePanel(model));
+        controls.append($('<dt/>').text('Layout Columns'));
+        for (let i = 1; i <= 4; i++)
+          controls.append($('<dd/>').append(createLayoutButton(model, i)));
+        controls.append($('<dt/>').text('Data Refresh'));
+        controls.append($('<dd/>').append(createRefreshButton(model)));
+        controls.append($('<dd/>').append(createRefreshInput(model)));
+        controls.append($('<dt/>').text('Page Rotation'));
+        controls.append($('<dd/>').append(createRotationButton(model)));
+      }
+      sidebar.append(controls);
+      return sidebar;
+    }
+
+    function createPageList(model) {
+      const list = $('<ul/>');
+      for (let page of model.pages)
+        list.append(createPageItem(model, page));
+      return $('<nav/>', { class: 'NavPages'}).append(list);
+    }
+
+    function createPageItem(model, page) {      
+      const label = $('<a/>', { href: '#' + page.id}).text(page.label);
+      const item = $('<li/>', { class: 'NavItem' + (page.selected ? ' selected' : '')});
+      item.append(label);
+      if (page.selected) {
+        if (isFunction(page.onReset))
+          item.append(createIconButton({
+            class: 'btn-icon',
+            icon: 'icon-reset',
+            alt: 'Reset Page',
+          }).click(page.onReset));
+        label.click(model.onSidebarToggle);
+      } else {
+        if (isFunction(page.onSwitch))
+          label.click(page.onSwitch);
+      }
+      if (isFunction(page.onDelete)) {
+        item.append(createIconButton({
+          class: 'btn-icon',
+          icon: 'icon-delete',
+          alt: 'Delete Page',
+        }).click(page.onDelete));
+      }
+      return item;
+    }
+
+    function createAddPagePanel(model) {
+      return $('<div/>', { class: 'NavAdd'})
+        .append(createIconButton({
+          icon: 'icon-plus',
+          text: 'Add New Page',
+        }).click(model.onPageAdd));
+    }
+
+    function createRefreshInput(model) {
+      let max = Math.max(10, model.refreshSpeed);
+      const value = $('<span/>').html(model.refreshSpeed + 's&nbsp;');
+      const button = $('<input/>', { type: 'range', min: 1, max: max, step: 1, value: model.refreshSpeed });
+      button.on('change input', () =>  {
+          let val = Number(button.val());
+          value.html(val + 's&nbsp;');
+          model.onRefreshSpeedChange(val);
+      });
+      return $('<span/>')
+        .append($('<label/>').text('Speed'))
+        .append(button)
+        .append(value);
+    }
+
+    function createLayoutButton(model, numberOfColumns) {
+      return createIconButton( {
+          class: 'btn-icon btn-layout' + (model.layoutColumns == numberOfColumns ? ' btn-selected' : ''),
+          icon: `icon-${numberOfColumns}-column`,
+          alt: 'Use '+numberOfColumns+' column layout' 
+      }).click(() => model.onLayoutChange(numberOfColumns));
+    }
+
+    function createRotationButton(model) {
+      return createIconButton({
+        class: 'btn-icon btn-rotation', 
+        icon: model.rotationEnabled ? 'icon-page-rotation-paused' : 'icon-page-rotation',
+        alt: (model.rotationEnabled ? 'Stop' : 'Start') + ' page rotation'
+      }).click(model.onRotationToggle);
+    }
+
+    function createRefreshButton(model) {
+      return createIconButton({
+        class: 'btn-icon',
+        icon: model.refreshEnabled ? 'icon-pause' : 'icon-play',
+        alt: (model.refreshEnabled ? 'Pause' : 'Unpause') + ' data updates'
+      }).click(model.onRefreshToggle);
+    }
+
+    return { createComponent: createComponent };
+  })();
+
+
+  /**
+   * FeedbackBanner
+   */
+  const FeedbackBanner = (function() {
+
+    function createComponent(model) {
+      let typeClass = '';
+      const isSuccess = model.type == 'success';
+      const isError = model.type == 'error';
+      if (isSuccess)
+        typeClass = 'FeedbackBannerSuccess';
+      if (isError)
+        typeClass = 'FeedbackBannerError';
+      const config = { 
+        class: `FeedbackBanner  ${typeClass}`,
+        role: 'dialog',
+        'aria-labelledby': 'this-modal-title'
+      };
+      if (model.id === undefined)
+        model.id = 'FeedbackBanner';
+      config.id = model.id;      
+      const banner = $('<div/>', config);
+      banner.append(createIconButton({
+        class: 'btn-icon btn-close',
+        icon: 'icon-cross',
+        alt: 'Close Dialog'
+      }).click(() => banner.remove()));
+      if (isSuccess)
+        banner.append(createIcon('icon-tick'));
+      if (isError)
+        banner.append(createIcon('icon-cross'));
+      banner.append($('<p/>').append(model.message));
+      return banner;
+    }
+
+    return { createComponent: createComponent };
+  })();
+
+
+  /**
+   * WidgetHeader is the title and tool icon(s) bar on top of a widget.
+   */
+  const WidgetHeader = (function() {
+
+    function createComponent(model) {
+      const config = { class: 'WidgetHeader' + (model.selected() ? ' WidgetHeaderSelected' : '')};
+      if (model.id)
+        config.id = model.id;
+      const header = $('<div/>', config);
+      return header
+        .append($('<h3/>', { title: model.description })
+          .append($('<span/>').text(model.title))
+          .append(createIcon('icon-pencil'))
+          .click(() => {            
+            model.onClick();
+            if (model.selected()) {
+              header.addClass('WidgetHeaderSelected');
+            } else {
+              header.removeClass('WidgetHeaderSelected');
+            }
+          })); 
+    }
+
+    return { createComponent: createComponent };
+  })();
+
 
   /*
    * Shared functions
@@ -1551,18 +1889,21 @@ MonitoringConsole.View.Components = (function() {
   * All methods return a jquery element reflecting the given model to be inserted into the DOM using jQuery
   */
   return {
-      createSettings: (model) => Settings.createComponent(model),
-      createLegend: (model) => Legend.createComponent(model),
-      createIndicator: (model) => Indicator.createComponent(model),
-      createMenu: (model) => Menu.createComponent(model),
-      createAlertTable: (model) => AlertTable.createComponent(model),
-      createAnnotationTable: (model) => AnnotationTable.createComponent(model),
-      createWatchManager: (model) => WatchManager.createComponent(model),
-      createPageManager: (model) => PageManager.createComponent(model),
-      createRoleSelector: (model) => RoleSelector.createComponent(model),
-      createModalDialog: (model) => ModalDialog.createComponent(model),
-      createSelectionWizard: (model) => SelectionWizard.createComponent(model),
-      createRAGIndicator: (model) => RAGIndicator.createComponent(model),
+      createSettings: model => Settings.createComponent(model),
+      createLegend: model => Legend.createComponent(model),
+      createIndicator: model => Indicator.createComponent(model),
+      createAlertTable: model => AlertTable.createComponent(model),
+      createAnnotationTable: model => AnnotationTable.createComponent(model),
+      createWatchManager: model => WatchManager.createComponent(model),
+      createWatchBuilder: (model, watch) => WatchBuilder.createComponent(model, watch),
+      createPageManager: model => PageManager.createComponent(model),
+      createModalDialog: model => ModalDialog.createComponent(model),
+      createSelectionWizard: model => SelectionWizard.createComponent(model),
+      createRAGIndicator: model => RAGIndicator.createComponent(model),
+      createNavSidebar: model => NavSidebar.createComponent(model),
+      createFeedbackBanner: model => FeedbackBanner.createComponent(model),
+      createWidgetHeader: model => WidgetHeader.createComponent(model),
+      createIconButton: model => createIconButton(model),
   };
 
 })();

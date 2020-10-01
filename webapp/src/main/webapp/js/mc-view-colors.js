@@ -56,7 +56,7 @@ MonitoringConsole.View.Colors = (function() {
       Payara: {
          name: 'Payara',
          palette: [ 
-            '#4363d8', '#42d4f4', '#469990', '#aaffc3', 
+            '#008fcc', '#42d4f4', '#469990', '#aaffc3', 
             '#bfef45', '#ffe119', '#ffd8b1', '#9A6324', 
             '#800000', '#911eb4', '#f032e6', '#fabebe', '#e6beff', '#fffac8' ],
          opacity: 10,
@@ -67,7 +67,7 @@ MonitoringConsole.View.Colors = (function() {
          }
       },
 
-      a: {
+      '80s': {
          name: '80s',
          opacity: 10,
          palette: [ '#c04df9', '#f3ea5f', '#08c1ef', '#d28f47', '#b86739'],
@@ -77,7 +77,7 @@ MonitoringConsole.View.Colors = (function() {
          }
       },
 
-      b: {
+      Pastels: {
          name: 'Pastels',
          opacity: 10,
          palette: [ '#deccff', '#96c0bc', '#dbd259', '#bd6283', '#08c7f7' ],
@@ -87,7 +87,7 @@ MonitoringConsole.View.Colors = (function() {
          }
       },
 
-      c: {
+      Neon: {
          name: 'Neon',
          opacity: 10,
          palette: [ '#f700d8', '#eff109', '#0ed4f7', '#00b8aa', '#0000f7'],
@@ -97,7 +97,7 @@ MonitoringConsole.View.Colors = (function() {
          }
       },
 
-      d: {
+      'Vapor Wave': {
          name: 'Vapor Wave',
          opacity: 10,
          palette: [ '#b8a9df', '#01cdfe', '#b967ff', '#fffb96', '#05ffa1'],
@@ -187,10 +187,7 @@ MonitoringConsole.View.Colors = (function() {
    }
 
    function schemeOptions() {
-      return Object.keys(SCHEMES).reduce(function(result, key) {
-         result[key] = SCHEMES[key].name;
-         return result;
-      }, { _: '(Select to apply)' });
+      return Object.keys(SCHEMES);
    }
 
    function applyScheme(name, override = true) {

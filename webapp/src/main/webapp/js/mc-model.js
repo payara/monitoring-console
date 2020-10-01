@@ -168,7 +168,13 @@ MonitoringConsole.Model = (function() {
 			if (settings.theme.colors === undefined)
 				settings.theme.colors = {};
 			if (settings.theme.options === undefined)
-				settings.theme.options = {};			
+				settings.theme.options = {};
+			if (settings.nav === undefined)
+				settings.nav = {};
+			if (settings.rotation === undefined)
+				settings.rotation = {};
+			if (typeof settings.rotation.interval !== 'number')
+				settings.rotation.interval = 60;
 			return settings;
 		}
 		
@@ -180,11 +186,11 @@ MonitoringConsole.Model = (function() {
 			}
 			window.localStorage.setItem(LOCAL_UI_KEY, doExport());
 			if (isPageUpdate && page.sync.autosync && settings.role == 'admin') {
-				doPushLocal(undefined, page);
+				doPushLocal(undefined, undefined, page);
 			}
 		}
 
-		function doPushLocal(onSuccess, page) {
+		function doPushLocal(onSuccess, onError, page) {
 			if (page === undefined)
 				page = pages[settings.home];
 			let basedOnRemoteLastModified = page.sync.basedOnRemoteLastModified;
@@ -197,25 +203,27 @@ MonitoringConsole.Model = (function() {
 				() => { // success
 					doStore();
 					if (onSuccess)
-						onSuccess();
+						onSuccess(page);
 				},
 				() => { // failure
 					page.sync.basedOnRemoteLastModified = basedOnRemoteLastModified;
 					page.sync.lastModifiedLocally = lastModifiedLocally;
 					page.sync.preferredOverRemoteLastModified = preferredOverRemoteLastModified;
+					if (onError)
+						onError(page);
 				}
 			);			
 		}
 
-		function doPushAllLocal() {	
+		function doPushAllLocal(onSuccess, onError) {	
 			Controller.requestListOfRemotePageNames((pageIds) => {
 				pageIds.forEach(pageId => {
-					doPushLocal(undefined, pages[pageId]);
+					doPushLocal(onSuccess, onError, pages[pageId]);
 				});
 			});
 		}
 
-		function doPullRemote(pageId) {
+		function doPullRemote(pageId, onSuccess, onError) {
 			if (pageId === undefined)
 				pageId = settings.home;
 			return new Promise(function(resolve, reject) {
@@ -223,7 +231,13 @@ MonitoringConsole.Model = (function() {
 					pages[page.id] = page;
 					doStore(false, page);
 					resolve(page);
-				}, () => reject(undefined));
+					if (typeof onSuccess === 'function')
+						onSuccess(page);
+				}, () => {
+					reject(undefined);
+					if (typeof onError === 'function')
+						onError(page);
+				});
 			});
 		}
 
@@ -249,13 +263,13 @@ MonitoringConsole.Model = (function() {
 			Controller.requestListOfRemotePages(remotePages => {
 				consumer({ 
 					pages: Object.values(remotePages).map(remotePage => createPullRemoteModelItem(pages[remotePage.id], remotePage)), 
-					onUpdate: async function (pageIds) {
+					onUpdate: async function (pageIds, onSuccess, onError) {
 						for (let remotePageId of Object.keys(remotePages)) {
 							if (!pageIds.includes(remotePageId)) {
 								pages[remotePageId].sync.preferredOverRemoteLastModified = remotePages[remotePageId].sync.basedOnRemoteLastModified;
 							}
 						}
-						await Promise.all(pageIds.map(pageId => doPullRemote(pageId)));
+						await Promise.all(pageIds.map(pageId => doPullRemote(pageId, onSuccess, onError)));
 					}
 				});
 			});
@@ -279,7 +293,7 @@ MonitoringConsole.Model = (function() {
 		}
 
 		
-		function doImport(userInterface, replaceExisting) {
+		function doImport(userInterface, replaceExisting, onSuccess, onError) {
 			if (!userInterface) {
 				return false;
 			}
@@ -289,12 +303,17 @@ MonitoringConsole.Model = (function() {
 			// override or add the entry in pages from userInterface
 			if (Array.isArray(importedPages)) {
 				for (let i = 0; i < importedPages.length; i++) {
+					let page = importedPages[i];
 					try {
-						let page = sanityCheckPage(importedPages[i]);
+						page = sanityCheckPage(page);
 						if (replaceExisting || pages[page.id] === undefined) {
 							pages[page.id] = page;
+							if (typeof onSuccess === 'function')
+								onSuccess(page);
 						}
 					} catch (ex) {
+						if (typeof onError === 'function')
+							onError(page, ex);
 					}
 				}
 			} else {
@@ -303,8 +322,12 @@ MonitoringConsole.Model = (function() {
 						if (replaceExisting || pages[id] === undefined) {
 							page.id = id;
 							pages[id] = sanityCheckPage(page); 
+							if (typeof onSuccess === 'function')
+								onSuccess(page);							
 						}
 					} catch (ex) {
+						if (typeof onError === 'function')
+							onError(page, ex);
 					}
 				}
 			}
@@ -315,23 +338,11 @@ MonitoringConsole.Model = (function() {
 			return true;
 		}
 		
-		function doExport(prettyPrint) {
-			let ui = { pages: pages, settings: settings };
-			return prettyPrint ? JSON.stringify(ui, null, 2) : JSON.stringify(ui);
+		function doExport() {
+			return JSON.stringify({ pages: pages, settings: settings });
 		}
 
-		function readTextFile(file) {
-          	return new Promise(function(resolve, reject) {
-				let reader = new FileReader();
-				reader.onload = function(evt){
-				  resolve(evt.target.result);
-				};
-				reader.onerror = function(err) {
-				  reject(err);
-				};
-				reader.readAsText(file);
-          	});
-      	}
+
 
       	function doLayout(columns) {
 			let page = pages[settings.home];
@@ -457,15 +468,35 @@ MonitoringConsole.Model = (function() {
 	      updown: 'updown',
    		};
 
+   		const QUERY_ORDER = ['Overall', 'Health', 'Liveness', 'Readiness'];
+
       	async function doQueryPage() {
-      		const page = pages[settings.home];
-      		function yAxisUnit(metadata) {
-      			if (Y_AXIS_UNIT[metadata.Unit] !== undefined)
-      				return Y_AXIS_UNIT[metadata.Unit];
-      			if (Y_AXIS_UNIT[metadata.BaseUnit] !== undefined)
-      				return Y_AXIS_UNIT[metadata.BaseUnit];
-      			return 'count';
+      		function sortByGroup(matches) {
+	  			function compareByOrder(a, b) {
+	  				function indexOf(e) {
+	  					let i = 0;
+	  					while (i < QUERY_ORDER.length && !e.series.includes(QUERY_ORDER[i]))
+	  						i++;
+	  					return i;
+	  				}
+	  				return indexOf(b) - indexOf(a);
+	  			}      			
+				const byGroup = {};
+				for (let match of matches) {
+					let group = 'none';
+					let groupIndex = match.series.indexOf('@');
+					if (groupIndex > 0)
+						group = match.series.substring(groupIndex, match.series.indexOf(' ', groupIndex));
+					if (byGroup[group] === undefined)
+						byGroup[group] = [];
+					byGroup[group].push(match);
+				}
+				for (let group of Object.values(byGroup))
+					group.sort(compareByOrder);
+				return byGroup;
       		}
+
+      		const page = pages[settings.home];
       		if (page.content === undefined)
       			return;
       		const content = new Promise(function(resolve, reject) {
@@ -483,58 +514,116 @@ MonitoringConsole.Model = (function() {
 			matches.sort((a, b) => a.data[0].stableCount - b.data[0].stableCount);
 			if (matches.length > page.content.maxSize)
 				matches = matches.slice(0, page.content.maxSize);
+			const matchesByGroup = sortByGroup(matches);
 			const widgets = [];
 			const numberOfColumns = page.numberOfColumns;
+			const now = new Date().getTime();
 			let column = 0;
-			for (let i = 0; i < matches.length; i++) {
-				let match = matches[i];
-				let metadata = match.annotations.filter(a => a.permanent)[0];
-				let attrs = {};
-				let type = 'line';
-				if (metadata) {
-					if (metadata.atts)
-						attrs = metadata.attrs;
+			for (let group of Object.values(matchesByGroup)) {
+				for (let match of group) {
+					const points = match.data[0].points;
+					if (now - points[points.length-2] < 60000) { // only matches with data updates in last 60sec
+						const widget = doInferWidget(match);
+						if (page.content.filter === undefined || widget.type == page.content.filter) {
+							widget.grid = { column: column % numberOfColumns, item: column };
+							widgets.push(widget);
+							column++;											
+						}
+					}
 				}
-				if (attrs.Unit === undefined && match.watches.length > 0) { // is there a watch we can used to get the unit from?
-					let watch = match.watches[0];
-					attrs.Unit = watch.unit;
-					let name = watch.name;
-					if (name.indexOf('RAG ') == 0)
-						name = name.substring(4);
-					attrs.DisplayName = name;
-					type = 'rag';
-				}
-				let data = match.data[0];
-				let scaleFactor;
-				if (attrs.ScaleToBaseUnit > 1) {
-					scaleFactor = Number(attrs.ScaleToBaseUnit);
-				}
-				let decimalMetric = attrs.Type == 'gauge';
-				let unit = yAxisUnit(attrs);
-				let max = decimalMetric ? 10000 : 1;
-				if (attrs.Unit == 'none' && data.observedMax <= max && data.observedMin >= 0) {
-					unit = 'percent';
-					scaleFactor = 100;
-				}
-				widgets.push({
-					id: match.series,
-					type: type,
-					series: match.series,
-					displayName: attrs.DisplayName,
-					description: attrs.Description,
-					grid: { column: column % numberOfColumns, item: column },
-					unit: unit,
-					options: { 
-						decimalMetric: decimalMetric,
-					},
-					scaleFactor: scaleFactor,
-				});
-				column++;
 			}
 			page.widgets = sanityCheckWidgets(widgets);
-			page.content.expires = new Date().getTime() + ((page.content.ttl || (60 * 60 * 24 * 365)) * 1000);
+			page.content.expires = now + ((page.content.ttl || (60 * 60 * 24 * 365)) * 1000);
 			doStore(true, page);
 			return page;
+      	}
+
+      	function doInferWidget(match) {
+      		function yAxisUnit(metadata) {
+      			if (Y_AXIS_UNIT[metadata.Unit] !== undefined)
+      				return Y_AXIS_UNIT[metadata.Unit];
+      			if (Y_AXIS_UNIT[metadata.BaseUnit] !== undefined)
+      				return Y_AXIS_UNIT[metadata.BaseUnit];
+      			return 'count';
+      		}
+			let metadata = match.annotations.filter(a => a.permanent)[0];
+			let attrs = {};
+			let type = 'line';
+			if (metadata) {
+				if (metadata.attrs)
+					attrs = metadata.attrs;
+			}
+			if (attrs.Unit === undefined && match.watches.length > 0) { // is there a watch we can used to get the unit from?
+				let watch = match.watches[0];
+				attrs.Unit = watch.unit;
+				let name = watch.name;
+				if (name.indexOf('RAG ') == 0)
+					name = name.substring(4);
+				attrs.DisplayName = name;
+				type = 'rag';
+			}
+			let data = match.data[0];
+			let scaleFactor;
+			if (attrs.ScaleToBaseUnit > 1) {
+				scaleFactor = Number(attrs.ScaleToBaseUnit);
+			}
+			let decimalMetric = attrs.Type == 'gauge';
+			let unit = yAxisUnit(attrs);
+			let max = decimalMetric ? 10000 : 1;
+			if (attrs.Unit == 'none' && data.observedMax <= max && data.observedMin >= 0) {
+				unit = 'percent';
+				scaleFactor = 100;
+			}
+			return {
+				id: match.series,
+				type: type,
+				series: match.series,
+				displayName: attrs.DisplayName,
+				description: attrs.Description,
+				unit: unit,
+				options: { 
+					decimalMetric: decimalMetric,
+				},
+				scaleFactor: scaleFactor,
+			};      		
+      	}
+
+      	function doAddWidget(series, grid, factory) {
+			if (!(typeof series === 'string' || Array.isArray(series) && series.length > 0 && typeof series[0] === 'string'))
+				throw 'configuration object requires string property `series`';
+			if (factory === undefined || typeof factory !== 'function')
+				factory = function(id) { return { id: id, series: series }; };			
+			doDeselect();
+			let layout = doLayout();
+			let page = pages[settings.home];
+			let widgets = page.widgets;
+			let id = (Object.values(widgets)
+				.filter(widget => widget.series == series)
+				.reduce((acc, widget) => Math.max(acc, widget.id.substr(0, widget.id.indexOf(' '))), 0) + 1) + ' ' + series;				
+			
+			let widget = sanityCheckWidget(factory(id));
+			widgets[widget.id] = widget;
+			widget.selected = true;
+			if (grid !== undefined) {
+				widget.grid = grid;
+			} else {
+				// automatically fill most empty column
+				let usedCells = new Array(layout.length);
+				for (let i = 0; i < usedCells.length; i++) {
+					usedCells[i] = 0;
+					for (let j = 0; j < layout[i].length; j++) {
+						let cell = layout[i][j];
+						if (cell === undefined || cell !== null && typeof cell === 'object')
+							usedCells[i]++;
+					}
+				}
+				let indexOfLeastUsedCells = usedCells.reduce((iMin, x, i, arr) => x < arr[iMin] ? i : iMin, 0);
+				widget.grid.column = indexOfLeastUsedCells;
+				widget.grid.item = Object.values(widgets)
+					.filter(widget => widget.grid.column == indexOfLeastUsedCells)
+					.reduce((acc, widget) => widget.grid.item ? Math.max(acc, widget.grid.item) : acc, 0) + 1;
+			}
+			doStore(true);      		
       	}
 
 		return {
@@ -543,7 +632,7 @@ MonitoringConsole.Model = (function() {
 				doStore();
 			},
 
-			themePalette: function(colors) {
+			themePalette: function() {
 				return settings.theme.palette;
 			},
 
@@ -567,29 +656,15 @@ MonitoringConsole.Model = (function() {
 			},
 			
 			exportPages: function() {
-				return doExport(true);
+				return JSON.parse(JSON.stringify(Object.values(pages)));
 			},
 			
-			/**
-			 * @param {FileList|object} userInterface - a plain user interface configuration object or a file containing such an object
-			 * @param {function} onImportComplete - optional function to call when import is done
-			 */
-			importPages: async (userInterface, onImportComplete) => {
-				if (userInterface instanceof FileList) {
-					let file = userInterface[0];
-					if (file) {
-						let json = await readTextFile(file);
-						doImport(JSON.parse(json), true);
-					}
-				} else {
-					doImport(userInterface, true);
-				}
-				if (onImportComplete)
-					onImportComplete();
+			importPages: function(pages, onSuccess, onError) {
+				doImport(pages, true, onSuccess, onError);
 			},
 
 			queryPage: () => doQueryPage(),
-			
+
 			/**
 			 * Loads and returns the userInterface from the local storage
 			 */
@@ -634,40 +709,59 @@ MonitoringConsole.Model = (function() {
 			 * Deletes the active page and changes to the first page.
 			 * Does not delete the last page.
 			 */
-			deletePage: function() {
+			deletePage: function(pageId, onSuccess, onError) {
+				if (pageId === undefined)
+					pageId = settings.home;
+				let presets = Data.PAGES;
+				let hasPreset = presets && presets[pageId];
+				if (hasPreset) {
+					onError('Page cannot be deleted.');
+					return;
+				}
 				let pageIds = Object.keys(pages);
-				if (pageIds.length <= 1)
-					return undefined;
+				if (pageIds.length <= 1) {
+					onError('Last page cannot be deleted.');
+					return;
+				}
 				let deletion = () => {
-					delete pages[settings.home];
-					settings.home = pageIds[0];
+					delete pages[pageId];
+					if (pageId == settings.home)
+						settings.home = pageIds[0];
+					doStore(false);
+					if (typeof onSuccess === 'function')
+						onSuccess();
 				};
 				if (settings.role === 'admin') {
-					let page = pages[settings.home];
+					let page = pages[pageId];
 					if (page.sync.basedOnRemoteLastModified !== undefined) {
-						Controller.requestDeleteRemotePage(settings.home, deletion);
+						Controller.requestDeleteRemotePage(pageId, deletion, onError);
+					} else {
+						deletion();
 					}
 				} else {
 					deletion();
 				}
-				return pages[settings.home];
 			},
 
-			resetPage: function() {
+			resetPage: function(pageId) {
+				if (pageId === undefined)
+					pageId = settings.home;				
 				let presets = Data.PAGES;
-				let currentPageId = settings.home;
-				if (presets && presets[currentPageId]) {
-					let preset = presets[currentPageId];
-					pages[currentPageId] = sanityCheckPage(JSON.parse(JSON.stringify(preset)));
+				if (presets && presets[pageId]) {
+					let preset = presets[pageId];
+					preset.id = pageId; // make sure the preset itself has the ID set
+					pages[pageId] = sanityCheckPage(JSON.parse(JSON.stringify(preset)));
 					doStore(true);
 					return true;
 				}
 				return false;
 			},
 
-			hasPreset: function() {
+			hasPreset: function(pageId) {
+				if (pageId === undefined)
+					pageId = settings.home;
 				let presets = Data.PAGES;
-				return presets && presets[settings.home];
+				return presets && presets[pageId];
 			},
 			
 			switchPage: function(pageId) {
@@ -696,39 +790,10 @@ MonitoringConsole.Model = (function() {
 				doStore(true);
 			},
 			
-			addWidget: function(series, grid) {
-				if (!(typeof series === 'string' || Array.isArray(series) && series.length > 0 && typeof series[0] === 'string'))
-					throw 'configuration object requires string property `series`';
-				doDeselect();
-				let layout = doLayout();
-				let page = pages[settings.home];
-				let widgets = page.widgets;
-				let id = (Object.values(widgets)
-					.filter(widget => widget.series == series)
-					.reduce((acc, widget) => Math.max(acc, widget.id.substr(0, widget.id.indexOf(' '))), 0) + 1) + ' ' + series;				
-				let widget = sanityCheckWidget({ id: id, series: series });
-				widgets[widget.id] = widget;
-				widget.selected = true;
-				if (grid !== undefined) {
-					widget.grid = grid;
-				} else {
-					// automatically fill most empty column
-					let usedCells = new Array(layout.length);
-					for (let i = 0; i < usedCells.length; i++) {
-						usedCells[i] = 0;
-						for (let j = 0; j < layout[i].length; j++) {
-							let cell = layout[i][j];
-							if (cell === undefined || cell !== null && typeof cell === 'object')
-								usedCells[i]++;
-						}
-					}
-					let indexOfLeastUsedCells = usedCells.reduce((iMin, x, i, arr) => x < arr[iMin] ? i : iMin, 0);
-					widget.grid.column = indexOfLeastUsedCells;
-					widget.grid.item = Object.values(widgets)
-						.filter(widget => widget.grid.column == indexOfLeastUsedCells)
-						.reduce((acc, widget) => widget.grid.item ? Math.max(acc, widget.grid.item) : acc, 0) + 1;
-				}
-				doStore(true);
+			addWidget: doAddWidget,
+
+			inferWidget: function(match) {
+				return doInferWidget(match);
 			},
 			
 			configureWidget: function(widgetUpdate, widgetId) {
@@ -790,6 +855,23 @@ MonitoringConsole.Model = (function() {
 				doStore();
 			},
 
+			Navigation: {
+				isCollapsed: () => settings.nav.collapsed === true,
+				isExpanded: () => settings.nav.collapsed !== true,
+				collapse: () => {
+					settings.nav.collapsed = true;
+					doStore();
+				},
+				expand: () => {
+					settings.nav.collapsed = false;
+					doStore();
+				},
+				toggle: () => {
+					settings.nav.collapsed = settings.nav.collapsed !== true;
+					doStore();					
+				},
+			},
+
 			Role: {
 				get: () => settings.role || 'user',
 				set: (role) => {
@@ -800,6 +882,14 @@ MonitoringConsole.Model = (function() {
 				isGuest: () => settings.role == 'guest',
 				isUser:  () => settings.role === undefined || settings.role == 'user',
 				isDefined: () => settings.role !== undefined,
+				name: function() {
+					return {
+						guest: 'Guest',
+						user: 'User',
+						admin: 'Administrator'
+					}[settings.role || 'user'];
+				},
+					
 			}, 
 
 			Sync: {
@@ -1100,15 +1190,32 @@ MonitoringConsole.Model = (function() {
 		}
 
 		function addAssessment(widget, data, alerts, watches) {
+			function unifyWatch(watch) {
+				for (let seriesState of Object.values(watch.states))
+					for (let [instance, state] of Object.entries(seriesState))
+						if (typeof state === 'string') {
+							seriesState[instance] = { level: state, since: undefined };
+						}
+			}
+			function defined(e) {
+				return e !== undefined;
+			}
 			data.forEach(function(seriesData) {
 				let instance = seriesData.instance;
 				let series = seriesData.series;
 				let status = 'normal';
+				let since;
 				if (Array.isArray(watches) && watches.length > 0) {
-					let states = watches
+					// unify watch state as it was just a string and become an object later
+					for (let watch of watches)
+						unifyWatch(watch);
+					// evaluate state
+					const watchStatus = watches
 						.filter(watch => !watch.disabled && !watch.stopped)
-						.map(watch => watch.states[series]).filter(e => e != undefined)
-						.map(states => states[instance]).filter(e => e != undefined);
+						.map(watch => watch.states[series]).filter(defined)
+						.map(states => states[instance]).filter(defined);
+					let states = watchStatus 
+						.map(state => state.level).filter(defined);
 					if (states.includes('red')) {
 						status = 'red';
 					} else if (states.includes('amber')) {
@@ -1118,6 +1225,7 @@ MonitoringConsole.Model = (function() {
 					} else if (states.length > 0) {
 						status = 'white';
 					}
+					since = Math.max( ... watchStatus.map(state => state.since).filter(defined));
 				}
 				let thresholds = widget.decorations.thresholds;
 				if (thresholds.reference && thresholds.reference !== 'off') {
@@ -1144,7 +1252,7 @@ MonitoringConsole.Model = (function() {
 						status = 'amber';
 					}
 				}
-				seriesData.assessments = { status: status };
+				seriesData.assessments = { status: status, since: since };
 			});
 		}
 
@@ -1318,9 +1426,7 @@ MonitoringConsole.Model = (function() {
 
 		listPages: UI.listPages,
 		exportPages: UI.exportPages,
-		importPages: function(userInterface, onImportComplete) {
-			UI.importPages(userInterface, () => onImportComplete(UI.arrange()));
-		},
+		importPages: UI.importPages,
 		
 		/**
 		 * API to control the chart refresh interval.
@@ -1383,8 +1489,11 @@ MonitoringConsole.Model = (function() {
 					UI.Rotation.interval(duration);
 					Rotation.resume(UI.Rotation.isEnabled() ? UI.Rotation.interval() : 0);
 				}
-			}
+			},
+
+			Navigation: UI.Navigation,
 		},
+
 		
 		/**
 		 * API to control the active page manipulate the set of charts contained on it.
@@ -1401,27 +1510,30 @@ MonitoringConsole.Model = (function() {
 			rename: UI.renamePage,
 			rotate: UI.rotatePage,
 			isEmpty: () => (Object.keys(UI.currentPage().widgets).length === 0),
-			
+			numberOfColumns: () => UI.currentPage().numberOfColumns,
+
 			create: function(name) {
 				UI.createPage(name);
 				Charts.clear();
 				return UI.arrange();
 			},
 			
-			erase: function() {
-				if (UI.deletePage()) {
+			erase: function(pageId, onSuccess, onError) {
+				UI.deletePage(pageId, () => {
 					Charts.clear();
 					Interval.tick();
-				}
-				return UI.arrange();
+					if (typeof onSuccess === 'function')
+						onSuccess();
+				}, onError);
 			},
 			
-			reset: function() {
-				if (UI.resetPage()) {
+			reset: function(pageId) {
+				if (UI.resetPage(pageId)) {
 					Charts.clear();
 					Interval.tick();
+					return true;
 				}
-				return UI.arrange();
+				return false;
 			},
 
 			hasPreset: UI.hasPreset,
@@ -1442,15 +1554,17 @@ MonitoringConsole.Model = (function() {
 			
 			Widgets: {
 				
-				add: function(series, grid) {
+				add: function(series, grid, factory) {
 					if (Array.isArray(series) && series.length == 1)
 						series = series[0];
 					if (Array.isArray(series) || series.trim()) {
-						UI.addWidget(series, grid);
+						UI.addWidget(series, grid, factory);
 						Interval.tick();
 					}
 					return UI.arrange();
 				},
+
+				infer: UI.inferWidget,
 				
 				remove: function(widgetId) {
 					Charts.destroy(widgetId);

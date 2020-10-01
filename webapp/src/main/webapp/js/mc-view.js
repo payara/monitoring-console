@@ -51,78 +51,60 @@ MonitoringConsole.View = (function() {
     const Colors = MonitoringConsole.View.Colors;
     const Theme = MonitoringConsole.Model.Theme;
 
+    const WIDGET_TYPE_OPTIONS = { line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status' };
+    const WIDGET_TYPE_FILTER_OPTIONS = { _: '(Any)', line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status' };
+
+    function isFunction(obj) {
+        return typeof obj === 'function';
+    }
+
     /**
      * Updates the DOM with the page navigation tabs so it reflects current model state
      */ 
-    function updatePageNavigation(selectedPage) {
-        let pages = MonitoringConsole.Model.listPages();
-        let activePage = selectedPage || pages.find(page => page.active).name;
-        let items = pages.map(function(page) {
-            return { label: page.name ? page.name : '(Unnamed)', onClick: () => onPageChange(MonitoringConsole.Model.Page.changeTo(page.id)) };
-        });
-        items.push({ label: 'Watches', onClick: onOpenWatchSettings });
-        let nav = { id: 'Navigation', groups: [
-            {label: activePage, items: items }
-        ]};
-        $('#Navigation').replaceWith(Components.createMenu(nav));
-    }
-
-    function updateMenu() {
-        let hasPreset = MonitoringConsole.Model.Page.hasPreset();
-        let isPaused = MonitoringConsole.Model.Refresh.isPaused();
-        let settingsOpen = MonitoringConsole.Model.Settings.isDispayed();
-        let toggleSettings = function() { MonitoringConsole.View.onPageMenu(); updateMenu(); };
-        let menu = { id: 'Menu', groups: [
-            { icon: '&#128463;', label: 'Page', items: [
-                { label: 'New...', icon: '&#128459;', description: 'Add a new blank page...', onClick: () => MonitoringConsole.View.onPageChange(MonitoringConsole.Model.Page.create('(Unnamed)')) },
-                { label: 'Delete', icon: '&times;', description: 'Delete current page', disabled: hasPreset, onClick: MonitoringConsole.View.onPageDelete },
-                { label: 'Reset', icon: '&#128260;', description: 'Reset Page to Preset', disabled: !hasPreset, onClick: MonitoringConsole.View.onPageReset },
-            ]},
-            { icon: '&#128472;', label: 'Data Refresh', items: [
-                { label: 'Pause', icon: '&#9208;', description: 'Pause Data Refresh', hidden: isPaused, onClick: function() { MonitoringConsole.Model.Refresh.pause(); updateMenu(); updateSettings(); } },
-                { label: 'Unpause', icon: '&#9654;', description: 'Unpause Data Refresh', hidden: !isPaused, onClick: function() { MonitoringConsole.Model.Refresh.resume(); updateMenu(); updateSettings(); } },
-                { label: 'Slow', icon: '&#128034;', description: 'Slow Data Refresh Rate', onClick: function() { MonitoringConsole.Model.Refresh.resume(4); updateMenu(); updateSettings(); } },
-                { label: 'Normal', icon: '&#128008;', description: 'Normal Data Refresh Rate', onClick: function() { MonitoringConsole.Model.Refresh.resume(2); updateMenu(); updateSettings(); } },
-                { label: 'Fast', icon: '&#128007;', description: 'Fast Data Refresh Rate', onClick: function() { MonitoringConsole.Model.Refresh.resume(1); updateMenu(); updateSettings(); } },
-            ]},
-            { icon: '&#9707;', label: 'Layout', items: [
-                { label: '1 Column', icon: '&#11034;', description: 'Use one column layout', onClick: () => MonitoringConsole.View.onPageLayoutChange(1) },
-                { label: ' 2 Columns', icon: '&#11034;&#11034;', description: 'Use two column layout', onClick: () => MonitoringConsole.View.onPageLayoutChange(2) },
-                { label: ' 3 Columns', icon: '&#11034;&#11034;&#11034;', description: 'Use three column layout', onClick: () => MonitoringConsole.View.onPageLayoutChange(3) },
-                { label: ' 4 Columns', icon: '&#11034;&#11034;&#11034;&#11034;', description: 'Use four column layout', onClick: () => MonitoringConsole.View.onPageLayoutChange(4) },
-            ]},
-            { icon: '&#9881;', label: 'Settings', clickable: true, items: [
-                { label: 'Hide', icon: '&times;', hidden: !settingsOpen, onClick: toggleSettings },
-                { label: 'Show', icon: '&plus;', hidden: settingsOpen, onClick: toggleSettings },
-                { label: 'Import...', icon: '&#9111;', description: 'Import Configuration...', onClick: () => $('#cfgImport').click() },
-                { label: 'Export...', icon: '&#9112;', description: 'Export Configuration...', onClick: MonitoringConsole.View.onPageExport },
-            ]},
-        ]};
-        $('#Menu').replaceWith(Components.createMenu(menu));
+    function updatePageNavigation() {
+        const Navigation = MonitoringConsole.Model.Settings.Navigation;
+        let panelConsole = $('#console');
+        if (Navigation.isCollapsed()) {
+            panelConsole.removeClass('state-show-nav');
+        } else {
+            if (!panelConsole.hasClass('state-show-nav')) {
+                panelConsole.addClass('state-show-nav');                
+            }
+        }
+        $('#NavSidebar').replaceWith(Components.createNavSidebar(createNavSidebarModel()));
     }
 
     /**
      * Updates the DOM with the page and selection settings so it reflects current model state
      */ 
     function updateSettings() {
-        let panelConsole = $('#console');
-        if (MonitoringConsole.Model.Settings.isDispayed()) {
+        const panelConsole = $('#console');
+        const collapsed = !MonitoringConsole.Model.Settings.isDispayed();
+        let groups = [];
+        if (collapsed) {
+            panelConsole.removeClass('state-show-settings');
+        } else {
             if (!panelConsole.hasClass('state-show-settings')) {
                 panelConsole.addClass('state-show-settings');                
             }
-            let singleSelection = MonitoringConsole.Model.Page.Widgets.Selection.isSingle();
-            let groups = [];
-            groups.push(createGlobalSettings(singleSelection));
+            groups = groups.concat(createAppSettings());
             groups.push(createColorSettings());
             groups.push(createPageSettings());
-            if (singleSelection) {
+            if (MonitoringConsole.Model.Page.Widgets.Selection.isSingle())
                 groups = groups.concat(createWidgetSettings(MonitoringConsole.Model.Page.Widgets.Selection.first()));
-            }
-            $('#Settings').replaceWith(Components.createSettings({id: 'Settings', groups: groups }));
-        } else {
-            panelConsole.removeClass('state-show-settings');
         }
+        $('#Settings').replaceWith(Components.createSettings({
+            id: 'Settings', 
+            collapsed: collapsed,            
+            groups: groups,
+            onSidebarToggle: () => {
+                MonitoringConsole.Model.Settings.toggle();
+                updateSettings();
+            },
+            onWidgetAdd: showAddWidgetModalDialog,
+        }));
     }
+
 
     function updateDomOfWidget(parent, widget) {
         if (!parent) {
@@ -136,7 +118,7 @@ MonitoringConsole.View = (function() {
             if (previousParent.length > 0 && previousParent.children().length > 0) {
                 previousParent.children().appendTo(parent);
             } else {
-                parent.append(createWidgetToolbar(widget));
+                parent.append(Components.createWidgetHeader(createWidgetHeaderModel(widget)));
                 parent.append(createWidgetTargetContainer(widget));
                 parent.append(Components.createAlertTable({}));
                 parent.append(Components.createAnnotationTable({}));
@@ -160,93 +142,95 @@ MonitoringConsole.View = (function() {
             .append($('<canvas/>',{ id: widget.target }));
     }
 
-    function toWords(str) {
-        // camel case to words
-        let res = str.replace(/([A-Z]+)/g, " $1").replace(/([A-Z][a-z])/g, " $1");
-        if (res.indexOf('.') > 0) {
-            // dots to words with upper casing each word
-            return res.replace(/\.([a-z])/g, " $1").split(' ').map((s) => s.charAt(0).toUpperCase() + s.substring(1)).join(' ');
+    function createWidgetHeaderModel(widget) {
+        function toWords(str) {
+            // camel case to words
+            let res = str.replace(/([A-Z]+)/g, " $1").replace(/([A-Z][a-z])/g, " $1");
+            if (res.indexOf('.') > 0) {
+                // dots to words with upper casing each word
+                return res.replace(/\.([a-z])/g, " $1").split(' ').map((s) => s.charAt(0).toUpperCase() + s.substring(1)).join(' ');
+            }
+            return res;
         }
-        return res;
-    }
 
-    function formatSeriesName(series) {
-        if (Array.isArray(series))
-            return 'Multi-Series without Display Name';
-        let endOfTags = series.lastIndexOf(' ');
-        let metric = endOfTags <= 0 ? series : series.substring(endOfTags + 1);
-        if (endOfTags <= 0 )
-            return toWords(metric);
-        let tags = series.substring(0, endOfTags).split(' ');
-        let text = '';
-        let metricText = toWords(metric);
-        let grouped = false;
-        for (let i = 0; i < tags.length; i++) {
-            let tag = tags[i];
-            let tagName = tag.substring(0, tag.indexOf(':'));
-            let tagValue = tag.substring(tag.indexOf(':') + 1);
-            if (tagName ===  '@') {
-                grouped = true;
-                text += metricText;
-                text += ': <strong>'+tagValue+'</strong> ';
+        function metricName(series) {
+            let start = series.indexOf(' ') + 1;
+            let groupStart = series.indexOf('@:') + 1;
+            if (groupStart > start)
+                start = groupStart + 1;
+            return series.substring(start);
+        }
+
+        const Widgets = MonitoringConsole.Model.Page.Widgets;
+        const series = widget.series;
+        let title = widget.displayName;
+        if (title == '' || title === undefined) {
+            if (Array.isArray(series)) {
+                title = series.map(e => toWords(metricName(e))).join(', ');
             } else {
-                text +=' <span>'+tagName+':<strong>'+tagValue+'</strong></span> ';
+                title = toWords(metricName(series));        
+            }
+        } 
+        let description = widget.description;
+        if (description == '' || description === undefined) {
+            if (Array.isArray(series)) {
+                description = series.join(', ');
+            } else {
+                description = series;
             }
         }
-        if (!grouped)
-            text += metricText;
-        return text;
+        return {
+            id: 'WidgetHeader-' + widget.target,
+            title: title,
+            description:  description,
+            selected: () => MonitoringConsole.Model.Page.Widgets.Selection.listSeries().indexOf(widget.id) >= 0,
+            onClick: () => {
+                Widgets.Selection.toggle(widget.id, true);
+                updateSettings();
+            },
+
+        };
     }
 
-    function createWidgetToolbar(widget) {
-        const Widgets = MonitoringConsole.Model.Page.Widgets;
-        let widgetId = widget.id;
-        let items = [
-            { icon: '&times;', label: 'Remove', onClick: () => onWidgetDelete(widgetId)},
-            { icon: '&ltri;', label: 'Move Left', onClick: () => onPageUpdate(Widgets.moveLeft(widgetId)) },
-            { icon: '&rtri;', label: 'Move Right', onClick: () => onPageUpdate(Widgets.moveRight(widgetId)) },                
+    function createAppSettings() {
+        const pushAvailable = MonitoringConsole.Model.Role.isAdmin();
+        const pullAvailable = !MonitoringConsole.Model.Role.isGuest();
+        return [
+            { id: 'settings-general', type: 'app', caption: 'General', entries: [
+                { label: 'Data Refresh', input: [
+                    { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Refresh.interval(), onChange: (val) => MonitoringConsole.Model.Refresh.interval(val) },
+                    { type: 'toggle', options: { false: 'Pause', true: 'Play'}, value: !MonitoringConsole.Model.Refresh.isPaused(), onChange: (checked) => MonitoringConsole.Model.Refresh.paused(!checked) },
+                ]},
+                { label: 'Page Rotation', input: [
+                    { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Settings.Rotation.interval(), onChange: (val) => MonitoringConsole.Model.Settings.Rotation.interval(val) },
+                    { type: 'toggle', options: { false: 'Off', true: 'On' }, value: MonitoringConsole.Model.Settings.Rotation.isEnabled(), onChange: (checked) => MonitoringConsole.Model.Settings.Rotation.enabled(checked) },
+                ]},
+                { label: 'Role', input: [
+                    { label: MonitoringConsole.Model.Role.name() },
+                    { input: () => Components.createIconButton({
+                        class: 'btn-icon',
+                        icon: 'icon-pencil',
+                        alt: 'Change User Role...'
+                    }).click(showRoleSelectionModalDialog) },
+                ]},
+                { label: 'Watches', input: $('<button/>').text('Go to Watch Settings').click(showWatchConfigModalDialog) },
+            ]},
+            { id: 'settings-pages', available: pushAvailable || pullAvailable, type: 'app', caption: 'Pages', entries: [
+                { label: 'Server Sync', input: [
+                    { available: pushAvailable, input: () => $('<button />', { text: 'Update Server...', title: 'Push local state of all know remote pages to server'}).click(showPagePushModalDialog) },
+                    { available: pullAvailable, input: () => $('<button/>', { text: 'Update Local...', title: 'Open page synchronisation dialogue'}).click(showPageSyncModalDialog) }, 
+                ]},
+                { label: 'Manual Sync', input: [
+                    { input: () => $('<button />', { text: 'Import...'}).click(showImportPagesModalDialog) },
+                    { input: () => $('<button />', { text: 'Export...'}).click(showExportPagesModalDialog) },
+                ]},
+            ]},
         ];
-        if (widget.type === 'annotation') {
-            items.push({ icon: '&#9202', label: 'Sort By Wall Time', onClick: () => Widgets.configure(widgetId, (widget) => widget.sort = 'time') });
-            items.push({ icon: '&#128292;', label: 'Sort By Value', onClick: () => Widgets.configure(widgetId, (widget) => widget.sort = 'value') });
-        }
-        items.push({ icon: '&#128295;', label: 'Edit...', onClick: () => onOpenWidgetSettings(widgetId) });
-        let menu = { groups: [
-            { icon: '&#9881;', items: items },
-        ]};
-        let title = widget.displayName ? widget.displayName : formatSeriesName(widget.series);
-        return $('<div/>', {"class": "widget-title-bar"})
-            .append(Components.createMenu(menu))
-            .append($('<h3/>', {title: widget.description != '' ? widget.description : widget.series})
-                .html(title)
-                .click(() => onWidgetToolbarClick(widget)))            
-            ;
-    }
-
-    function createGlobalSettings(initiallyCollapsed) {
-        const  pushAvailable = MonitoringConsole.Model.Role.isAdmin();
-        const  pullAvailable = !MonitoringConsole.Model.Role.isGuest();
-        return { id: 'settings-global', caption: 'Global', collapsed: initiallyCollapsed, entries: [
-            { label: 'Data Refresh', input: [
-                { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Refresh.interval(), onChange: (val) => MonitoringConsole.Model.Refresh.interval(val) },
-                { label: 'paused', type: 'checkbox', value: MonitoringConsole.Model.Refresh.isPaused(), onChange: function(checked) { MonitoringConsole.Model.Refresh.paused(checked); updateMenu(); } },
-            ]},
-            { label: 'Page Rotation', input: [
-                { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Settings.Rotation.interval(), onChange: (val) => MonitoringConsole.Model.Settings.Rotation.interval(val) },
-                { label: 'enabled', type: 'checkbox', value: MonitoringConsole.Model.Settings.Rotation.isEnabled(), onChange: (checked) => MonitoringConsole.Model.Settings.Rotation.enabled(checked) },
-            ]},
-            { label: 'Role', type: 'dropdown', options: {guest: 'Guest', user: 'User', admin: 'Administrator'}, value: MonitoringConsole.Model.Role.get(), onChange: (val) => { MonitoringConsole.Model.Role.set(val); updateSettings(); } },
-            { label: 'Page Sync', available: pushAvailable || pullAvailable, input: [
-                { available: pushAvailable, input: () => $('<button />', { text: 'Update Remote Pages', title: 'Push local state of all know remote pages to server'}).click(MonitoringConsole.Model.Page.Sync.pushAllLocal) },
-                { available: pullAvailable, input: () => $('<button/>', { text: 'Update Local Pages', title: 'Open Page synchronisation dialoge'}).click(onPagesSync) }, 
-            ]},
-            { label: 'Watches', input: $('<button/>').text('Open Settings').click(onOpenWatchSettings) },
-        ]};
     }
 
     function createColorSettings() {
         function createChangeColorDefaultFn(name) {
-            return (color) => { Theme.configure(theme => theme.colors[name] = color); updateSettings(); };
+            return (color) => { Theme.configure(theme => theme.colors[name] = color); };
         }
         function createChangeOptionFn(name) {
             return (value) => { Theme.configure(theme => theme.options[name] = value); };
@@ -257,10 +241,9 @@ MonitoringConsole.View = (function() {
                 label = name[0].toUpperCase() + name.slice(1);
             return { label: label, type: 'color', value: Theme.color(name), onChange: createChangeColorDefaultFn(name) };
         }
-        let collapsed = $('#settings-colors').children('tr:visible').length <= 1;
-        return { id: 'settings-colors', caption: 'Colors', collapsed: collapsed, entries: [
-            { label: 'Scheme', type: 'dropdown', options: Colors.schemes(), value: undefined, onChange: (name) => { Colors.scheme(name); updateSettings(); } },
-            { label: 'Data #', type: 'color', value: Theme.palette(), onChange: (colors) => Theme.palette(colors) },
+        return { id: 'settings-appearance', type: 'app', caption: 'Appearance', entries: [
+            { label: 'Scheme', input: $('<button/>').text('Switch Theme').click(showThemeSelectionModalDialog) },
+            { label: 'Data #', type: 'color', value: Theme.palette(), onChange: (colors) => Theme.configure(theme => theme.palette = colors) },
             { label: 'Defaults', input: [
                 ['error', 'missing'].map(createColorDefaultSettingMapper),
                 ['alarming', 'critical', 'waterline'].map(createColorDefaultSettingMapper),
@@ -274,11 +257,40 @@ MonitoringConsole.View = (function() {
         ]};
     }
 
+    function showThemeSelectionModalDialog() {
+        const options = Colors.schemes();
+        const results = { selected: options[0] };
+        showModalDialog({
+            title: 'Select Color Theme',
+            content: () => [
+                $('<p/>').text('Switching the color theme will override current default colors.'),
+                Components.createSettings({id: 'theme-properties', groups: [
+                    { id: 'settings-appearance' , entries: [
+                        { label: 'Scheme', type: 'dropdown', options: options, value: undefined, onChange: (name) => { results.selected = name; } }
+                    ]}
+                ]})
+            ],
+            buttons: [
+                { property: 'cancel', label: 'Cancel', secondary: true },
+                { property: 'selected', label: 'Switch' },
+            ],
+            closeProperty: 'cancel',
+            results: results,
+            onExit: name => {
+                if (name) {
+                    Colors.scheme(name); 
+                    updateSettings();
+                    showFeedback({ type: 'success', message: `Switched to color theme <em>${name}</em>` });
+                }
+            }
+        });
+    }
+
     function createWidgetSettings(widget) {
-        function changeSeries(selectedSeries) {
-            if (selectedSeries !== undefined && selectedSeries.length > 0)
+        function changeSeries(series) {
+            if (series !== undefined && series.length > 0)
                 onPageChange(MonitoringConsole.Model.Page.Widgets.configure(widget.id, 
-                    widget => widget.series = selectedSeries.length == 1 ? selectedSeries[0] : selectedSeries));
+                    widget => widget.series = series.length == 1 ? series[0] : series));
         }
         let seriesInput = $('<span/>');
         if (Array.isArray(widget.series)) {
@@ -286,46 +298,52 @@ MonitoringConsole.View = (function() {
         } else {
             seriesInput.append(widget.series).append(' ');
         }
-        seriesInput.append($('<br/>')).append($('<button/>', { text: 'Change metric(s)...' })
-                .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel(widget.series, changeSeries)))));
+        seriesInput.append($('<br/>')).append(Components.createIconButton({
+            class: 'btn-icon',
+            icon: 'icon-pencil',
+            alt: 'Change metric(s)...'
+        })
+                .click(() => showModalDialog(createWizardModalDialogModel({
+                    title: 'Edit Widget Metric Series', 
+                    submit: 'Apply',
+                    series: widget.series, 
+                    onExit: changeSeries
+                }))));
         let options = widget.options;
         let unit = widget.unit;
         let thresholds = widget.decorations.thresholds;
         let settings = [];
-        let collapsed = $('#settings-widget').children('tr:visible').length <= 1;
-        let typeOptions = { line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status' };
+        
         let modeOptions = widget.type == 'annotation' ? { table: 'Table', list: 'List' } : { list: '(Default)' };
-        settings.push({ id: 'settings-widget', caption: 'Widget', collapsed: collapsed, entries: [
-            { label: 'Display Name', type: 'text', value: widget.displayName, onChange: (widget, value) => widget.displayName = value},
-            { label: 'Type', type: 'dropdown', options: typeOptions, value: widget.type, onChange: (widget, selected) => widget.type = selected},
-            { label: 'Mode', type: 'dropdown', options: modeOptions, value: widget.mode, onChange: (widget, selected) => widget.mode = selected},
-            { label: 'Column / Item', input: [
-                { type: 'range', min: 1, max: 4, value: 1 + (widget.grid.column || 0), onChange: (widget, value) => widget.grid.column = value - 1},
-                { type: 'range', min: 1, max: 8, value: 1 + (widget.grid.item || 0), onChange: (widget, value) => widget.grid.item = value - 1},
-            ]},             
+        settings.push({ id: 'settings-widget', caption: 'General', collapsed: false, entries: [
+            { label: 'Display Name', type: 'text', value: widget.displayName, placeholder: '(derived from series)', onChange: (widget, value) => widget.displayName = value},
+            { label: 'Column', type: 'range', min: 1, max: 4, value: 1 + (widget.grid.column || 0), onChange: (widget, value) => widget.grid.column = value - 1},
+            { label: 'Rank', type: 'range', min: 1, max: 8, value: 1 + (widget.grid.item || 0), onChange: (widget, value) => widget.grid.item = value - 1, 
+                description: 'Columns are filled by rank, lowest rank is added first to the column' },
             { label: 'Size', input: [
                 { label: '&nbsp;x', type: 'range', min: 1, max: 4, value: widget.grid.colspan || 1, onChange: (widget, value) => widget.grid.colspan = value},
                 { type: 'range', min: 1, max: 4, value: widget.grid.rowspan || 1, onChange: (widget, value) => widget.grid.rowspan = value},
             ]},
+            { input: Components.createIconButton({
+                icon: 'icon-delete',
+                text: 'Remove Widget'
+            }).click(() => onWidgetDelete(widget)) },
         ]});
         settings.push({ id: 'settings-data', caption: 'Data', entries: [
+            { label: 'Type', type: 'dropdown', options: WIDGET_TYPE_OPTIONS, value: widget.type, onChange: (widget, selected) => widget.type = selected},
+            { label: 'Mode', type: 'dropdown', options: modeOptions, value: widget.mode || 'list', onChange: (widget, selected) => widget.mode = selected},
             { label: 'Series', input: seriesInput },
             { label: 'Unit', input: [
                 { type: 'dropdown', options: Units.names(), value: widget.unit, onChange: function(widget, selected) { widget.unit = selected; updateSettings(); }},
                 { label: '1/sec', type: 'checkbox', value: options.perSec, onChange: (widget, checked) => widget.options.perSec = checked},
             ]},
-            { label: 'Upscaling', description: 'Upscaling is sometimes needed to convert the original value range to a more user freindly display value range', input: [
+            { label: 'Upscaling', description: 'Upscaling is sometimes needed to convert the original value range to a more user friendly display value range', input: [
                 { type: 'range', min: 1, value: widget.scaleFactor, onChange: (widget, value) => widget.scaleFactor = value, 
                     description: 'A factor multiplied with each value to upscale original values in a graph, e.g. to move a range 0-1 to 0-100%'},
                 { label: 'decimal value', type: 'checkbox', value: options.decimalMetric, onChange: (widget, checked) => widget.options.decimalMetric = checked,
                     description: 'Values that are collected as decimal are converted to a integer with 4 fix decimal places. By checking this option this conversion is reversed to get back the original decimal range.'},
             ]},
-            { label: 'Extra Lines', input: [
-                { label: 'Min', type: 'checkbox', value: options.drawMinLine, onChange: (widget, checked) => widget.options.drawMinLine = checked},
-                { label: 'Max', type: 'checkbox', value: options.drawMaxLine, onChange: (widget, checked) => widget.options.drawMaxLine = checked},
-                { label: 'Avg', type: 'checkbox', value: options.drawAvgLine, onChange: (widget, checked) => widget.options.drawAvgLine = checked},            
-            ]},
-            { label: 'Lines', input: [
+            { label: 'Line Style', input: [
                 { label: 'Points', type: 'checkbox', value: options.drawPoints, onChange: (widget, checked) => widget.options.drawPoints = checked},
                 { label: 'Curvy', type: 'checkbox', value: options.drawCurves, onChange: (widget, checked) => widget.options.drawCurves = checked},
             ]},
@@ -341,31 +359,42 @@ MonitoringConsole.View = (function() {
             ]},
             { label: 'Coloring', type: 'dropdown', options: { instance: 'Instance Name', series: 'Series Name', index: 'Result Set Index', 'instance-series': 'Instance and Series Name' }, value: widget.coloring, onChange: (widget, value) => widget.coloring = value,
                 description: 'What value is used to select the index from the color palette' },
-            { label: 'Fields', type: 'text', value: (widget.fields || []).join(' '), onChange: (widget, value) => widget.fields = value == undefined || value == '' ? undefined : value.split(/[ ,]+/),
-                description: 'Selection and order of annotation fields to display, empty for auto selection and default order' },
-            {label: 'Annotations', type: 'checkbox', value: !options.noAnnotations, onChange: (widget, checked) => widget.options.noAnnotations = !checked}                
         ]});
-        settings.push({ id: 'settings-decorations', caption: 'Decorations', entries: [
-            { label: 'Waterline', input: [
+        const lineExtrasAvailable = widget.type == 'line';
+        settings.push({ id: 'settings-decorations', caption: 'Extras', collapsed: true, entries: [
+            { label: 'Annotations', input: [
+                { label: 'show', type: 'checkbox', value: !options.noAnnotations, onChange: (widget, checked) => widget.options.noAnnotations = !checked},
+            ]},
+            { type: 'textarea', value: (widget.fields || []).join(' '), placeholder: '(fields: auto)', onChange: (widget, value) => widget.fields = value == undefined || value == '' ? undefined : value.split(/[ ,]+/),
+                description: 'Selection and order of annotation fields to display, empty for auto selection and default order' },
+            { label: 'Aggregates', available: lineExtrasAvailable, input: [
+                { label: 'Min', type: 'checkbox', value: options.drawMinLine, onChange: (widget, checked) => widget.options.drawMinLine = checked},
+                { label: 'Max', type: 'checkbox', value: options.drawMaxLine, onChange: (widget, checked) => widget.options.drawMaxLine = checked},
+                { label: 'Avg', type: 'checkbox', value: options.drawAvgLine, onChange: (widget, checked) => widget.options.drawAvgLine = checked},            
+            ]},            
+            { label: 'Waterline', available: lineExtrasAvailable, input: [
                 { type: 'value', unit: unit, value: widget.decorations.waterline.value, onChange: (widget, value) => widget.decorations.waterline.value = value },
                 { type: 'color', value: widget.decorations.waterline.color, defaultValue: Theme.color('waterline'), onChange: (widget, value) => widget.decorations.waterline.color = value },
             ]},
-            { label: 'Alarming Threshold', input: [
-                { type: 'value', unit: unit, value: thresholds.alarming.value, onChange: (widget, value) => widget.decorations.thresholds.alarming.value = value },
-                { type: 'color', value: thresholds.alarming.color, defaultValue: Theme.color('alarming'), onChange: (widget, value) => thresholds.alarming.color = value },
-                { label: 'Line', type: 'checkbox', value: thresholds.alarming.display, onChange: (widget, checked) => thresholds.alarming.display = checked },
-            ]},
-            { label: 'Critical Threshold', input: [
-                { type: 'value', unit: unit, value: thresholds.critical.value, onChange: (widget, value) => widget.decorations.thresholds.critical.value = value },
-                { type: 'color', value: thresholds.critical.color, defaultValue: Theme.color('critical'), onChange: (widget, value) => widget.decorations.thresholds.critical.color = value },
-                { label: 'Line', type: 'checkbox', value: thresholds.critical.display, onChange: (widget, checked) => widget.decorations.thresholds.critical.display = checked },
+            { label: 'Visual Thresholds', available: lineExtrasAvailable, input: [
+                { type: 'dropdown', options: { off: 'Off', now: 'Most Recent Value', min: 'Minimum Value', max: 'Maximum Value', avg: 'Average Value'}, value: thresholds.reference, onChange: (widget, selected) => widget.decorations.thresholds.reference = selected},
+                [
+                    { label: 'alarming', type: 'value', unit: unit, value: thresholds.alarming.value, onChange: (widget, value) => widget.decorations.thresholds.alarming.value = value },
+                    { type: 'color', value: thresholds.alarming.color, defaultValue: Theme.color('alarming'), onChange: (widget, value) => thresholds.alarming.color = value },
+                    { label: 'Line', type: 'checkbox', value: thresholds.alarming.display, onChange: (widget, checked) => thresholds.alarming.display = checked },
+                ],
+                [
+                    { label: 'critical', type: 'value', unit: unit, value: thresholds.critical.value, onChange: (widget, value) => widget.decorations.thresholds.critical.value = value },
+                    { type: 'color', value: thresholds.critical.color, defaultValue: Theme.color('critical'), onChange: (widget, value) => widget.decorations.thresholds.critical.color = value },
+                    { label: 'Line', type: 'checkbox', value: thresholds.critical.display, onChange: (widget, checked) => widget.decorations.thresholds.critical.display = checked },
+                ]
             ]},                
-            { label: 'Threshold Reference', type: 'dropdown', options: { off: 'Off', now: 'Most Recent Value', min: 'Minimum Value', max: 'Maximum Value', avg: 'Average Value'}, value: thresholds.reference, onChange: (widget, selected) => widget.decorations.thresholds.reference = selected},
+            
         ]});
         settings.push({ id: 'settings-status', caption: 'Status', collapsed: true, description: 'Set a text for an assessment status', entries: [
-            { label: '"No Data"', type: 'text', value: widget.status.missing.hint, onChange: (widget, text) => widget.status.missing.hint = text},
-            { label: '"Alaraming"', type: 'text', value: widget.status.alarming.hint, onChange: (widget, text) => widget.status.alarming.hint = text},
-            { label: '"Critical"', type: 'text', value: widget.status.critical.hint, onChange: (widget, text) => widget.status.critical.hint = text},
+            { label: '"No Data"', type: 'textarea', value: widget.status.missing.hint, onChange: (widget, text) => widget.status.missing.hint = text},
+            { label: '"Alarming"', type: 'textarea', value: widget.status.alarming.hint, onChange: (widget, text) => widget.status.alarming.hint = text},
+            { label: '"Critical"', type: 'textarea', value: widget.status.critical.hint, onChange: (widget, text) => widget.status.critical.hint = text},
         ]});
         let alerts = widget.decorations.alerts;
         settings.push({ id: 'settings-alerts', caption: 'Alerts', collapsed: true, entries: [
@@ -388,82 +417,254 @@ MonitoringConsole.View = (function() {
     }
 
     function createPageSettings() {
-        function addWidgets(selectedSeries) {
-            if (selectedSeries !== undefined && selectedSeries.length > 0)
-                onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries));
+
+        function showIfRemotePageExists(jQuery) {
+            Controller.requestListOfRemotePageNames((pageIds) => { // OBS: this asynchronously makes the button visible
+                if (pageIds.indexOf(MonitoringConsole.Model.Page.id()) >= 0) {
+                    jQuery.show();
+                }
+            });                        
+            return jQuery;
         }
-        const addWidgetsInput = $('<button/>', { text: 'Select metric(s)...' })
-            .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(createWizardModalDialogModel([], addWidgets))));
-        let pageNameOnChange = MonitoringConsole.Model.Page.hasPreset() ? undefined : function(text) {
-            if (MonitoringConsole.Model.Page.rename(text)) {
-                updatePageNavigation();                        
-            }
-        };
-        let collapsed = $('#settings-page').children('tr:visible').length <= 1;
-        let pushAvailable = !MonitoringConsole.Model.Role.isGuest() && MonitoringConsole.Model.Page.Sync.isLocallyChanged() && MonitoringConsole.Model.Role.isAdmin();
-        let pullAvailable = !MonitoringConsole.Model.Role.isGuest();
-        let autoAvailable = MonitoringConsole.Model.Role.isAdmin();
-        let page = MonitoringConsole.Model.Page.current();
+
+        const Page = MonitoringConsole.Model.Page;
+        const Role = MonitoringConsole.Model.Role;
+        let collapsed = Page.Widgets.Selection.isSingle();
+        let pushAvailable = !Role.isGuest() && Page.Sync.isLocallyChanged() && Role.isAdmin();
+        let pullAvailable = !Role.isGuest();
+        let autoAvailable = Role.isAdmin();
+        let renameAvailable = !Page.hasPreset();
+        let page = Page.current();
         let queryAvailable = page.type === 'query';
-        const configure =  MonitoringConsole.Model.Page.configure;
-        return { id: 'settings-page', caption: 'Page', collapsed: collapsed, entries: [
-            { label: 'Name', type: 'text', value: MonitoringConsole.Model.Page.name(), onChange: pageNameOnChange },
-            { label: 'Page Rotation', input: [
-                { label: 'Include in Rotation', type: 'checkbox', value: MonitoringConsole.Model.Page.rotate(), onChange: (checked) => MonitoringConsole.Model.Page.rotate(checked) },
+        const configure =  Page.configure;
+        const name = $('<input/>', { type: 'text', value: Page.name() });
+        const rename = $('<button/>').text('Rename').click(() => {
+          Page.rename(name.val());  
+          updatePageNavigation();
+        } );
+
+        return { id: 'settings-page', type: 'page', caption: 'Page Settings', collapsed: collapsed, entries: [
+            { label: 'Name', input: [
+                { available: renameAvailable, input: [ name, rename ] },
+                { available: !renameAvailable, input: $('<span/>').text(Page.name()) },
             ]},
             { label: 'Type', type: 'dropdown', options: {manual: 'Manual', query: 'Query'}, value: page.type, onChange: (type) => { onPageUpdate(configure(page => page.type = type)); updateSettings(); } },            
+            { label: 'Number of Columns', type: 'range', min: 1, max: 8, value: page.numberOfColumns, onChange: columns =>  { onPageUpdate(Page.arrange(columns)); updatePageNavigation(); }},
+            { label: 'Include in Rotation', type: 'toggle', options: { false: 'No', true: 'Yes' }, value: Page.rotate(), onChange: (checked) => Page.rotate(checked) },
             { label: 'Max Size', available: queryAvailable, type: 'value', min: 1, unit: 'count', value: page.content.maxSize,  onChange: (value) => configure(page => page.content.maxSize = value) },
             { label: 'Query Series', available: queryAvailable, type: 'text', value: page.content.series, onChange: (value) => configure(page => page.content.series = value) },
             { label: 'Query Interval', available: queryAvailable, input: [
                 { type: 'value', min: 1, unit: 'sec', value: page.content.ttl, onChange: (value) => configure(page => page.content.ttl = value) },
-                { input: $('<button/>', {text: 'Update'}).click(() => configure(page => page.content.expires = undefined)) },
+                { input: $('<button/>', {text: 'Update Now'}).click(() => configure(page => page.content.expires = undefined)) },
             ]},
-            { label: 'Add Widgets', available: !queryAvailable, input: addWidgetsInput },
-            { label: 'Sync', available: pushAvailable || pullAvailable, input: [
-                { available: autoAvailable, label: 'auto', type: 'checkbox', value: MonitoringConsole.Model.Page.Sync.auto(), onChange: (checked) => MonitoringConsole.Model.Page.Sync.auto(checked),
-                    description: 'When checked changed to the page are automatically pushed to the remote server (shared with others)' },
-                { available: pushAvailable, input: () => $('<button />', { text: 'Push', title: 'Push local page to server (update remote)' }).click(onPagePush) },
-                { available: pullAvailable, input: () => showIfRemotePageExists($('<button />', { text: 'Pull', title: 'Pull remote page from server (update local)', style: 'display: none'}).click(onPagePull)) },
-            ]}
+            { label: 'Filter Type', available: queryAvailable, type: 'dropdown', options: WIDGET_TYPE_FILTER_OPTIONS, value: page.content.filter, onChange: filter => onPageUpdate(configure(page => page.content.filter = filter)) },
+            { label: 'Server Sync', available: pushAvailable || pullAvailable, input: [
+                { available: autoAvailable, label: 'Auto', type: 'checkbox', value: Page.Sync.auto(), onChange: (checked) => Page.Sync.auto(checked),
+                    description: 'When checked changes to the page are automatically pushed to the remote server (shared with others)' },
+                { available: pushAvailable, input: () => $('<button />', { text: 'Push', title: 'Push local page to server (update remote)' }).click(showPushPageConfirmModalDialog) },
+                { available: pullAvailable, input: () => showIfRemotePageExists($('<button />', { text: 'Pull', title: 'Pull remote page from server (update local)', style: 'display: none'}).click(showPullPageConfirmModalDialog)) },
+            ]},
         ]};
     }
 
-    function showIfRemotePageExists(jQuery) {
-        Controller.requestListOfRemotePageNames((pageIds) => { // OBS: this asynchronously makes the button visible
-            if (pageIds.indexOf(MonitoringConsole.Model.Page.id()) >= 0) {
-                jQuery.show();
+    /**
+     * Model: { title, question, yes, no, onYes, dangerzone }
+     */
+    function createYesNoModualDialog(model) {
+        return {
+            style: model.dangerzone ? 'danger-zone' : undefined,
+            title: model.title,
+            content: () => model.question.split('\n').map(par => $('<p/>').html(par)),
+            buttons: [
+                { property: 'no', label: model.no, secondary: true },
+                { property: 'yes', label: model.yes },
+            ],
+            results: { yes: true, no: false },
+            onExit: result => {
+                if (result)
+                    model.onYes();
             }
-        });                        
-        return jQuery;
+        };
+    }
+
+    function showAddWidgetModalDialog(grid) {
+        function addNewWidget(series, matches) {
+            if (series.length > 0) {
+                const factory = series.length != 1 ? undefined : id => {
+                    const widget = MonitoringConsole.Model.Page.Widgets.infer(matches[series[0]]);
+                    widget.id = id;
+                    return widget;
+                };
+                onPageChange(MonitoringConsole.Model.Page.Widgets.add(series, grid, factory));
+            }
+        }
+
+        showModalDialog(createWizardModalDialogModel({
+            title: 'Add New Widget',
+            submit: 'Add',
+            series: [], 
+            onExit: addNewWidget,
+        }));
+    }
+
+    function showModalDialog(model) {
+        const id = model.id || 'ModalDialog';
+        $('#' + id).replaceWith(Components.createModalDialog(model));
+    }
+
+    function showFeedback(model) {
+        const banner = Components.createFeedbackBanner(model);
+        $('#FeedbackBannerContainer').append(banner);
+        banner.delay(3000).fadeOut();
     }
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Event Handlers ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    function onWidgetToolbarClick(widget) {
-        MonitoringConsole.Model.Page.Widgets.Selection.toggle(widget.id, true);
-        updateDomOfWidget(undefined, widget);
-        updateSettings();
+    function onWidgetDelete(widget) {
+        let description = widget.displayName;
+        if (description === undefined || description == '')
+            description = Array.isArray(widget.series)
+                ? widget.series.join(', ')
+                : widget.series;
+        showModalDialog(createYesNoModualDialog({ 
+            dangerzone: true,
+            title: 'Remove Widget?',
+            question: `Do you really want to remove the widget with metric series <em>${description}</em> from the page?`,
+            yes: 'Remove', 
+            no: 'Cancel', 
+            onYes: () =>  {
+                onPageChange(MonitoringConsole.Model.Page.Widgets.remove(widget.id));
+                showFeedback({ type: 'success', message: `Widget ${description} removed.`});
+            }
+        }));
     }
 
-    function onWidgetDelete(widgetId) {
-        if (window.confirm('Do you really want to remove the chart from the page?')) {
-            onPageChange(MonitoringConsole.Model.Page.Widgets.remove(widgetId));
+    function showImportPagesModalDialog() {
+        function readTextFile(file) {
+            return new Promise(function(resolve, reject) {
+                let reader = new FileReader();
+                reader.onload = function(evt){
+                  resolve(evt.target.result);
+                };
+                reader.onerror = function(err) {
+                  reject(err);
+                };
+                reader.readAsText(file);
+            });
         }
+
+        const btn = $('#cfgImport');
+        btn.on('input', async function() {
+            const files = this.files;
+            if (files instanceof FileList) {
+                let file = files[0];
+                if (file) {
+                    let json = await readTextFile(file);
+                    let pages = JSON.parse(json);
+                    if (!Array.isArray(pages)) {
+                        showFeedback({ type: 'error', message: 'File did not contain a list of pages.'});
+                    } else {
+                        showSelectPagesModalDialog({
+                            dangerzone: true,
+                            title: 'Import Pages',
+                            description: 'Please select the pages to import. Note that existing pages with same name are overridden.',
+                            submit: 'Import',
+                            pages: pages.filter(p => p.name != "" && p.name !== undefined),
+                            onExit: selected => {
+                                if (selected.length > 0) {
+                                    MonitoringConsole.Model.importPages(selected,
+                                        page => showFeedback({ type: 'success', message: `Successfully imported page <em>${page.name}</em>.`}),
+                                        page => showFeedback({ type: 'error', message: `Failed to import page <em>${page.name}</em>.`}),
+                                    );
+                                    updatePageNavigation();
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+
+        });
+        btn.click();
     }
 
-    function onPageExport(filename, text) {
-        let pom = document.createElement('a');
-        pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-        pom.setAttribute('download', filename);
+    function showExportPagesModalDialog() {
+        function download(text) {
+            let pom = document.createElement('a');
+            pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            pom.setAttribute('download', 'monitoring-console-pages.json');
 
-        if (document.createEvent) {
-            let event = document.createEvent('MouseEvents');
-            event.initEvent('click', true, true);
-            pom.dispatchEvent(event);
+            if (document.createEvent) {
+                let event = document.createEvent('MouseEvents');
+                event.initEvent('click', true, true);
+                pom.dispatchEvent(event);
+            } else {
+                pom.click();
+            }
         }
-        else {
-            pom.click();
+
+        const pages = MonitoringConsole.Model.exportPages();
+        showSelectPagesModalDialog({
+            title: 'Export Pages',
+            description: 'Please select the pages that should be exported.',
+            submit: 'Export',
+            pages: pages,
+            onExit: selected => {
+                if (selected.length > 0) {
+                    download(JSON.stringify(selected, null, 2));
+                    const names = selected.map(p => p.name).join(', ');
+                    showFeedback({ type: 'success', message: `Exported page(s) <em>${names}</em>.`});
+                }
+            }
+        });
+    }
+    
+    /**
+     * Model: { title, description, submit, pages, onExit, dangerzone }
+     */
+    function showSelectPagesModalDialog(model) {
+        const pages = model.pages;
+        const results = { empty: [], selected: [] };
+        const list = $('<ul/>');
+        const createInput = (id, page) => $('<input/>', { type: 'checkbox', id: id, checked: false })
+            .change(function() {
+                const include = this.checked;
+                const contained = results.selected.find(p => p.name == page.name) !== undefined;
+                if (include && !contained) {
+                    results.selected.push(page);
+                } else if (!include && contained) {
+                    results.selected = results.selected.filter(p => p.name != page.name);
+                }
+            });
+        const inputs = [];
+        for (let page of pages) {
+            const id = 'page-' + page.name;
+            const input = createInput(id, page);
+            inputs.push(input);
+            list.append($('<li/>')
+                .append(input)
+                .append(' ')
+                .append($('<label/>', { for: id }).text(page.name))
+                );
         }
+        list.prepend($('<li/>').html('&nbsp;')).prepend($('<li/>').append($('<input/>', { type: 'checkbox', id: 'pages-all', checked: false }).change(function() {
+            inputs.forEach(i => i.prop('checked', this.checked).change());
+        })).append($('<label/>', { for: 'pages-all' }).append($('<i/>').text('All'))));
+        const content = [];
+        if (model.description)
+            content.push($('<p/>').text(model.description));
+        content.push(list);
+        showModalDialog({
+            style: model.dangerzone ? 'danger-zone' : undefined,
+            title: model.title,
+            content: content,
+            buttons: [
+                { property: 'empty', label: 'Cancel', secondary: true },
+                { property: 'selected', label: model.submit },
+            ],
+            results: results,
+            onExit: model.onExit,
+        });
     }
 
     function createLegendModel(widget, data, alerts, annotations) {
@@ -522,6 +723,7 @@ MonitoringConsole.View = (function() {
                 color: color,
                 background: background,
                 status: status,
+                since: seriesData.assessments.since,
                 highlight: highlight,
             };
             legend.push(item);
@@ -612,7 +814,8 @@ MonitoringConsole.View = (function() {
             items.push({
                 label: item.label,
                 status: item.status,
-                state: item.value,
+                since: item.since,
+                value: item.value,
                 color: item.color,
                 background: item.highlight,
             });
@@ -704,20 +907,131 @@ MonitoringConsole.View = (function() {
         return { id: widget.target + '_annotations', mode: widget.mode, sort: widget.sort, items: items };
     }
 
-    function createRoleSelectionModel(onExit) {
-        return { id: 'RoleSelector', onChange: role => {
-                MonitoringConsole.Model.Role.set(role);
-                $('#RoleSelector').hide();
-                if (onExit !== undefined)
-                    onExit();
-            }, items: [
-            { name: 'guest', label: 'Guest' , description: 'Automatically uses latest server page configuration. Existing local changes are overridden. Local changes during the session do not affect the remote configuration.'},
-            { name: 'user', label: 'User' , description: 'Can select for each individual page if server configuration replaces local page. Can manually update local page with server page configuration during the session.' },
-            { name: 'admin', label: 'Administrator' , description: 'Can select for each individual page if server configuration replaces local page. Can manually update local pages with server page configuration or update server configuration with local changes. For pages with automatic synchronisation local changes do affect server page configurations.' },
-        ]};
+    function showAddPageModalDialog() {
+        const results = {};
+        const input = $('<input/>', { type: 'text'});
+        input.change(() => results.input = input.val());
+        showModalDialog({
+            title: 'Add Page',
+            content: () => $('<form/>')
+                .append($('<label/>').text('Page Name')).append(' ')
+                .append(input),
+            buttons: [
+                { property: 'cancel', label: 'Cancel', secondary: true },
+                { property: 'input', label: 'Add Page' }
+            ],
+            results: results,
+            closeProperty: 'cancel',
+            onExit: name => {
+                if (name != '' && name !== undefined) {
+                    MonitoringConsole.View.onPageChange(MonitoringConsole.Model.Page.create(name));
+                    showFeedback({ type: 'success', message: `Your page <em>${name}</em> has been added.`});
+                }
+            }
+        });
     }
 
-    function createWizardModalDialogModel(initiallySelectedSeries, onExit) {
+    function showRoleSelectionModalDialog(onExitCall) {
+        const Role = MonitoringConsole.Model.Role;
+        const currentRole = Role.isDefined() ? Role.get() : 'guest';
+        showModalDialog({
+            style: 'ModalDialogUserRole',
+            title: 'User Role Selection',
+            content: () => $('<dl/>')
+                .append($('<dt/>').append($('<b/>').text('Guest')))
+                .append($('<dd/>').text('Automatically uses latest server page configuration. Existing local changes are overridden. Local changes during the session do not affect the remote configuration.'))
+                .append($('<dt/>').append($('<b/>').text('User')))
+                .append($('<dd/>').text('Can select for each individual page if server configuration replaces local page. Can manually update local page with server page configuration during the session.'))
+                .append($('<dt/>').append($('<b/>').text('Administrator')))
+                .append($('<dd/>').text('Can select for each individual page if server configuration replaces local page. Can manually update local pages with server page configuration or update server configuration with local changes. For pages with automatic synchronisation local changes do affect server page configurations.')),
+            buttons: [
+                { property: 'guest', label: 'Guest', secondary: true },
+                { property: 'user', label: 'User' },
+                { property: 'admin', label: 'Administrator', secondary: true },
+            ],
+            results: { admin: 'admin' , user: 'user', guest: 'guest', current: currentRole },
+            closeProperty: 'current',
+            onExit: role =>  {
+                let confirm = !Role.isDefined() || Role.get() != role;
+                Role.set(role);
+                updateSettings();
+                if (Role.get() != role) {
+                    showFeedback({ type: 'error', message: 'Failed to update user role. Please report an issue.'});
+                } else if (confirm)
+                    showFeedback({ type: 'success', message: `User Role changed to <em>${Role.name()}</em>` });
+                if (isFunction(onExitCall))
+                    onExitCall();
+            }
+        });
+    }
+
+    function createNavSidebarModel() {
+        const Navigation = MonitoringConsole.Model.Settings.Navigation;
+        const Rotation = MonitoringConsole.Model.Settings.Rotation;
+        const Refresh = MonitoringConsole.Model.Refresh;
+        const Page = MonitoringConsole.Model.Page;
+        const pages = [];
+        function createNavItem(page) {
+            const selected = page.active;
+            const hasPreset = Page.hasPreset(page.id);
+            return {
+                id: page.id,
+                label: page.name,
+                selected: selected,
+                onSwitch: selected ? undefined : () => MonitoringConsole.View.onPageChange(Page.changeTo(page.id)),
+                onDelete: hasPreset ? undefined : () => MonitoringConsole.View.onPageDelete(page),
+                onReset: selected && hasPreset ? () => MonitoringConsole.View.onPageReset(page) : undefined,
+            };
+        }
+        for (let page of MonitoringConsole.Model.listPages()) {
+            pages.push(createNavItem(page));
+        }
+        let collapsed = Navigation.isCollapsed();
+        return { 
+            id: 'NavSidebar', 
+            collapsed: collapsed, 
+            rotationEnabled: Rotation.isEnabled(),
+            refreshEnabled: !Refresh.isPaused(),
+            refreshSpeed: Refresh.interval(),
+            layoutColumns: Page.numberOfColumns(),
+            logo: collapsed ? 'images/fish.svg' : 'images/logo.svg',
+            pages: pages,
+            onLogoClick: () => MonitoringConsole.View.onPageChange(Page.changeTo('core')),
+            onSidebarToggle: () => {
+                Navigation.toggle();
+                updatePageNavigation();
+            },
+            onRotationToggle: () => {
+                Rotation.enabled(!Rotation.isEnabled());
+                updateSettings();
+                updatePageNavigation();
+            },
+            onRefreshToggle: () => {
+                Refresh.paused(!Refresh.isPaused());
+                updateSettings();
+                updatePageNavigation();
+            },
+            onPageAdd: () => {
+                showAddPageModalDialog();
+            },
+            onLayoutChange: numberOfColumns => {
+                MonitoringConsole.View.onPageLayoutChange(numberOfColumns);
+                updateSettings();
+                updatePageNavigation();  
+            },
+            onRefreshSpeedChange: duration => { 
+                Refresh.resume(duration);
+                updateSettings();
+                updatePageNavigation();
+            }
+        };
+    }
+
+    /**
+      * Model: { id, title, submit, series, onExit }
+      */
+    function createWizardModalDialogModel(model) {
+        let initiallySelectedSeries = model.series;
         if (initiallySelectedSeries !== undefined && !Array.isArray(initiallySelectedSeries))
             initiallySelectedSeries = [ initiallySelectedSeries ];
         function objectToOptions(obj) {
@@ -733,7 +1047,7 @@ MonitoringConsole.View = (function() {
                     widgetId: 'auto', 
                     series: '?:* *',
                     truncate: ['ALERTS', 'POINTS'],
-                    exclude: ['ALERTS', 'WATCHES']
+                    exclude: []
                 }]}, 
                 (response) => resolve(response.matches),
                 () => reject(undefined));
@@ -820,47 +1134,155 @@ MonitoringConsole.View = (function() {
                 { label: 'Series', property: 'series', filter: matchesText },
             ],
             // what should happen if the selection made by the user changes
-            onChange: selectedSeries => results.ok = selectedSeries,
+            onChange: (selectedSeries, selectedMatches) => results.ok = selectedMatches,
         };
 
-        return { id: 'ModalDialog', 
-            title: 'Select Metric Series...',
+        return {
+            id: model.id,
+            title: model.title,
             content: () => Components.createSelectionWizard(wizard),
             buttons: [
-                { property: 'ok', label: 'OK' },
-                { property: 'cancel', label: 'Cancel' },
+                { property: 'cancel', label: 'Cancel', secondary: true },
+                { property: 'ok', label: model.submit },
             ],
             results: results,
-            onExit: onExit,
+            closeProperty: 'cancel',
+            onExit: seriesOrMatches => {
+                if (Array.isArray(seriesOrMatches)) {
+                    model.onExit(seriesOrMatches); 
+                } else if (typeof seriesOrMatches === 'object') {
+                    model.onExit(Object.keys(seriesOrMatches), seriesOrMatches);
+                }
+            },
+        };
+    }
+
+    function showPagePushModalDialog() {
+        showModalDialog(createYesNoModualDialog({
+            dangerzone: true,
+            title: 'Push Local to Remote',
+            question: 'Are you sure you want to override all <b>shared</b> pages with the current local state?',
+            yes: 'Push All',
+            no: 'Cancel',
+            onYes: () => {
+                MonitoringConsole.Model.Page.Sync.pushAllLocal(
+                    page => showFeedback({ type: 'success', message: `Remote page <em>${page.name}</em> updated successfully.` }),
+                    page => showFeedback({ type: 'error', message: `Failed to update remote page <em>${page.name}</em>.` }));
+            } 
+        }));
+    }
+
+    function wrapOnSuccess(onSuccess, message) {
+        return () => {
+            if (isFunction(onSuccess))
+                onSuccess();
+            if (message)
+                showFeedback({ type: 'success', message: message});
+            showWatchConfigModalDialog();
+        };
+    }
+
+    function wrapOnError(onError, message) {
+        return () => {
+            if (isFunction(onError))
+                onError();
+            if (message)
+                showFeedback({ type: 'error', message: message});
+            showWatchConfigModalDialog();
         };
     }
 
     /**
      * This function is called when the watch details settings should be opened
      */
-    function onOpenWatchSettings() {
-        function wrapOnSuccess(onSuccess) {
-            return () => {
-                if (typeof onSuccess === 'function')
-                    onSuccess();
-                onOpenWatchSettings();
+    function showWatchConfigModalDialog() {
+
+        const Role = MonitoringConsole.Model.Role;
+        const actions = {};
+        if (Role.isAdmin()) {
+            actions.onDelete = (name, onSuccess, onError) => {
+                showModalDialog(createYesNoModualDialog({
+                    dangerzone: true,
+                    title: 'Delete Watch',
+                    question: `Are you sure you want to delete watch <em>${name}</em>?`,
+                    yes: 'Delete',
+                    no: 'Cancel',
+                    onYes: () => Controller.requestDeleteWatch(name, 
+                        wrapOnSuccess(onSuccess, `Successfully deleted watch <em>${name}</em>.`), 
+                        wrapOnError(onError, `Failed to deleted watch <em>${name}</em>.`))
+                }));
             };
+            actions.onDisable = (name, onSuccess, onError) => Controller.requestDisableWatch(name, 
+                wrapOnSuccess(onSuccess, `Successfully disabled watch <em>${name}</em>.`), 
+                wrapOnError(onError), `Failed to disable watch <em>${name}</em>.`);
+            actions.onEnable = (name, onSuccess, onError) => Controller.requestEnableWatch(name, 
+                wrapOnSuccess(onSuccess, `Successfully enabled watch <em>${name}</em>.`), 
+                wrapOnError(onError, `Failed to enable watch <em>${name}</em>.`));            
+        }
+        if (!Role.isGuest()) {
+            actions.onCreate = (watch, onSuccess, onError) => showWatchBuilderModalDialog(createEditableWatch(watch), 
+                    watch === undefined || watch.programmatic, onSuccess, onError);
+            actions.onEdit = actions.onCreate;
         }
         Controller.requestListOfWatches((watches) => {
             const manager = { 
                 id: 'WatchManager', 
                 items: watches, 
                 colors: { red: Theme.color('red'), amber: Theme.color('amber'), green: Theme.color('green') },
-                actions: { 
-                    onCreate: (watch, onSuccess, onFailure) => Controller.requestCreateWatch(watch, wrapOnSuccess(onSuccess), onFailure),
-                    onDelete: (name, onSuccess, onFailure) => Controller.requestDeleteWatch(name, wrapOnSuccess(onSuccess), onFailure),
-                    onDisable: (name, onSuccess, onFailure) => Controller.requestDisableWatch(name, wrapOnSuccess(onSuccess), onFailure),
-                    onEnable: (name, onSuccess, onFailure) => Controller.requestEnableWatch(name, wrapOnSuccess(onSuccess), onFailure),
-                },
+                actions: actions,
             };
-            updatePageNavigation('Watches');
-            $('#chart-grid').hide();
-            $('#WatchManager').replaceWith(Components.createWatchManager(manager));
+            showModalDialog({
+                id: 'WatchSettingsModalDialog',
+                title: 'Manage Watches',
+                content: () => Components.createWatchManager(manager),
+                buttons: [{ property: 'close', label: 'Close' }],
+                results: { close: true },                
+                closeProperty: 'close',
+            });
+        });
+    }
+
+    function createEditableWatch(watch) {
+        if (watch === undefined)
+            return { unit: 'count', name: 'New Watch' };
+        if (watch.programmatic) {
+            const editedWatch = JSON.parse(JSON.stringify(watch));
+            editedWatch.name = 'Copy of ' + watch.name;
+            editedWatch.programmatic = false;
+            return editedWatch;
+        }
+        return watch;
+    }
+
+    function showWatchBuilderModalDialog(watch, isAdd, onSuccess, onError) {
+        const builder = {
+            watch: watch,
+            colors: { red: Theme.color('red'), amber: Theme.color('amber'), green: Theme.color('green') },
+            onSelect: !isAdd ? undefined : (id, series, onSelection) => showModalDialog(createWizardModalDialogModel({
+                id: id,
+                title: 'Select Watch Metric Series', 
+                submit: 'Select',
+                series: series, 
+                onExit: series => onSelection(series[0]),
+            })),
+        };
+        showModalDialog({
+            id: 'WatchBuilder',
+            style: !isAdd ? 'danger-zone' : undefined,
+            title: isAdd ? 'Add New Watch' : 'Edit Watch',
+            content: () => Components.createWatchBuilder(builder),
+            buttons: [
+                { property: 'cancel', label: 'Cancel', secondary: true },
+                { property: 'save', label: isAdd ? 'Save' : 'Update' }
+            ],
+            results: { save: watch },
+            closeProperty: 'cancel',
+            onExit: watch => {
+                if (watch)
+                    Controller.requestCreateWatch(watch, 
+                        wrapOnSuccess(onSuccess, `Successfully saved watch <em>${watch.name}</em>.`), 
+                        wrapOnError(onError, `Failed to saved watch <em>${watch.name}</em>.`));
+            },
         });
     }
 
@@ -876,6 +1298,7 @@ MonitoringConsole.View = (function() {
         let annotations = update.annotations;
         updateDomOfWidget(undefined, widget);
         let widgetNode = $('#widget-' + widget.target);
+        let headerNode = widgetNode.find('.WidgetHeader').first();
         let legendNode = widgetNode.find('.Legend').first();
         let indicatorNode = widgetNode.find('.Indicator').first();
             if (indicatorNode.length == 0)
@@ -886,6 +1309,7 @@ MonitoringConsole.View = (function() {
         if (data !== undefined && (widget.type === 'line' || widget.type === 'bar')) {
             MonitoringConsole.Chart.getAPI(widget).onDataUpdate(update);
         }
+        headerNode.replaceWith(Components.createWidgetHeader(createWidgetHeaderModel(widget)));
         if (widget.type == 'rag') {
             alertsNode.hide();
             legendNode.hide();
@@ -903,22 +1327,16 @@ MonitoringConsole.View = (function() {
      * This function refleshes the page with the given layout.
      */
     function onPageUpdate(layout) {
-        function addWidgets(selectedSeries, row, col) {
-            if (selectedSeries !== undefined && selectedSeries.length > 0) {
-                const grid = { column: col, item: row };
-                onPageChange(MonitoringConsole.Model.Page.Widgets.add(selectedSeries, grid));
-            }
-        }
+
         function createPlusButton(row, col) {
-            return $('<button/>', { text: '+', 'class': 'big-plus' })
-                .click(() => $('#ModalDialog').replaceWith(Components.createModalDialog(
-                    createWizardModalDialogModel([], selectedSeries => addWidgets(selectedSeries, row, col))))); 
+            return $('<button/>', { text: '+', 'class': 'big-plus', title: 'Add a widget to the page...' })
+                .click(() => showAddWidgetModalDialog({ column: col, item: row })); 
         }              
         let numberOfColumns = layout.length;
         let maxRows = layout[0].length;
         let table = $("<table/>", { id: 'chart-grid', 'class': 'columns-'+numberOfColumns + ' rows-'+maxRows });
-        let padding = 30;
-        let headerHeight = 40;
+        let padding = 32;
+        let headerHeight = 48;
         let minRowHeight = 160;
         let rowsPerScreen = maxRows;
         let windowHeight = $(window).height();
@@ -950,26 +1368,77 @@ MonitoringConsole.View = (function() {
         $('#chart-container').append(table);
     }
 
-    function onPagePush() {
-        MonitoringConsole.Model.Page.Sync.pushLocal(onPageRefresh);
+    function showPushPageConfirmModalDialog() {
+        showModalDialog(createYesNoModualDialog({
+            dangerzone: true,
+            title: 'Share Local Page', 
+            question: 'Are you sure you want update the server configuration of this page with the local configuration?\n<b>Warning:</b> Current server configuration will be overridden.', 
+            yes: 'Update Server Configuration', 
+            no: 'Cancel', 
+            onYes: () => {
+                MonitoringConsole.Model.Page.Sync.pushLocal(
+                    page => {
+                        showFeedback({ type: 'success', message: `Successfully updated server page <em>${page.name}</em> with local configuration.`});
+                        onPageRefresh();
+                    },
+                    page => showFeedback({ type: 'error', message: `Failed to update server page <em>${page.name}</em>.`}));
+            }
+        }));
     }
 
-    async function onPagePull() {
-        await MonitoringConsole.Model.Page.Sync.pullRemote();
-        onPageRefresh();
+    function showPullPageConfirmModalDialog() {
+        showModalDialog(createYesNoModualDialog({
+            dangerzone: true,
+            title: 'Update Local Page', 
+            question: 'Are you sure you want to update this page with the server configuration?\n<b>Warning:</b> Current local configuration will be overridden.', 
+            yes: 'Update Local Configuration', 
+            no: 'Cancel', 
+            onYes: async () => {
+                await MonitoringConsole.Model.Page.Sync.pullRemote(undefined,
+                    page => {
+                        showFeedback({ type: 'success', message: `Successfully updated local page <em>${page.name}</em> with server configuration.`});
+                        onPageRefresh();
+                    },
+                    page => showFeedback({ type: 'error', message: `Failed to update local page <em>${page.name}</em>.`}));
+            }
+        }));
     }
 
-    function onPagesSync() {
+    function showPageSyncModalDialog(autosync) {
         MonitoringConsole.Model.Page.Sync.providePullRemoteModel(model => {
-            let onUpdate = model.onUpdate;
-            model.id = 'PageManager';
-            model.onUpdate = async function(pageIds) {
-                await onUpdate(pageIds);
-                $('#PageManager').hide();
-                onPageRefresh();
+            if (model.pages.length == 0)
+                return;
+            // abses the object properties as a set of ids
+            const onExit = async function(pageIds) {
+                if (pageIds.length > 0) {
+                    await model.onUpdate(pageIds, 
+                        page => showFeedback({type: 'success', message: `Updated local page <em>${page.name}</em> with server configuration.`}),
+                        page => showFeedback({type: 'error', message: `Failed to update local page <em>${page.name}</em> with server configuration.`})
+                    );
+                    onPageRefresh(); 
+                }
             };
-            model.onCancel = () => $('#PageManager').hide();
-            $('#PageManager').replaceWith(Components.createPageManager(model));
+            if (autosync === true) {
+                onExit(model.pages.map(p => p.id));
+                return;
+            }
+
+            const results = { empty: {}, selected: {} };
+            model.onSelection = pageId => results.selected[pageId] = true;
+            model.onDeselection = pageId => delete results.selected[pageId];
+
+            showModalDialog({
+                style: 'ModalDialogPageSync',
+                title: 'Page Synchronisation',
+                content: () => Components.createPageManager(model),
+                buttons: [
+                    { property: 'empty', label: 'Cancel', secondary: true },
+                    { property: 'selected', label: 'Update Selected', tooltip: 'Updates checked pages locally with the remote configuration for these pages' },
+                ],
+                closeProperty: 'empty',
+                results: results,
+                onExit: pageIdMap => onExit(Object.keys(pageIdMap)),
+            });
         });
     }    
 
@@ -981,19 +1450,8 @@ MonitoringConsole.View = (function() {
      * Method to call when page changes to update UI elements accordingly
      */
     function onPageChange(layout) {
-        MonitoringConsole.Chart.Trace.onClosePopup();
-        $('#WatchManager').hide();
-        $('#chart-grid').show();
         onPageUpdate(layout);
         updatePageNavigation();
-        updateSettings();
-        updateMenu();
-    }
-
-    function onOpenWidgetSettings(widgetId) {
-        MonitoringConsole.Model.Page.Widgets.Selection.clear();
-        MonitoringConsole.Model.Page.Widgets.Selection.toggle(widgetId);
-        MonitoringConsole.Model.Settings.open();
         updateSettings();
     }
 
@@ -1021,25 +1479,66 @@ MonitoringConsole.View = (function() {
                     onPageChange(MonitoringConsole.Model.Page.changeTo(pageId));
                 }
             });
+            const pageSync = () => showPageSyncModalDialog(MonitoringConsole.Model.Role.isGuest());
             if (!MonitoringConsole.Model.Role.isDefined()) {
-                $('#RoleSelector').replaceWith(Components.createRoleSelector(createRoleSelectionModel(onPagesSync)));
+                showRoleSelectionModalDialog(pageSync);
             } else {
-                onPagesSync();
+                pageSync();
             }
         },
         onPageChange: (layout) => onPageChange(layout),
         onPageUpdate: (layout) => onPageUpdate(layout),
-        onPageReset: () => onPageChange(MonitoringConsole.Model.Page.reset()),
-        onPageImport: (src) => MonitoringConsole.Model.importPages(src, onPageChange),
-        onPageExport: () => onPageExport('monitoring-console-config.json', MonitoringConsole.Model.exportPages()),
+        onPageReset: page => {
+            const name = page.name;
+            showModalDialog(createYesNoModualDialog({
+                dangerzone: true,
+                title: 'Reset Page?',
+                question: `Are you sure you want to reset the page <em>${name}</em> to its preset?`,
+                yes: 'Reset',
+                no: 'Cancel',
+                onYes: () => { 
+                    if (MonitoringConsole.Model.Page.reset(page.id)) {
+                        showFeedback({ type: 'success', message: `Page <em>${name}</em> reset successfully.` });
+                        onPageChange(MonitoringConsole.Model.Page.arrange());
+                    } else {
+                        showFeedback({ type: 'error', message: `Failed to reset page <em>${name}</em>. The page has no preset.` });
+                    }
+                }
+            }));
+        },
         onPageMenu: function() { MonitoringConsole.Model.Settings.toggle(); updateSettings(); },
         onPageLayoutChange: (numberOfColumns) => onPageUpdate(MonitoringConsole.Model.Page.arrange(numberOfColumns)),
-        onPageDelete: function() {
-            if (window.confirm("Do you really want to delete the current page?")) { 
-                onPageUpdate(MonitoringConsole.Model.Page.erase());
-                updatePageNavigation();
-            }
+        onPageDelete: page => {
+            const name = page.name;
+            showModalDialog(createYesNoModualDialog({
+                dangerzone: true,
+                title: 'Delete Page?',
+                question: `Are you sure you want to delete the page <em>${name}</em>?`, 
+                yes: 'Delete', 
+                no: 'Cancel', 
+                onYes: () => {
+                    MonitoringConsole.Model.Page.erase(page.id, () => {
+                        onPageUpdate(MonitoringConsole.Model.Page.arrange());    
+                        showFeedback({ type: 'success', message: `Your page <em>${name}</em> has been deleted.` });             
+                        updatePageNavigation();
+                        updateSettings();                 
+                    }, 
+                    msg => showFeedback({ type: 'error', message: `Failed to delete page <em>${name}</em>. ${msg}`}));
+                }
+            }));
         },
-        onOpenWidgetSettings: (widgetId) => onOpenWidgetSettings(widgetId),
+        onTracePopup: series => {
+            showModalDialog({
+                title: 'Request Tracing Details',
+                content: () => MonitoringConsole.Chart.Trace.createPopup(series),
+                buttons: [
+                    { label: 'Close', property: 'close' }
+                ],
+                closeProperty: 'close',
+                results: { close: [] },
+                onExit: () => MonitoringConsole.Chart.Trace.onClosePopup()
+            });
+            
+        },
     };
 })();

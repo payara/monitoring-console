@@ -53,11 +53,12 @@ autosync        = boolean
 lastModifiedLocally             = number
 basedOnRemoteLastModified       = number
 preferredOverRemoteLastModified = number
-content         = { series, maxSize, expires, ttl }
+content         = { series, maxSize, expires, ttl, filter }
 series          = string
 maxSize         = number
 expires         = number
 ttl             = number
+filter          = 'line' | 'bar' | 'alert' | 'annotation' | 'rag' | undefined
 ```
 * `id` is derived from `name` and used as attribute name in `pages` object
 * `widgets` can be omitted for an empty page
@@ -69,6 +70,7 @@ ttl             = number
 * when a page has a `content` object it is considered a _arranged_ page (not strictly `widgets` based content)
 * `expires` is a timestamp when the content is expired and should be updated
 * `ttl` number of seconds the page is valid
+* `filter` filters query pages by the widget type if set
 
 
 ### Widget Model
@@ -80,7 +82,7 @@ series     = string | [string]
 target     = string
 displayName= string
 description= string
-type       = 'line' | 'bar' | 'alert' | 'annotation'
+type       = 'line' | 'bar' | 'alert' | 'annotation' | 'rag'
 unit       = UNIT
 UNIT       = 'count' | 'ms' | 'ns' | 'bytes' | 'percent'
 coloring   = 'instance' | 'series' | 'index' | 'instance-series'
@@ -254,7 +256,9 @@ surpressingSeries    = string
 surpressingUnit      = string
 states               = SERIES_STATES
 SERIES_STATES        = { *:INSTANCE_STATES }
-INSTANCE_STATES      = { *:string }
+INSTANCE_STATES      = { *:INSTANCE_STATE }
+INSTANCE_STATE       = { level, since }
+since                = number 
 ```
 
 
@@ -288,9 +292,10 @@ value    = number
 Assessments are evaluations made by the client to classify the data based on a widgets configuration.
 
 ```
-ASSESSMENTS = { status }
+ASSESSMENTS = { status, since }
 status      = Status
 Status      = 'normal' | 'alarming' | 'critical' | 'error' | 'missing' | 'white' | 'green' | 'amber' | 'red'
+since       = number
 ```
 
 
@@ -304,15 +309,19 @@ The general idea of model driven UI components is that a model - usually a JS ob
 Describes the model expected by the `Settings` component.
 
 ```
-SETTINGS    = { id, groups }
+SETTINGS    = { id, collapsed, groups, onSidebarToggle, onWidgetAdd }
+collapsed   = boolean
+onSidebarToggle = function () => ()
+onWidgetAdd = function () => ()
 groups      = [GROUP]
-GROUP       = { id, caption, entries, collapsed, available }
+GROUP       = { id, type, caption, entries, collapsed, available }
 id 		    = string
+type        = 'app' | 'page' | 'widget'
 caption     = string
 entries     = [ENTRY]
-ENTRY       = { label, type, input, value, unit, min, max, options, onChange, description, defaultValue, collapsed, available } 
+ENTRY       = { label, type, input, value, unit, min, max, options, onChange, description, defaultValue, collapsed, available, placeholder } 
 label       = string
-type        = undefined | 'header' | 'checkbox' | 'range' | 'dropdown' | 'value' | 'text' | 'color'
+type        = undefined | 'header' | 'checkbox' | 'range' | 'dropdown' | 'value' | 'text' | 'color' | 'toggle' | 'textarea'
 unit        = string | fn () => string
 value       = number | string | [number] | [string]
 defaultValue= number | string
@@ -324,6 +333,7 @@ onChange    = fn (widget, newValue) => () | fn (newValue) => ()
 description = string
 collapsed   = boolean
 available   = boolean
+placeholder = string
 ```
 * When `caption` is provided this adds a _header_ entry identical to adding a _header_ entry explicitly as first element of the `entries` array.
 * The `options` object is used as map where the attribute names are the values of the options and the attribute values are the _string_ labels displayed for that option.
@@ -339,9 +349,12 @@ Mandatory members of `ENTRY` depend on `type` member. Variants are:
 'dropdown' : { label, value, options, onChange }
 'value'    : { label, value, unit, onChange }
 'text'     : { label, value, onChange }
+'textarea' : { label, value, onChange }
 'color'    : { label, value, defaultValue, onChange }
+'toggle'   : { label, value, options, onChange }
 ```
 * `onChange` may be omitted for _text_ inputs which makes the field _readonly_.
+* `options` provided for a `toggle` are given in the form of `{ true: 'Yes', false: 'No' }`. Toggles are always considered "on" when `true`.
 * Settings of type `'value'` are inputs for a number that depends on the `unit` 
 used by the widget range. E.g. a duration in ms or ns, a size in bytes, a percentage or a plain number. The actual input component created will therefore depend on the `unit` provided.
 If no unit is provided or the unit is undefined a plain number is assumed.
@@ -369,6 +382,7 @@ value           = string | number
 color           = string
 background      = string | [ string ]
 status          = Status
+since           = number
 highlight       = string
 
 ```
@@ -398,35 +412,16 @@ This component gives a simple Red-Amber-Green status indication on the state of 
 ```
 RAG_INDICATOR = { items }
 items         = [ RAG_ITEM ]
-RAG_ITEM      = { label, status, color, background }
+RAG_ITEM      = { label, value, since, status, color, background }
 label         = string
-state         = string
+value         = string
 status        = Status
+since         = number
 color         = string
 background    = string
 ```
-
-
-### Menu API
-Describes the model expected by the `MENU` component that is used for any of the text + icon menus or toolbars.
-
-```
-MENU         = { id, groups }
-groups       = [BUTTON_GROUP | BUTTON]
-BUTTON_GROUP = { icon, label, description, clickable, items }
-items        = [BUTTON]
-clickable    = boolean
-BUTTON       = { icon, label, description, disabled, hidden, onClick }
-icon         = string
-label        = string
-description  = string
-disabled     = boolean
-hidden       = boolean
-onClick      = fn () => ()
-```
-* `id` is optional
-* `description` is optional
-* if item in `MENU` array has `items` it is a `BUTTON_GROUP` otherwise it is a `BUTTON`
+* `value` is the state as value, e.g. _UP_ or _100%_
+* `status` is the state as `Status`: RAGW
 
 
 ### Alert Table API
@@ -509,13 +504,11 @@ Describes the model expected by the `WatchManager` component which combines the 
 The manager shows a configuration with a list of watches which also allows to create new watches.
 
 ```
-WATCH_LIST      = { id, items, colors, actions  }
-WATCH_BUILDER   = { id, colors, actions }
 WATCH_MANAGER	= { id, items, colors, actions }
+WATCH_LIST      = { id, items, colors, actions  }
 items           = [ WATCH ]
-actions         = { onCreate, onDelete, onDisable, onEnable }
-onEdit          = fn (WATCH) => ()
-onCreate        = fn (WATCH, onSuccess, onFailure) => ()
+actions         = { onEdit, onDelete, onDisable, onEnable }
+onEdit          = fn (WATCH, onSuccess, onFailure) => ()
 onDelete        = fn (name, onSuccess, onFailure) => ()
 onDisable       = fn (name, onSuccess, onFailure) => ()
 onEnable        = fn (name, onSuccess, onFailure) => ()
@@ -523,11 +516,18 @@ colors          = { red, amber, green }
 red             = string
 amber           = string
 green           = string
+id              = string
+series          = string
+WATCH_BUILDER   = { id, watch, colors, onSelect }
+watch           = WATCH
+onSelect        = fn (id, series, onSelection) => ()
+onSelection     = fn (series) => ()
 ```
 * `WATCH` refers to an object as described for update data structures
 * `onDelete` is a function to call to delete the watch by its `name` (a `string`)
 * `onCreate` is a function to create new watches
 * `onEdit` is created by the `WatchManager` for the `WATCH_LIST` to use when an list entry should be edited.
+* `onSelect` is a fuction that is given an DOM `id`, a `series` and a callback that accepts the series that was selected
 
 
 ## Data Driven Chart Plugins
@@ -556,10 +556,10 @@ style           = 'fill' | 'outline'
 Describes the model expected by the component used to create a tabular overview for pages and their synchronisation state.
 
 ```
-PAGE_MANAGER     = { id, pages, onUpdate, onCancel }
+PAGE_MANAGER     = { id, pages, onSelection, onDeselection }
 pages            = [ PAGE_SYNC_ITEM ]
-onUpdate         = fn ([string]) => ()
-onCancel         = fn () => ()
+onSelection      = function (string) => ()
+onDeselection    = function (string) => ()
 PAGE_SYNC_ITEM   = { id, name, checked, lastLocalChange, lastRemoteChange, lastRemoteUpdate }
 id               = string
 name             = string
@@ -569,23 +569,7 @@ lastRemoteChange = number
 lastRemoteUpdate = number
 ```
 * `id` of `PAGE_SYNC_ITEM` is a page ID, `id` of the `PAGE_MANAGER` is the id of the HTML element
-* `onUpdate` is called with the pages selected by the user if dialoge is not cancelled
-* `onCancel` is called when dialoge is cancelled
-
-
-### RoleSelector API
-Descrives the model expected by the component used to create a role selection modal dialoge. 
-
-```
-ROLE_SELECTOR    = { id, items, onChange }
-items            = [ ROLE_ITEM ]
-ROLE_ITEM        = { name, label, description }
-name             = string
-label            = string
-description      = string
-onChange         = fn (string) => ()
-```
-* `onChange` gets passed the `name` of the selected item
+* `onSelection` and `onDeselection` are called with page id whenever the page is selected or deselected
 
 
 ### SelectionWizard API
@@ -633,14 +617,76 @@ filter           = string | fn (string) => boolean | fn (string, string) => bool
 ### ModalDialoge API
 
 ```
-MODAL_DIALOG     = { id, title, content, buttons, results, onExit }
+MODAL_DIALOG     = { id, style, title, content, buttons, results, closeProperty, onExit }
+style            = string
 title            = string
-content          = fn () => jQuery
+content          = fn () => jQuery | jQuery
 buttons          = [ DIALOG_BUTTON ]
-DIALOG_BUTTON    = { property, label }
+DIALOG_BUTTON    = { property, label, secondary, tooltip }
 property         = string
 label            = string
+secondary        = boolean
+tooltip          = string
 results          = { *:* }
+closeProperty    = string
 onExit           = fn(*) => ()
 ```
+* `style` is an optional parameter to pass a custom CSS class name that is added to the modal so custom CSS styling can be applied using that class selector
 * when a particular button is clicked the named `property` of that button is extracted from `results` and passed to `onExit` function. This value can be of any type and change while the dialog is open.
+* `closeProperty` is an optional field refering to the property used for the window close (x) button, if it is undefined the window has no such button
+
+
+
+### NavSidebar API
+
+```
+NAV_SIDEBAR      = { id, collapsed, rotationEnabled, refreshEnabled, refreshSpeed, layoutColumns, logo, pages,
+					onLogoClick, onSidebarToggle, onRotationToggle, onRefreshToggle,
+					onPageAdd, onLayoutChange, onRefreshSpeedChange }
+id               = string
+pages            = [ PAGE_ITEM ]
+collapsed        = boolean
+rotationEnabled  = boolean
+refreshEnabled   = boolean
+refreshSpeed     = number
+layoutColumns    = number
+logo             = string
+PAGE_ITEM        = { id, label, selected, onSwitch, onDelete, onReset }
+label            = string
+selected         = boolean
+onLogoClick      = function () => ()
+onSidebarToggle  = function () => ()
+onRotationToggle = function () => ()
+onRefreshToggle  = function () => ()
+onSwitch         = function () => ()
+onDelete         = function () => ()
+onReset          = function () => ()
+onPageAdd        = function (string) => ()
+onLayoutChange   = function (number) => ()
+onRefreshSpeedChange = function (number) => ()
+```
+*`onSidebarToggle` has no argument since a sidebar created with `collapsed` being `true` should expand, likewise for `false` is should collapse
+
+
+### FeedbackBanner API
+
+```
+FEEDBACK_BANNER = { id, type, message }
+id              = string
+type            = 'success' | 'error'
+message         = string
+```
+* `message` is HTML
+
+
+
+### WidgetHeader API
+
+```
+WIDGET_HEADER    = { id, title, description, selected, onClick }
+id               = string
+title            = string
+description      = string
+selected         = function () => boolean
+onClick          = function () => ()
+```

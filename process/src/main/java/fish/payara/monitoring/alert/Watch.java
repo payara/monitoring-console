@@ -96,6 +96,7 @@ public final class Watch implements WatchBuilder, Iterable<Watch.State>, Seriali
         final SeriesDataset watchingSince;
         volatile Level level = Level.WHITE;
         volatile Alert ongoing;
+        volatile Long levelSince;
 
         State(SeriesDataset watched) {
             this.watchingSince = watched;
@@ -117,6 +118,10 @@ public final class Watch implements WatchBuilder, Iterable<Watch.State>, Seriali
 
         public Series getSeries() {
             return watchingSince.getSeries();
+        }
+
+        public Long getSince() {
+            return levelSince;
         }
 
         public Level getLevel() {
@@ -177,8 +182,11 @@ public final class Watch implements WatchBuilder, Iterable<Watch.State>, Seriali
     private void stopAlertsOfThisWatch() {
         for (State s : statesByInstanceSeries.values()) {
             if (s.ongoing != null) {
-                s.ongoing.stop(WHITE, (System.currentTimeMillis() / 1000L) * 1000L);
+                long now = System.currentTimeMillis();
+                s.ongoing.stop(WHITE, (now / 1000L) * 1000L);
                 s.ongoing = null;
+                if (s.level != WHITE)
+                    s.levelSince = now;
                 s.level = WHITE;
             }
         }
@@ -307,6 +315,8 @@ public final class Watch implements WatchBuilder, Iterable<Watch.State>, Seriali
     }
 
     private Alert transitionTo(Level to, SeriesLookup lookup, SeriesDataset data, State state) {
+        if (state.level != to)
+            state.levelSince = System.currentTimeMillis();
         state.level = to;
         Alert alert = state.ongoing;
         if (to == WHITE || to == GREEN) {
