@@ -393,7 +393,7 @@ MonitoringConsole.View = (function() {
         ]});
         settings.push({ id: 'settings-status', caption: 'Status', collapsed: true, description: 'Set a text for an assessment status', entries: [
             { label: '"No Data"', type: 'textarea', value: widget.status.missing.hint, onChange: (widget, text) => widget.status.missing.hint = text},
-            { label: '"Alaraming"', type: 'textarea', value: widget.status.alarming.hint, onChange: (widget, text) => widget.status.alarming.hint = text},
+            { label: '"Alarming"', type: 'textarea', value: widget.status.alarming.hint, onChange: (widget, text) => widget.status.alarming.hint = text},
             { label: '"Critical"', type: 'textarea', value: widget.status.critical.hint, onChange: (widget, text) => widget.status.critical.hint = text},
         ]});
         let alerts = widget.decorations.alerts;
