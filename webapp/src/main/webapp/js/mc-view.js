@@ -460,7 +460,7 @@ MonitoringConsole.View = (function() {
             { label: 'Filter Type', available: queryAvailable, type: 'dropdown', options: WIDGET_TYPE_FILTER_OPTIONS, value: page.content.filter, onChange: filter => onPageUpdate(configure(page => page.content.filter = filter)) },
             { label: 'Server Sync', available: pushAvailable || pullAvailable, input: [
                 { available: autoAvailable, label: 'Auto', type: 'checkbox', value: Page.Sync.auto(), onChange: (checked) => Page.Sync.auto(checked),
-                    description: 'When checked changed to the page are automatically pushed to the remote server (shared with others)' },
+                    description: 'When checked changes to the page are automatically pushed to the remote server (shared with others)' },
                 { available: pushAvailable, input: () => $('<button />', { text: 'Push', title: 'Push local page to server (update remote)' }).click(showPushPageConfirmModalDialog) },
                 { available: pullAvailable, input: () => showIfRemotePageExists($('<button />', { text: 'Pull', title: 'Pull remote page from server (update local)', style: 'display: none'}).click(showPullPageConfirmModalDialog)) },
             ]},
