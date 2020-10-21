@@ -350,7 +350,8 @@ button.toggle {
   line-height: inherit;
   padding: 2px;
   position: relative;
-  transform: none; 
+  transform: none;
+  margin-bottom: 2px;
 }
 button.toggle .toggle__off, 
 button.toggle .toggle__on {
@@ -605,6 +606,9 @@ svg.icon {
   padding-right: 0.5em;
   white-space: nowrap;
 }
+.Settings .toggle + label {
+  margin-left: 1em;
+}
 .Settings .x-input span {
   white-space: nowrap;
 }
@@ -807,11 +811,14 @@ table.tags th, table.tags td {
 
 /* Alert Tables */
 .AlertTable {
+  position: relative;
+  background-color: var(--widget-part-bg-color);
+}
+.widget .AlertTable {
   position: absolute;
   top: 40px;
   left: 15px;
   width: calc(100% - 38px);
-  background-color: var(--widget-part-bg-color);
   max-height: calc(100% - 110px);
   overflow-y: auto;
   overflow-x: hidden;  
@@ -864,6 +871,9 @@ table.tags th, table.tags td {
   border-width: 0 0 0 5px;
   padding: 0 5px;
   margin: 5px 0 0 0;
+}
+.widget .AlertTable .AlertTableUnconfirmed {
+  animation: blinker 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
 }
 
 

@@ -711,7 +711,11 @@ MonitoringConsole.View.Components = (function() {
         box.append(createConditionGroup(item));
       if (verbose && Array.isArray(item.annotations) && item.annotations.length > 0)
         box.append(createAnnotationGroup(item));
-      let row = $('<div/>', { id: `Alert-${item.serial}` , class: `Item ${level}` , style: `border-color: ${item.color};` });
+      let row = $('<div/>', { 
+        id: `Alert-${item.serial}`, 
+        class: `Item ${level} ${item.confirmed ? 'AlertTableConfirmed' : ongoing ? 'AlertTableUnconfirmed' : ''}`, 
+        style: `border-color: ${item.color};`,
+      });
       row.append(box);
       return row;
     }

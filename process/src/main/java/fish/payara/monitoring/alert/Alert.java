@@ -43,6 +43,9 @@ import static java.time.Instant.ofEpochMilli;
 import static java.time.LocalDateTime.ofInstant;
 import static java.time.ZoneId.systemDefault;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.List;
@@ -56,9 +59,9 @@ import fish.payara.monitoring.model.SeriesDataset;
  * An {@linkplain Alert} is raised when a watched series matches the {@link Circumstance}s for {@link Level#RED} or
  * {@link Level#AMBER} and last until the same {@link Series} and instance transitions to {@link Level#GREEN} or
  * {@link Level#WHITE}.
- * 
+ *
  * @see Watch
- * 
+ *
  * @author Jan Bernitt
  */
 public final class Alert implements Iterable<Alert.Frame> {
@@ -118,16 +121,28 @@ public final class Alert implements Iterable<Alert.Frame> {
      * The maximal number of {@link Frame}s each {@link Alert} can have. When further frames are added old frames are
      * compacted away by cutting out a pair of amber-red or red-amber transitions while updating the end of the frame
      * before to connect to the frame after the cut out frames.
-     * 
+     *
      * Frames are limited to avoid excessive use of memory and data transfer.
      */
     static final int MAX_FRAMES = 20;
 
-    private static final AtomicInteger NEXT_SERIAL = new AtomicInteger();
+    private static final int COUNTER_BASIS = (int)(
+            LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)
+          - LocalDate.now().atStartOfDay().withDayOfMonth(1).withMonth(1).toEpochSecond(ZoneOffset.UTC));
+
+    /**
+     * The first serial is initialised to a value that is based on current moment so that
+     * subsequent starts will not continue with serials that were already in use.
+     * Theoretically this could still be the case but it is highly unlikely as this would
+     * require an average of 1 new alert per second. At that point we have a much larger problem.
+     */
+    private static final AtomicInteger NEXT_SERIAL = new AtomicInteger(COUNTER_BASIS);
+
     /**
      * The change count tracks state changes of all {@link Alert} instances.
+     * Like the next serial it is initialised with a value that avoids problems with restarts.
      */
-    private static final AtomicInteger CHANGE_COUNT = new AtomicInteger();
+    private static final AtomicInteger CHANGE_COUNT = new AtomicInteger(COUNTER_BASIS);
 
     public static int getChangeCount() {
         return CHANGE_COUNT.get();
@@ -195,7 +210,6 @@ public final class Alert implements Iterable<Alert.Frame> {
     public void acknowledge() {
         if (!isAcknowledged()) {
             acknowledged = true;
-            CHANGE_COUNT.incrementAndGet();
         }
     }
 

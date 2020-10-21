@@ -67,6 +67,7 @@ public interface AlertService {
         public int unacknowledgedAmberAlerts;
         public int acknowledgedAmberAlerts;
         public int watches;
+        public int[] ongoingAlertSerials;
     }
 
     AlertStatistics getAlertStatistics();
@@ -105,7 +106,7 @@ public interface AlertService {
 
     /**
      * Removes the given watch. Alerts triggered by this watch will end now.
-     * 
+     *
      * @param watch the watch to end, not null
      */
     void removeWatch(Watch watch);

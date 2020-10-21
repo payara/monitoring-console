@@ -872,12 +872,17 @@ MonitoringConsole.Model = (function() {
 					doStore();
 				},				
 
-				confirm: function(changeCount) {
-					settings.alerts.confirmedChangeCount = settings.alerts.confirmedChangeCount === undefined ? changeCount : Math.max(settings.alerts.confirmedChangeCount, changeCount);
-					doStore();
+				confirm: function(changeCount, serials) {
+					const currentChangeCount = settings.alerts.confirmedChangeCount;
+					if (currentChangeCount === undefined || changeCount > currentChangeCount) {
+						settings.alerts.confirmedChangeCount = changeCount;
+						settings.alerts.confirmedSerials = serials;
+						doStore();
+					}
 				},
 
 				confirmed: () => settings.alerts.confirmedChangeCount || 0,
+				confirmedSerials: () => settings.alerts.confirmedSerials || [],
 			},
 
 			Navigation: {
@@ -1281,8 +1286,9 @@ MonitoringConsole.Model = (function() {
 			});
 		}
 
-		function createOnSuccess(widgets, onDataUpdate) {
+		function createOnSuccess(widgets, onDataUpdate, getConfirmedAlertSerials) {
 			return function(response) {
+				const confirmedAlertsSerials = getConfirmedAlertSerials();
 				Object.values(widgets).forEach(function(widget, index) {
 					let allMatches = response.matches;
 					let widgetMatches = allMatches.filter(match => match.widgetId == widget.id);
@@ -1296,6 +1302,8 @@ MonitoringConsole.Model = (function() {
 						watches = watches.concat(widgetMatches[i].watches);
 						annotations = annotations.concat(widgetMatches[i].annotations);
 					}
+					for (let alert of alerts)
+						alert.confirmed = confirmedAlertsSerials.includes(alert.serial);
 					data = retainCommonTimeFrame(data);
 					if (widget.options.decimalMetric || widget.scaleFactor !== undefined && widget.scaleFactor !== 1)
 						adjustDecimals(data, widget.scaleFactor ? widget.scaleFactor : 1,  widget.options.decimalMetric ? 10000 : 1);
@@ -1311,9 +1319,14 @@ MonitoringConsole.Model = (function() {
 						chart: () => Charts.getOrCreate(widget),
 					});
 				});
+				const alertsStats = response.alerts;
+				alertsStats.byIdOnPage = {};
+				for (let match of response.matches)
+					for (let alert of match.alerts)
+						alertsStats.byIdOnPage[alert.serial] = alert; 
 				// by convention the same function is called for global updates 
 				// in that case it does not have a widget property but just the below:
-				onDataUpdate({ alerts: response.alerts });
+				onDataUpdate({ alerts: alertsStats });
 			};
 		}
 
@@ -1394,7 +1407,7 @@ MonitoringConsole.Model = (function() {
 			}
 			let widgets = page.widgets;
 			Controller.requestListOfSeriesData(Update.createQuery(widgets), 
-				Update.createOnSuccess(widgets, onDataUpdate),
+				Update.createOnSuccess(widgets, onDataUpdate, UI.Alerts.confirmedSerials),
 				Update.createOnError(widgets, onDataUpdate));
 		});
 		if (UI.Refresh.interval() === undefined) {

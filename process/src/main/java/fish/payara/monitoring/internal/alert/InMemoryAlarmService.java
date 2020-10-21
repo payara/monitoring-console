@@ -431,6 +431,7 @@ public class InMemoryAlarmService implements AlertService {
         if (alerts.isEmpty()) {
             return stats;
         }
+        List<Integer> serials = new ArrayList<>();
         for (Deque<Alert> seriesAlerts : alerts.values()) {
             for (Alert a : seriesAlerts) {
                 if (a.getLevel() == Level.RED) {
@@ -439,15 +440,18 @@ public class InMemoryAlarmService implements AlertService {
                     } else {
                         stats.unacknowledgedRedAlerts++;
                     }
+                    serials.add(a.serial);
                 } else if (a.getLevel() == Level.AMBER) {
                     if (a.isAcknowledged()) {
                         stats.acknowledgedAmberAlerts++;
                     } else {
                         stats.unacknowledgedAmberAlerts++;
                     }
+                    serials.add(a.serial);
                 }
             }
         }
+        stats.ongoingAlertSerials = serials.isEmpty() ? new int[0] : serials.stream().mapToInt(e -> e).toArray();
         return stats;
     }
 

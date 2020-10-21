@@ -830,8 +830,6 @@ MonitoringConsole.View = (function() {
     }
 
     function createAlertTableModel(widget, alerts, annotations) {
-        if (widget.type === 'annotation')
-            return {};
         function createAlertAnnotationsFilter(alert) {
           return (annotation) => widget.options.noAnnotations !== true
                 && annotation.series == alert.series 
@@ -839,12 +837,12 @@ MonitoringConsole.View = (function() {
                 && Math.round(annotation.time / 1000) >= Math.round(alert.since / 1000) // only same second needed
                 && annotation.time <= (alert.until || new Date().getTime());  
         }
+        if (widget.type === 'annotation')
+            return {};
         let items = [];
         if (Array.isArray(alerts)) {
-            let palette = Theme.palette();
             let fields = widget.fields;
-            for (let i = 0; i < alerts.length; i++) {
-                let alert = alerts[i];
+            for (let alert of alerts) {
                 let autoInclude = widget.type === 'alert' || ((alert.level === 'red' || alert.level === 'amber') && !alert.acknowledged);
                 let filters = widget.decorations.alerts;
                 let lastAlertLevel = alert.frames[alert.frames.length - 1].level;
@@ -854,38 +852,51 @@ MonitoringConsole.View = (function() {
                            && (alert.stopped && filters.noStopped !== true || !alert.stopped && filters.noOngoing !== true)
                            && (lastAlertLevel == 'red' && filters.noRed !== true || lastAlertLevel == 'amber' && filters.noAmber !== true);                  
                 if (autoInclude && visible) {
-                    let frames = alert.frames.map(function(frame) {
+                    items.push(createAlertTableItemModel(alert, widget, annotations
+                    .filter(createAlertAnnotationsFilter(alert))
+                    .map(function(annotation) {
                         return {
-                            level: frame.level,
-                            since: frame.start,
-                            until: frame.end,
-                            color: Theme.color(frame.level),
+                            time: annotation.time,
+                            value: annotation.value,
+                            attrs: annotation.attrs,
+                            fields: fields,
                         };
-                    });
-                    let instanceColoring = widget.coloring === 'instance' || widget.coloring === undefined;
-                    items.push({
-                        serial: alert.serial,
-                        name: alert.initiator.name,
-                        unit: alert.initiator.unit,
-                        acknowledged: alert.acknowledged,
-                        series: alert.series == widget.series ? undefined : alert.series,
-                        instance: alert.instance,
-                        color: instanceColoring ? Colors.lookup('instance', alert.instance, palette) : undefined,
-                        frames: frames,
-                        watch: alert.initiator,
-                        annotations: annotations.filter(createAlertAnnotationsFilter(alert)).map(function(annotation) {
-                            return {
-                                time: annotation.time,
-                                value: annotation.value,
-                                attrs: annotation.attrs,
-                                fields: fields,
-                            };
-                        }),
-                    });
+                    })));
                 }
             }
         }
         return { id: widget.target + '_alerts', verbose: widget.type === 'alert', items: items };
+    }
+
+    function createPopupAlertTableModel(alerts) {
+        return { verbose: true, items: alerts.map(alert => createAlertTableItemModel(alert)) };
+    }
+
+    function createAlertTableItemModel(alert, widget, annotations) {
+        const palette = Theme.palette();
+        const instanceColoring = widget === undefined || widget.coloring === 'instance' || widget.coloring === undefined;
+        const series = widget !== undefined && alert.series == widget.series ? undefined : alert.series;
+        const frames = alert.frames.map(function(frame) {
+            return {
+                level: frame.level,
+                since: frame.start,
+                until: frame.end,
+                color: Theme.color(frame.level),
+            };
+        });
+        return {
+            serial: alert.serial,
+            name: alert.initiator.name,
+            unit: alert.initiator.unit,
+            acknowledged: alert.acknowledged,
+            confirmed: alert.confirmed,
+            series: series,
+            instance: alert.instance,
+            color: instanceColoring ? Colors.lookup('instance', alert.instance, palette) : undefined,
+            frames: frames,
+            watch: alert.initiator,
+            annotations: annotations === undefined ? [] : annotations,
+        };
     }
 
     function createAnnotationTableModel(widget, annotations) {
@@ -1337,7 +1348,7 @@ MonitoringConsole.View = (function() {
      * This function is called once per server polling to update the global page state
      * (not widget specific state) 
      */
-    function onGlobalUpdate(update) {
+    async function onGlobalUpdate(update) {
         const alertsIndicatorNode = $('#AlertIndicator');
         const alerts = update.alerts;
         alertsIndicatorNode.replaceWith(Components.createAlertIndicator({
@@ -1356,24 +1367,17 @@ MonitoringConsole.View = (function() {
         }));
         const hasRedAlerts = alerts.unacknowledgedRedAlerts > 0;
         const hasAmberAlerts = alerts.unacknowledgedAmberAlerts > 0;
-        const isConfirmed = MonitoringConsole.Model.Settings.Alerts.confirmed() >= alerts.changeCount;
+        const lastConfirmed = MonitoringConsole.Model.Settings.Alerts.confirmed();
+        const isConfirmed = lastConfirmed >= alerts.changeCount;
         if (!isConfirmed && 
             ((hasRedAlerts && MonitoringConsole.Model.Settings.Alerts.showPopupRed()) ||
              (hasAmberAlerts && MonitoringConsole.Model.Settings.Alerts.showPopupAmber()))) {
             const color = hasRedAlerts ? Theme.color('red') : Theme.color('amber');
-            const content = $('<div/>');
-            const items = $('<ul>');
-            if (hasRedAlerts)
-                items.append($('<li/>').text(`${alerts.unacknowledgedRedAlerts} Red Alert(s)`));
-            if (hasAmberAlerts)
-                items.append($('<li/>').text(`${alerts.unacknowledgedAmberAlerts} Amber Alert(s)`));
-            content
-                .append(items)
-                .append($('<p/>').text('The global alert status has changed. This means new alerts started or alerts have stopped. Please confirm.'));
+            const content = await createGlobalAlertContent(alerts);
             showModalDialog({
                 id: 'AlertDialog',
                 style: `background-color: ${color};`,
-                title: 'New Alerts Status',
+                title: 'Alert Status Change',
                 content: content,
                 buttons: [
                     { property: 'confirm', label: 'Confirm', secondary: true },
@@ -1382,7 +1386,7 @@ MonitoringConsole.View = (function() {
                 results: { confirm: false, show: true },
                 closeProperty: 'confirm',
                 onExit: show => {
-                    MonitoringConsole.Model.Settings.Alerts.confirm(alerts.changeCount);
+                    MonitoringConsole.Model.Settings.Alerts.confirm(alerts.changeCount, alerts.ongoingAlertSerials);
                     if (show)
                         onPageChange(MonitoringConsole.Model.Page.changeTo('alerts'));
                 }                
@@ -1390,6 +1394,37 @@ MonitoringConsole.View = (function() {
         } else {
             $('#AlertDialog').hide();
         }
+    }
+
+    async function createGlobalAlertContent(alerts) {
+        async function createList(serials) {
+            async function requestAll(serials) {
+                return Promise.all(serials.map(serial => {
+                    let alert = alerts.byIdOnPage[serial];
+                    if (alert !== undefined)
+                        return alert;
+                    return new Promise(function(resolve, reject) {
+                        Controller.requestAlertDetails(serial, response => resolve(response.alerts[0]), () => reject());
+                    });
+                }));
+            }
+            const list = await requestAll(serials);
+            return Components.createAlertTable(createPopupAlertTableModel(list.filter(e => e !== undefined)));
+        }
+        const confirmedSerials = MonitoringConsole.Model.Settings.Alerts.confirmedSerials();
+        const currentSerials = alerts.ongoingAlertSerials;
+        const startedSerials = currentSerials.filter(serial => !confirmedSerials.includes(serial));
+        const stoppedSerials = confirmedSerials.filter(serial => !currentSerials.includes(serial));
+        const content = $('<div/>');
+        if (startedSerials.length > 0) {
+            content.append($('<h3/>').text('Alerts Started'));
+            content.append(await createList(startedSerials));
+        }
+        if (stoppedSerials.length > 0) {
+            content.append($('<h3/>').text('Alerts Stopped'));
+            content.append(await createList(stoppedSerials));
+        }
+        return content;
     }
 
     /**

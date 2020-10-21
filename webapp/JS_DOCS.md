@@ -48,9 +48,6 @@ colors          = { *:COLOR }
 options         = { *:number }
 COLOR           = string
 role            = 'admin' | 'user' | 'guest'
-alerts          = { noPopupRed, noPopupAmber, confirmedChangeCount }
-noPopupRed      = boolean
-noPopupAmber    = boolean
 sync            = { autosync, lastModifiedLocally, basedOnRemoteLastModified, preferredOverRemoteLastModified }
 autosync        = boolean
 lastModifiedLocally             = number
@@ -62,6 +59,11 @@ maxSize         = number
 expires         = number
 ttl             = number
 filter          = 'line' | 'bar' | 'alert' | 'annotation' | 'rag' | undefined
+alerts          = { noPopupRed, noPopupAmber, confirmedChangeCount, confirmedSerials }
+noPopupRed      = boolean
+noPopupAmber    = boolean
+confirmedChangeCount = number
+confirmedSerials     = [ number ]
 ```
 * `id` is derived from `name` and used as attribute name in `pages` object
 * `widgets` can be omitted for an empty page
@@ -435,13 +437,14 @@ This component gives a tabular overview of alerts that occurred for the widget `
 ALERT_TABLE  = { id, verbose, items }
 brief        = boolean
 items        = [ ALERT_ITEM ]
-ALERT_ITEM   = { serial, name, series, instance, unit, color, acknowledged, frames, watch, annotations }
+ALERT_ITEM   = { serial, name, series, instance, unit, color, acknowledged, confirmed, frames, watch, annotations }
 serial       = number
 name         = string
 series       = string
 instance     = instance
 unit         = UNIT
 acknowledged = boolean
+confirmed    = boolean
 frames       = [ALERT_FRAME]
 ALERT_FRAME  = { level, since, until, color }
 level        = 'red' | 'amber'
