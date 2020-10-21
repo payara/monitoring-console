@@ -1582,7 +1582,8 @@ MonitoringConsole.View.Components = (function() {
       };
       const overlay = $('<div/>', config);
       const dialog = $('<div/>', {
-        class: `ModalDialogContent${(model.style ? ' ' +  model.style : '')}`,
+        class: `ModalDialogContent${(model.style && !model.style.includes(':') ? ' ' +  model.style : '')}`,
+        style: model.style && model.style.includes(':') ? model.style : undefined,
       });
       if (model.title !== undefined && model.title != '')
         dialog.append($('<h2/>').html(model.title));
@@ -1832,6 +1833,47 @@ MonitoringConsole.View.Components = (function() {
   })();
 
 
+  /**
+   * AlertIndicator is the global alerts summary shown at the botton of the page (footer)
+   */ 
+  const AlertIndicator = (function() {
+
+    function createComponent(model) {
+      const config = { class: 'AlertIndicator'};
+      if (model.id)
+        config.id = model.id;
+      addTotal(model.redAlerts);
+      addTotal(model.amberAlerts);
+      if (model.redAlerts.totalCount == 0 && model.amberAlerts.totalCount == 0) {
+        model.class += ' AlertIndicatorNoAlerts';
+      }
+      const indicator = $('<aside/>', config);
+      if (model.redAlerts.totalCount > 0) {
+        indicator.append($('<a/>', { 
+          style: `color: ${model.redAlerts.color};`,
+          class: model.redAlerts.unacknowledgedCount > 0 ? 'AlertIndicatorActive' : undefined,
+          title: `${model.redAlerts.unacknowledgedCount} unacknowledged ongoing red alerts (${model.redAlerts.acknowledgedCount} acknowledged)`,
+          href: '#alerts',
+        }).html(`<b>&#x26a0;</b> ${model.redAlerts.unacknowledgedCount} <small>(${model.redAlerts.acknowledgedCount})</small>`));
+      }
+      if (model.amberAlerts.totalCount > 0) {
+        indicator.append($('<a/>', { 
+          style: `color: ${model.amberAlerts.color};`,
+          class: model.amberAlerts.unacknowledgedCount > 0 ? 'AlertIndicatorActive' : undefined,
+          title: `${model.amberAlerts.unacknowledgedCount} unacknowledged ongoing amber alerts (${model.amberAlerts.acknowledgedCount} acknowledged)`,
+          href: '#alerts',
+        }).html(`<b>&#x26a0;</b> ${model.amberAlerts.unacknowledgedCount} <small>(${model.amberAlerts.acknowledgedCount})</small>`));        
+      }
+      return indicator;
+    }
+
+    function addTotal(level) {
+      level.totalCount = level.acknowledgedCount + level.unacknowledgedCount;
+    }
+
+    return { createComponent: createComponent };
+  })();
+
   /*
    * Shared functions
    */
@@ -1903,6 +1945,7 @@ MonitoringConsole.View.Components = (function() {
       createNavSidebar: model => NavSidebar.createComponent(model),
       createFeedbackBanner: model => FeedbackBanner.createComponent(model),
       createWidgetHeader: model => WidgetHeader.createComponent(model),
+      createAlertIndicator: model => AlertIndicator.createComponent(model),
       createIconButton: model => createIconButton(model),
   };
 

@@ -225,6 +225,12 @@ MonitoringConsole.View = (function() {
                     { input: () => $('<button />', { text: 'Export...'}).click(showExportPagesModalDialog) },
                 ]},
             ]},
+            { id: 'settings-alerts', type: 'app', caption: 'Alerts', entries: [
+                { label: 'Popups', input: [
+                    { label: 'Red', type: 'toggle', options: { false: 'Off', true: 'On' }, value: MonitoringConsole.Model.Settings.Alerts.showPopupRed(), onChange: (checked) => MonitoringConsole.Model.Settings.Alerts.showPopupRed(checked)},
+                    { label: 'Amber', type: 'toggle', options: { false: 'Off', true: 'On' }, value: MonitoringConsole.Model.Settings.Alerts.showPopupAmber(), onChange: (checked) => MonitoringConsole.Model.Settings.Alerts.showPopupAmber(checked)},
+                ]},
+            ]},
         ];
     }
 
@@ -1292,6 +1298,10 @@ MonitoringConsole.View = (function() {
      * Depending on the update different content is rendered within a chart box.
      */
     function onDataUpdate(update) {
+        if (update.widget === undefined) {
+            onGlobalUpdate(update);
+            return;
+        }
         let widget = update.widget;
         let data = update.data;
         let alerts = update.alerts;
@@ -1320,6 +1330,65 @@ MonitoringConsole.View = (function() {
             legendNode.replaceWith(Components.createLegend(legend));
             indicatorNode.replaceWith(Components.createIndicator(createIndicatorModel(widget, data)));
             annotationsNode.replaceWith(Components.createAnnotationTable(createAnnotationTableModel(widget, annotations)));            
+        }
+    }
+
+    /**
+     * This function is called once per server polling to update the global page state
+     * (not widget specific state) 
+     */
+    function onGlobalUpdate(update) {
+        const alertsIndicatorNode = $('#AlertIndicator');
+        const alerts = update.alerts;
+        alertsIndicatorNode.replaceWith(Components.createAlertIndicator({
+            id: 'AlertIndicator',
+            redAlerts: { 
+                acknowledgedCount: alerts.acknowledgedRedAlerts, 
+                unacknowledgedCount: alerts.unacknowledgedRedAlerts,
+                color: Theme.color('red'),
+            },
+            amberAlerts: { 
+                acknowledgedCount: alerts.acknowledgedAmberAlerts, 
+                unacknowledgedCount: alerts.unacknowledgedAmberAlerts,
+                color: Theme.color('amber'),
+            },
+            changeCount: alerts.changeCount,
+        }));
+        const hasRedAlerts = alerts.unacknowledgedRedAlerts > 0;
+        const hasAmberAlerts = alerts.unacknowledgedAmberAlerts > 0;
+        const isConfirmed = MonitoringConsole.Model.Settings.Alerts.confirmed() >= alerts.changeCount;
+        if (!isConfirmed && 
+            ((hasRedAlerts && MonitoringConsole.Model.Settings.Alerts.showPopupRed()) ||
+             (hasAmberAlerts && MonitoringConsole.Model.Settings.Alerts.showPopupAmber()))) {
+            const color = hasRedAlerts ? Theme.color('red') : Theme.color('amber');
+            const content = $('<div/>');
+            const items = $('<ul>');
+            if (hasRedAlerts)
+                items.append($('<li/>').text(`${alerts.unacknowledgedRedAlerts} Red Alert(s)`));
+            if (hasAmberAlerts)
+                items.append($('<li/>').text(`${alerts.unacknowledgedAmberAlerts} Amber Alert(s)`));
+            content
+                .append(items)
+                .append($('<p/>').text('The global alert status has changed. This means new alerts started or alerts have stopped. Please confirm.'));
+            showModalDialog({
+                id: 'AlertDialog',
+                style: `background-color: ${color};`,
+                title: 'New Alerts Status',
+                content: content,
+                buttons: [
+                    { property: 'confirm', label: 'Confirm', secondary: true },
+                    { property: 'show', label: 'Confirm & Show', secondary: true },
+                ],
+                results: { confirm: false, show: true },
+                closeProperty: 'confirm',
+                onExit: show => {
+                    MonitoringConsole.Model.Settings.Alerts.confirm(alerts.changeCount);
+                    if (show)
+                        onPageChange(MonitoringConsole.Model.Page.changeTo('alerts'));
+                }                
+            });
+        } else {
+            $('#AlertDialog').hide();
         }
     }
 

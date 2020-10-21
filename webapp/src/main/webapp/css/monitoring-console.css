@@ -205,7 +205,7 @@ footer {
   text-align: center;
   position: fixed;
   bottom: 0;
-  width: 100%;
+  width: calc(100% - 24px);
 }
 h1 {
 	font-size: 24px;
@@ -1461,3 +1461,30 @@ table.AnnotationTable {
 .ModalDialog .ModalDialogUserRole .ModalDialogButtons button {
   justify-self: center;
 }
+
+/* Alert Modal Dialog Customisation */
+#AlertDialog {
+  background: transparent;
+  pointer-events: none;
+}
+
+#AlertDialog .ModalDialogContent {
+  pointer-events: auto;
+}
+
+/* AlertIndicator Component */
+#AlertIndicator {
+  float: right;
+}
+.AlertIndicator a {
+  padding-left: 12px;
+  font-weight: bold;
+  text-decoration: none;
+}
+.AlertIndicator a b {
+  font-size: 24px;
+}
+.AlertIndicator a.AlertIndicatorActive {
+  animation: blinker 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+}
+

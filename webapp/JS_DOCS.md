@@ -34,7 +34,7 @@ id              = string
 numberOfColumns = number
 rotate          = boolean
 widgets         = [WIDGET] | { *: WIDGET }
-settings        = { display, home, refresh, rotation, theme, role }
+settings        = { display, home, refresh, rotation, theme, role, alerts }
 display         = boolean
 home            = string
 refresh         = { paused, interval }
@@ -48,6 +48,9 @@ colors          = { *:COLOR }
 options         = { *:number }
 COLOR           = string
 role            = 'admin' | 'user' | 'guest'
+alerts          = { noPopupRed, noPopupAmber, confirmedChangeCount }
+noPopupRed      = boolean
+noPopupAmber    = boolean
 sync            = { autosync, lastModifiedLocally, basedOnRemoteLastModified, preferredOverRemoteLastModified }
 autosync        = boolean
 lastModifiedLocally             = number
@@ -631,7 +634,7 @@ results          = { *:* }
 closeProperty    = string
 onExit           = fn(*) => ()
 ```
-* `style` is an optional parameter to pass a custom CSS class name that is added to the modal so custom CSS styling can be applied using that class selector
+* `style` is an optional parameter to pass a custom CSS class name that is added to the modal so custom CSS styling can be applied using that class selector or if `style` contains any `:` it is not considered a CSS class name but as CSS properties as used in the `style` attribute of HTML elements
 * when a particular button is clicked the named `property` of that button is extracted from `results` and passed to `onExit` function. This value can be of any type and change while the dialog is open.
 * `closeProperty` is an optional field refering to the property used for the window close (x) button, if it is undefined the window has no such button
 
@@ -669,6 +672,7 @@ onRefreshSpeedChange = function (number) => ()
 
 
 ### FeedbackBanner API
+Component that shows a single feedback message.
 
 ```
 FEEDBACK_BANNER = { id, type, message }
@@ -676,11 +680,12 @@ id              = string
 type            = 'success' | 'error'
 message         = string
 ```
-* `message` is HTML
+* `message` is assumed HTML
 
 
 
 ### WidgetHeader API
+Component that is showing the widget title/caption/header and the "edit" or "settings" icon.
 
 ```
 WIDGET_HEADER    = { id, title, description, selected, onClick }
@@ -690,3 +695,18 @@ description      = string
 selected         = function () => boolean
 onClick          = function () => ()
 ```
+
+
+### AlertIndicator API
+Component that shows the global alerts summary at the bottom of the page
+
+```
+ALERTS_INDICATOR = { id, redAlerts, amberAlerts, changeCount }
+redAlerts        = ALERT_LEVEL
+amberAlerts      = ALERT_LEVEL
+ALERT_LEVEL      = { acknowledgedCount, unacknowledgedCount, color }
+color            = string
+acknowledgedCount   = number
+unacknowledgedCount = number
+```
+* `changeCount` increases each time the global alerts status has changed, meaning a new alert has started or an ongoing alert has stopped - this makes it easy to recognise such a change compared to a previous state

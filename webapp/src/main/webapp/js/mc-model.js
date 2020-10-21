@@ -175,6 +175,8 @@ MonitoringConsole.Model = (function() {
 				settings.rotation = {};
 			if (typeof settings.rotation.interval !== 'number')
 				settings.rotation.interval = 60;
+			if (typeof settings.alerts !== 'object')
+				settings.alerts = {};
 			return settings;
 		}
 		
@@ -855,6 +857,29 @@ MonitoringConsole.Model = (function() {
 				doStore();
 			},
 
+			Alerts: {
+				showPopupRed: function(showPopup) {
+					if (showPopup === undefined)
+						return settings.alerts.noPopupRed !== true;
+					settings.alerts.noPopupRed = showPopup !== true;
+					doStore();
+				},
+
+				showPopupAmber: function(showPopup) {
+					if (showPopup === undefined)
+						return settings.alerts.noPopupAmber !== true;
+					settings.alerts.noPopupAmber = showPopup !== true;
+					doStore();
+				},				
+
+				confirm: function(changeCount) {
+					settings.alerts.confirmedChangeCount = settings.alerts.confirmedChangeCount === undefined ? changeCount : Math.max(settings.alerts.confirmedChangeCount, changeCount);
+					doStore();
+				},
+
+				confirmed: () => settings.alerts.confirmedChangeCount || 0,
+			},
+
 			Navigation: {
 				isCollapsed: () => settings.nav.collapsed === true,
 				isExpanded: () => settings.nav.collapsed !== true,
@@ -1286,6 +1311,9 @@ MonitoringConsole.Model = (function() {
 						chart: () => Charts.getOrCreate(widget),
 					});
 				});
+				// by convention the same function is called for global updates 
+				// in that case it does not have a widget property but just the below:
+				onDataUpdate({ alerts: response.alerts });
 			};
 		}
 
@@ -1476,6 +1504,8 @@ MonitoringConsole.Model = (function() {
 			open: UI.openSettings,
 			close: UI.closeSettings,
 			toggle: () => UI.showSettings() ? UI.closeSettings() : UI.openSettings(),
+
+			Alerts: UI.Alerts,
 
 			Rotation: {
 				isEnabled: UI.Rotation.isEnabled,
