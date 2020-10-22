@@ -512,7 +512,9 @@ MonitoringConsole.View = (function() {
 
     function showModalDialog(model) {
         const id = model.id || 'ModalDialog';
-        $('#' + id).replaceWith(Components.createModalDialog(model));
+        const dialog = Components.createModalDialog(model);
+        $('#' + id).replaceWith(dialog);
+        return dialog;
     }
 
     function showFeedback(model) {
@@ -1369,14 +1371,18 @@ MonitoringConsole.View = (function() {
         const showPopup = MonitoringConsole.Model.Settings.Alerts.showPopup();
         const confirm = () => MonitoringConsole.Model.Settings.Alerts.confirm(alerts.changeCount, alerts.ongoingRedAlerts, alerts.ongoingAmberAlerts);
         if (showPopup && !isConfirmed) {
+            // test: is there already a popup for the current change-count? => done
+            const shownDialog = $('#AlertDialog');
+            if (shownDialog.attr('data-change-count') == alerts.changeCount)
+                return; // we already show the proper popup - do not change it (save potential server requests to fetch alert data)
             const content = await createGlobalAlertContent(alerts);
-            showModalDialog({
+            const dialog = showModalDialog({
                 id: 'AlertDialog',
                 title: 'Alert Status Change',
                 content: content,
                 buttons: [
-                    { property: 'confirm', label: 'Confirm', secondary: true },
-                    { property: 'show', label: 'Confirm & Show', secondary: true },
+                    { property: 'confirm', label: 'OK' },
+                    { property: 'show', label: 'Show', secondary: true },
                 ],
                 results: { confirm: false, show: true },
                 closeProperty: 'confirm',
@@ -1388,6 +1394,7 @@ MonitoringConsole.View = (function() {
                     }
                 }                
             });
+            dialog.attr('data-change-count', alerts.changeCount);
         } else {
             $('#AlertDialog').hide();
             if (!showPopup || alerts.changeCount + 1000 < lastConfirmed) // most likely a server restart after new year 
