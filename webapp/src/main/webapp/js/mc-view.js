@@ -1382,8 +1382,10 @@ MonitoringConsole.View = (function() {
                 closeProperty: 'confirm',
                 onExit: show => {
                     confirm();
-                    if (show)
+                    if (show) {
+                        MonitoringConsole.Model.Settings.Rotation.enabled(false);
                         onPageChange(MonitoringConsole.Model.Page.changeTo('alerts'));
+                    }
                 }                
             });
         } else {
