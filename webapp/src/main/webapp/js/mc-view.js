@@ -226,10 +226,7 @@ MonitoringConsole.View = (function() {
                 ]},
             ]},
             { id: 'settings-alerts', type: 'app', caption: 'Alerts', entries: [
-                { label: 'Popups', input: [
-                    { label: 'Red', type: 'toggle', options: { false: 'Off', true: 'On' }, value: MonitoringConsole.Model.Settings.Alerts.showPopupRed(), onChange: (checked) => MonitoringConsole.Model.Settings.Alerts.showPopupRed(checked)},
-                    { label: 'Amber', type: 'toggle', options: { false: 'Off', true: 'On' }, value: MonitoringConsole.Model.Settings.Alerts.showPopupAmber(), onChange: (checked) => MonitoringConsole.Model.Settings.Alerts.showPopupAmber(checked)},
-                ]},
+                { label: 'Popups', type: 'toggle', options: { false: 'Off', true: 'On' }, value: MonitoringConsole.Model.Settings.Alerts.showPopup(), onChange: (checked) => MonitoringConsole.Model.Settings.Alerts.showPopup(checked)},
             ]},
         ];
     }
@@ -1367,16 +1364,14 @@ MonitoringConsole.View = (function() {
         }));
         const hasRedAlerts = alerts.unacknowledgedRedAlerts > 0;
         const hasAmberAlerts = alerts.unacknowledgedAmberAlerts > 0;
-        const lastConfirmed = MonitoringConsole.Model.Settings.Alerts.confirmed();
+        const lastConfirmed = MonitoringConsole.Model.Settings.Alerts.confirmedChangeCount();
         const isConfirmed = lastConfirmed >= alerts.changeCount;
-        if (!isConfirmed && 
-            ((hasRedAlerts && MonitoringConsole.Model.Settings.Alerts.showPopupRed()) ||
-             (hasAmberAlerts && MonitoringConsole.Model.Settings.Alerts.showPopupAmber()))) {
-            const color = hasRedAlerts ? Theme.color('red') : Theme.color('amber');
+        const showPopup = MonitoringConsole.Model.Settings.Alerts.showPopup();
+        const confirm = () => MonitoringConsole.Model.Settings.Alerts.confirm(alerts.changeCount, alerts.ongoingRedAlerts, alerts.ongoingAmberAlerts);
+        if (showPopup && !isConfirmed) {
             const content = await createGlobalAlertContent(alerts);
             showModalDialog({
                 id: 'AlertDialog',
-                style: `background-color: ${color};`,
                 title: 'Alert Status Change',
                 content: content,
                 buttons: [
@@ -1386,13 +1381,15 @@ MonitoringConsole.View = (function() {
                 results: { confirm: false, show: true },
                 closeProperty: 'confirm',
                 onExit: show => {
-                    MonitoringConsole.Model.Settings.Alerts.confirm(alerts.changeCount, alerts.ongoingAlertSerials);
+                    confirm();
                     if (show)
                         onPageChange(MonitoringConsole.Model.Page.changeTo('alerts'));
                 }                
             });
         } else {
             $('#AlertDialog').hide();
+            if (!showPopup || alerts.changeCount + 1000 < lastConfirmed) // most likely a server restart after new year 
+                confirm();
         }
     }
 
@@ -1411,21 +1408,50 @@ MonitoringConsole.View = (function() {
             const list = await requestAll(serials);
             return Components.createAlertTable(createPopupAlertTableModel(list.filter(e => e !== undefined)));
         }
-        const confirmedSerials = MonitoringConsole.Model.Settings.Alerts.confirmedSerials();
-        const currentSerials = alerts.ongoingAlertSerials;
-        const startedSerials = currentSerials.filter(serial => !confirmedSerials.includes(serial));
-        const stoppedSerials = confirmedSerials.filter(serial => !currentSerials.includes(serial));
-        const content = $('<div/>');
-        if (startedSerials.length > 0) {
-            content.append($('<h3/>').text('Alerts Started'));
-            content.append(await createList(startedSerials));
+        function difference(left, right) {
+            return left.filter(e => !right.includes(e));
         }
-        if (stoppedSerials.length > 0) {
-            content.append($('<h3/>').text('Alerts Stopped'));
-            content.append(await createList(stoppedSerials));
+        function intersection(left, right) {
+            return left.filter(e => right.includes(e));
         }
+        function union(left, right) {
+            return left.concat(right);
+        }
+        // basis sets
+        const redConfirmed = MonitoringConsole.Model.Settings.Alerts.confirmedRedAlerts();
+        const amberConfirmed = MonitoringConsole.Model.Settings.Alerts.confirmedAmberAlerts();
+        const redCurrent = alerts.ongoingRedAlerts;
+        const amberCurrent = alerts.ongoingAmberAlerts;
+        const allConfirmed = union(redConfirmed, amberConfirmed);
+        const allCurrent = union(redCurrent, amberCurrent);
+        // transition sets
+        const red2green = difference(redConfirmed, allCurrent);
+        const amber2green = difference(amberConfirmed, allCurrent);
+        const red2amber = intersection(redConfirmed, amberCurrent);
+        const amber2red = intersection(amberConfirmed, redCurrent);
+        const green2amber = difference(amberCurrent, allConfirmed);
+        const green2red = difference(redCurrent, allConfirmed);
+        
+        const content = [];
+        const list = async (set, from, to) => {
+            if (set.length > 0) {
+                content.push($('<h3/>')
+                    .append($('<span/>', {style: `color:${Theme.color(from)};`}).text(Units.Alerts.name(from)))
+                    .append(' => ')
+                    .append($('<span/>', {style: `color:${Theme.color(to)};`}).text(Units.Alerts.name(to)))
+                    );
+                content.push(await createList(set));
+            }
+        };
+        await list(green2red, 'green', 'red');
+        await list(amber2red, 'amber', 'red');
+        await list(red2amber, 'red', 'amber');
+        await list(green2amber, 'green', 'amber');
+        await list(red2green, 'red', 'green');
+        await list(amber2green, 'amber', 'green');
         return content;
     }
+
 
     /**
      * This function refleshes the page with the given layout.

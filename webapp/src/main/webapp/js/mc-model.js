@@ -858,31 +858,26 @@ MonitoringConsole.Model = (function() {
 			},
 
 			Alerts: {
-				showPopupRed: function(showPopup) {
+				showPopup: function(showPopup) {
 					if (showPopup === undefined)
-						return settings.alerts.noPopupRed !== true;
-					settings.alerts.noPopupRed = showPopup !== true;
+						return settings.alerts.noPopup !== true;
+					settings.alerts.noPopup = showPopup !== true;
 					doStore();
-				},
+				},			
 
-				showPopupAmber: function(showPopup) {
-					if (showPopup === undefined)
-						return settings.alerts.noPopupAmber !== true;
-					settings.alerts.noPopupAmber = showPopup !== true;
-					doStore();
-				},				
-
-				confirm: function(changeCount, serials) {
-					const currentChangeCount = settings.alerts.confirmedChangeCount;
-					if (currentChangeCount === undefined || changeCount > currentChangeCount) {
-						settings.alerts.confirmedChangeCount = changeCount;
-						settings.alerts.confirmedSerials = serials;
+				confirm: function(changeCount, redAlerts, amberAlerts) {
+					if (settings.alerts.confirmed === undefined || changeCount > settings.alerts.confirmed.changeCount) {
+						settings.alerts.confirmed = { changeCount, redAlerts, amberAlerts };
 						doStore();
 					}
 				},
 
-				confirmed: () => settings.alerts.confirmedChangeCount || 0,
-				confirmedSerials: () => settings.alerts.confirmedSerials || [],
+				confirmedChangeCount: () => settings.alerts.confirmed === undefined ? -1 : settings.alerts.confirmed.changeCount,
+				confirmedRedAlerts: () => settings.alerts.confirmed === undefined ? [] : settings.alerts.confirmed.redAlerts,
+				confirmedAmberAlerts: () => settings.alerts.confirmed === undefined ? [] : settings.alerts.confirmed.amberAlerts,
+				confirmedSerials: () => settings.alerts.confirmed === undefined 
+					? [] 
+					: settings.alerts.confirmed.redAlerts.concat(settings.alerts.confirmed.amberAlerts),
 			},
 
 			Navigation: {

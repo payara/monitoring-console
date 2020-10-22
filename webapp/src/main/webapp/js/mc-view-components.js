@@ -65,6 +65,10 @@ MonitoringConsole.View.Components = (function() {
     return typeof obj === 'string';
   }
 
+  function isJQuery(obj) {
+    return obj instanceof jQuery;
+  }
+
   function createIcon(icon) {
     const svgElem = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     const useElem = document.createElementNS('http://www.w3.org/2000/svg', 'use');
@@ -690,13 +694,14 @@ MonitoringConsole.View.Components = (function() {
       if (items.length == 0)
         config.style = 'display: none';
       let table = $('<div/>', config);
-      for (let i = 0; i < items.length; i++) {
-        table.append(createAlertRow(items[i], model.verbose));
+      const prefix = sharedStart(items.map(alert => alert.serial.toString()));
+      for (let item of items) {
+        table.append(createAlertRow(item, model.verbose, prefix));
       }
       return table;
     }
 
-    function createAlertRow(item, verbose) {
+    function createAlertRow(item, verbose, prefix) {
       item.frames = item.frames.sort(sortMostRecentFirst); //NB. even though sortMostUrgetFirst does this as well we have to redo it here - JS...
       let endFrame = item.frames[0];
       let ongoing = endFrame.until === undefined;
@@ -705,7 +710,7 @@ MonitoringConsole.View.Components = (function() {
       let box = $('<div/>', { style: `border-color: ${color};` });
       box.append($('<input/>', { type: 'checkbox', checked: item.acknowledged, disabled: item.acknowledged })
         .change(() => acknowledge(item)));
-      box.append(createGeneralGroup(item, verbose));
+      box.append(createGeneralGroup(item, verbose, prefix));
       box.append(createStatisticsGroup(item, verbose));
       if (ongoing && verbose)
         box.append(createConditionGroup(item));
@@ -722,6 +727,18 @@ MonitoringConsole.View.Components = (function() {
 
     function acknowledge(item) {
       Controller.requestAcknowledgeAlert(item.serial);
+    }
+
+    function sharedStart(arr) {
+      if (arr.length <= 1)
+        return '';
+      const e0 = arr[0];
+      const len0 = e0.length;
+      for (let p = 0; p < len0; p++)
+        for (let i = 1; i < arr.length; i++)
+          if (e0.charAt(p) != arr[i].charAt(p))
+            return e0.substring(0, p);
+      return '';
     }
 
     function createAnnotationGroup(item) {
@@ -775,9 +792,11 @@ MonitoringConsole.View.Components = (function() {
       return group;
     }
 
-    function createGeneralGroup(item, verbose) {
+    function createGeneralGroup(item, verbose, prefix) {
       let group = $('<div/>', { class: 'Group' });
-      appendProperty(group, 'Alert', item.serial);
+      appendProperty(group, 'Alert', $('<strong/>')
+          .append($('<small/>').text(prefix))
+          .append(item.serial.toString().substring(prefix.length)));
       appendProperty(group, 'Watch', item.name);
       if (item.series)
         appendProperty(group, 'Series', item.series);
@@ -1885,7 +1904,7 @@ MonitoringConsole.View.Components = (function() {
   function appendProperty(parent, label, value, tag = "strong") {
     parent.append($('<span/>')
       .append($('<small>', { text: label + ':' }))
-      .append($('<' + tag + '/>').append(value))
+      .append(isJQuery(value) ? value : $('<' + tag + '/>').append(value))
     ).append('\n'); // so browser will line break;
   }
 

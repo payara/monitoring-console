@@ -67,7 +67,8 @@ public interface AlertService {
         public int unacknowledgedAmberAlerts;
         public int acknowledgedAmberAlerts;
         public int watches;
-        public int[] ongoingAlertSerials;
+        public int[] ongoingRedAlerts;
+        public int[] ongoingAmberAlerts;
     }
 
     AlertStatistics getAlertStatistics();

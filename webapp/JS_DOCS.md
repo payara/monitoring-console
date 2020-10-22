@@ -59,11 +59,12 @@ maxSize         = number
 expires         = number
 ttl             = number
 filter          = 'line' | 'bar' | 'alert' | 'annotation' | 'rag' | undefined
-alerts          = { noPopupRed, noPopupAmber, confirmedChangeCount, confirmedSerials }
-noPopupRed      = boolean
-noPopupAmber    = boolean
-confirmedChangeCount = number
-confirmedSerials     = [ number ]
+alerts          = { noPopup, confirmed }
+noPopup         = boolean
+confirmed       = { changeCount, redAlerts, amberAlerts }
+changeCount     = number
+redAlerts       = [ number ]
+amberAlerts     = [ number ]
 ```
 * `id` is derived from `name` and used as attribute name in `pages` object
 * `widgets` can be omitted for an empty page

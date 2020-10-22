@@ -849,6 +849,7 @@ table.tags th, table.tags td {
 .AlertTable .Item small {
   color: rgba(255,255,255,0.8);
   background-color: var(--widget-part-bg-color);
+  font-weight: normal;
 }
 .AlertTable .Item span {
   white-space: nowrap;

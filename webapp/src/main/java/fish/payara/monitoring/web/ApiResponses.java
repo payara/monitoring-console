@@ -103,7 +103,8 @@ public final class ApiResponses {
         public final int unacknowledgedAmberAlerts;
         public final int acknowledgedAmberAlerts;
         public final int watchCount;
-        public final int[] ongoingAlertSerials;
+        public final int[] ongoingRedAlerts;
+        public final int[] ongoingAmberAlerts;
 
         public Alerts(AlertStatistics stats) {
             this.watchCount = stats.watches;
@@ -112,7 +113,8 @@ public final class ApiResponses {
             this.acknowledgedRedAlerts = stats.acknowledgedRedAlerts;
             this.unacknowledgedAmberAlerts = stats.unacknowledgedAmberAlerts;
             this.acknowledgedAmberAlerts = stats.acknowledgedAmberAlerts;
-            this.ongoingAlertSerials = stats.ongoingAlertSerials;
+            this.ongoingRedAlerts = stats.ongoingRedAlerts;
+            this.ongoingAmberAlerts = stats.ongoingAmberAlerts;
         }
     }
 
