@@ -119,17 +119,12 @@ MonitoringConsole.View = (function() {
                 previousParent.children().appendTo(parent);
             } else {
                 parent.append(Components.createWidgetHeader(createWidgetHeaderModel(widget)));
-                parent.append(createWidgetTargetContainer(widget));
+                parent.append(createChartContainer(widget));
                 parent.append(Components.createAlertTable({}));
                 parent.append(Components.createAnnotationTable({}));
                 parent.append(Components.createLegend([]));                
                 parent.append(Components.createIndicator({}));
             }
-        }
-        if (widget.selected) {
-            parent.addClass('chart-selected');
-        } else {
-            parent.removeClass('chart-selected');
         }
     }
 
@@ -137,8 +132,8 @@ MonitoringConsole.View = (function() {
      * Each chart needs to be in a relative positioned box to allow responsive sizing.
      * This fuction creates this box including the canvas element the chart is drawn upon.
      */
-    function createWidgetTargetContainer(widget) {
-        return $('<div/>', { id: widget.target + '-box', "class": "widget-chart-box" })
+    function createChartContainer(widget) {
+        return $('<div/>', { id: widget.target + '-box', class: 'widget-chart-box' })
             .append($('<canvas/>',{ id: widget.target }));
     }
 
@@ -1311,18 +1306,24 @@ MonitoringConsole.View = (function() {
         function replaceKeepYScroll(replaced, replacement) {
             const top = replaced.scrollTop();
             replaced.replaceWith(replacement);
-            replacement.scrollTop(top);
+            replacement.scrollTop(top);                
         }
         if (update.widget === undefined) {
             onGlobalUpdate(update);
             return;
         }
-        let widget = update.widget;
-        let data = update.data;
-        let alerts = update.alerts;
-        let annotations = update.annotations;
-        updateDomOfWidget(undefined, widget);
-        let widgetNode = $('#widget-' + widget.target);
+        const widget = update.widget;
+        const data = update.data;
+        const alerts = update.alerts;
+        const annotations = update.annotations;
+        const widgetNode = $('#widget-' + widget.target);
+        if (widgetNode.length == 0)
+            return; // can't update, widget is not in page
+        if (widget.selected) {
+            widgetNode.addClass('chart-selected');
+        } else {
+            widgetNode.removeClass('chart-selected');
+        }
         let headerNode = widgetNode.find('.WidgetHeader').first();
         let legendNode = widgetNode.find('.Legend').first();
         let indicatorNode = widgetNode.find('.Indicator').first();
@@ -1499,11 +1500,27 @@ MonitoringConsole.View = (function() {
                 if (cell) {
                     let rowspan = cell.rowspan;
                     let height = (rowspan * rowHeight);
-                    let td = $("<td/>", { id: 'widget-'+cell.widget.target, colspan: cell.colspan, rowspan: rowspan, 'class': 'widget', style: 'height: '+height+"px;"});
-                    updateDomOfWidget(td, cell.widget);
+                    let td = $("<td/>", { colspan: cell.colspan, rowspan: rowspan, style: 'height: '+height+"px;"});
+                    const widget = cell.widget;
+                    const widgetTarget = 'widget-' + widget.target;
+                    let existingWidget = $('#' + widgetTarget);
+                    if (existingWidget.length > 0) {
+                        existingWidget.appendTo(td); // recycle the widget already rendered into the page
+                    } else {
+                        // add a blank widget box, filled during data update
+                        const widgetNode = $('<div/>', { id : widgetTarget, class: 'Widget' });
+                        widgetNode.append(Components.createWidgetHeader(createWidgetHeaderModel(widget)));
+                        widgetNode.append(createChartContainer(widget));
+                        widgetNode.append(Components.createAlertTable({}));
+                        widgetNode.append(Components.createAnnotationTable({}));
+                        widgetNode.append(Components.createLegend([]));                
+                        widgetNode.append(Components.createIndicator({}));                        
+                        td.append(widgetNode); 
+                    }
                     tr.append(td);
                 } else if (cell === null) {
-                    tr.append($("<td/>", { 'class': 'widget empty', style: 'height: '+rowHeight+'px;'}).append(createPlusButton(row, col)));                  
+                    tr.append($("<td/>", { style: 'height: '+rowHeight+'px;'})
+                        .append($('<div/>', { class: 'Widget empty'}).append(createPlusButton(row, col))));                  
                 }
             }
             table.append(tr);
