@@ -585,24 +585,16 @@ MonitoringConsole.View.Components = (function() {
       let attrs = { style: 'border-color: ' + color + ';' };
       if (item.status)
         attrs.class = 'status-' + item.status;
-      let label0 = Array.isArray(label) ? label[0] : label;
-      if (label0 === 'server') { // special rule for DAS
-        label0 = 'DAS'; 
-        attrs.title = "Data for the Domain Administration Server (DAS); plain instance name is 'server'";
-      } else if (label0.startsWith('server:')) {
-        label0 = 'DAS:' + label0.substring(7);
-      }
       let textAttrs = {};
       if (item.highlight)
-       textAttrs.style = 'color: '+ item.highlight + ';';
-      let mainLabel = $('<span/>', { title: label0 }).text(label0);
-      if (Array.isArray(label) && label.length > 1) {
-        for (let i = 1; i < label.length; i++) {
-          mainLabel.append(' - ' + label[i]);
-        }
+        textAttrs.style = 'color: '+ item.highlight + ';';
+      let labelText = Array.isArray(label) ? label.join(', ') : label;
+      if (labelText.startsWith('server')) { // special rule for DAS
+        labelText = 'DAS' + labelText.substring(6);
+        attrs.title = "Data for the Domain Administration Server (DAS); plain instance name is 'server'";
       }
       return $('<li/>', attrs)
-        .append(mainLabel)
+        .append($('<span/>', { title: labelText }).text(labelText))
         .append($('<strong/>', textAttrs).text(strong))
         .append($('<span/>').text(normal));
     }

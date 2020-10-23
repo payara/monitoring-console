@@ -743,9 +743,12 @@ table.tags th, table.tags td {
   position: absolute;
   max-width: 50%;
   left: 50%;
-  transform: translate(-50%, 0);
-  top: 0;
+  top: 50%;
+  transform: translate(-50%, -50%);
   background-color: var(--widget-bg-color);
+  font-weight: bold;
+  opacity: 0.9;
+  border-radius: var(--block-radius);
 }
 .Indicator.status-missing {
   width: 100%;
@@ -755,6 +758,8 @@ table.tags th, table.tags td {
   background-color: var(--page-bg-color);
   text-align: left;
   padding: 20px;
+  opacity: 1;
+  font-weight: normal;
 }
 .Indicator.status-missing p {
   font-size: 50px;
@@ -825,6 +830,7 @@ table.tags th, table.tags td {
 .Widget .AlertTable {
   position: absolute;
   top: 0;
+  width: 100%;
   max-width: 100%;
   max-height: 100%;
   overflow-y: auto;
@@ -889,12 +895,11 @@ table.tags th, table.tags td {
 .AnnotationTable {
   position: absolute;
   top: 0;
-  left: 15px;
-  width: calc(100% - 38px);
-  background-color: var(--widget-part-bg-color);
-  max-height: calc(100% - 100px);
+  width: 100%;
+  max-height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
+  background-color: var(--widget-part-bg-color);
 }
 .AnnotationTable .Group.Annotation {
   display: block;
