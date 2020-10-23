@@ -105,29 +105,6 @@ MonitoringConsole.View = (function() {
         }));
     }
 
-
-    function updateDomOfWidget(parent, widget) {
-        if (!parent) {
-            parent = $('#widget-'+widget.target);
-            if (!parent) {
-                return; // can't update
-            }
-        }
-        if (parent.children().length == 0) {
-            let previousParent = $('#widget-'+widget.target);
-            if (previousParent.length > 0 && previousParent.children().length > 0) {
-                previousParent.children().appendTo(parent);
-            } else {
-                parent.append(Components.createWidgetHeader(createWidgetHeaderModel(widget)));
-                parent.append(createChartContainer(widget));
-                parent.append(Components.createAlertTable({}));
-                parent.append(Components.createAnnotationTable({}));
-                parent.append(Components.createLegend([]));                
-                parent.append(Components.createIndicator({}));
-            }
-        }
-    }
-
     /**
      * Each chart needs to be in a relative positioned box to allow responsive sizing.
      * This fuction creates this box including the canvas element the chart is drawn upon.
