@@ -595,7 +595,7 @@ MonitoringConsole.View.Components = (function() {
       let textAttrs = {};
       if (item.highlight)
        textAttrs.style = 'color: '+ item.highlight + ';';
-      let mainLabel = $('<span/>').text(label0);
+      let mainLabel = $('<span/>', { title: label0 }).text(label0);
       if (Array.isArray(label) && label.length > 1) {
         for (let i = 1; i < label.length; i++) {
           mainLabel.append(' - ' + label[i]);

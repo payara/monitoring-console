@@ -110,7 +110,7 @@ MonitoringConsole.View = (function() {
      * This fuction creates this box including the canvas element the chart is drawn upon.
      */
     function createChartContainer(widget) {
-        return $('<div/>', { id: widget.target + '-box', class: 'widget-chart-box' })
+        return $('<div/>', { id: widget.target + '-box', class: 'Chart' })
             .append($('<canvas/>',{ id: widget.target }));
     }
 
@@ -1485,14 +1485,14 @@ MonitoringConsole.View = (function() {
                         existingWidget.appendTo(td); // recycle the widget already rendered into the page
                     } else {
                         // add a blank widget box, filled during data update
-                        const widgetNode = $('<div/>', { id : widgetTarget, class: 'Widget' });
-                        widgetNode.append(Components.createWidgetHeader(createWidgetHeaderModel(widget)));
-                        widgetNode.append(createChartContainer(widget));
-                        widgetNode.append(Components.createAlertTable({}));
-                        widgetNode.append(Components.createAnnotationTable({}));
-                        widgetNode.append(Components.createLegend([]));                
-                        widgetNode.append(Components.createIndicator({}));                        
-                        td.append(widgetNode); 
+                        td.append($('<div/>', { id : widgetTarget, class: 'Widget' })
+                            .append(Components.createWidgetHeader(createWidgetHeaderModel(widget)))
+                            .append($('<div/>', { class: 'WidgetContent' })
+                                .append(createChartContainer(widget))
+                                .append(Components.createAlertTable({}))
+                                .append(Components.createAnnotationTable({}))
+                                .append(Components.createIndicator({})))
+                            .append(Components.createLegend([])));        
                     }
                     tr.append(td);
                 } else if (cell === null) {
