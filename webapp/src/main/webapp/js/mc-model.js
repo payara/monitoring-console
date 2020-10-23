@@ -873,11 +873,8 @@ MonitoringConsole.Model = (function() {
 				},
 
 				confirmedChangeCount: () => settings.alerts.confirmed === undefined ? -1 : settings.alerts.confirmed.changeCount,
-				confirmedRedAlerts: () => settings.alerts.confirmed === undefined ? [] : settings.alerts.confirmed.redAlerts,
-				confirmedAmberAlerts: () => settings.alerts.confirmed === undefined ? [] : settings.alerts.confirmed.amberAlerts,
-				confirmedSerials: () => settings.alerts.confirmed === undefined 
-					? [] 
-					: settings.alerts.confirmed.redAlerts.concat(settings.alerts.confirmed.amberAlerts),
+				confirmedRedAlerts: () => settings.alerts.confirmed === undefined ? [] : settings.alerts.confirmed.redAlerts || [],
+				confirmedAmberAlerts: () => settings.alerts.confirmed === undefined ? [] : settings.alerts.confirmed.amberAlerts || [],
 			},
 
 			Navigation: {
@@ -1402,7 +1399,8 @@ MonitoringConsole.Model = (function() {
 			}
 			let widgets = page.widgets;
 			Controller.requestListOfSeriesData(Update.createQuery(widgets), 
-				Update.createOnSuccess(widgets, onDataUpdate, UI.Alerts.confirmedSerials),
+				Update.createOnSuccess(widgets, onDataUpdate, 
+					() => UI.Alerts.confirmedRedAlerts().concat(UI.Alerts.confirmedAmberAlerts())),
 				Update.createOnError(widgets, onDataUpdate));
 		});
 		if (UI.Refresh.interval() === undefined) {

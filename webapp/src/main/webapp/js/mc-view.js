@@ -1308,6 +1308,11 @@ MonitoringConsole.View = (function() {
      * Depending on the update different content is rendered within a chart box.
      */
     function onDataUpdate(update) {
+        function replaceKeepYScroll(replaced, replacement) {
+            const top = replaced.scrollTop();
+            replaced.replaceWith(replacement);
+            replacement.scrollTop(top);
+        }
         if (update.widget === undefined) {
             onGlobalUpdate(update);
             return;
@@ -1329,17 +1334,17 @@ MonitoringConsole.View = (function() {
         if (data !== undefined && (widget.type === 'line' || widget.type === 'bar')) {
             MonitoringConsole.Chart.getAPI(widget).onDataUpdate(update);
         }
-        headerNode.replaceWith(Components.createWidgetHeader(createWidgetHeaderModel(widget)));
+        replaceKeepYScroll(headerNode, Components.createWidgetHeader(createWidgetHeaderModel(widget)));
         if (widget.type == 'rag') {
             alertsNode.hide();
             legendNode.hide();
-            indicatorNode.replaceWith(Components.createRAGIndicator(createRAGIndicatorModel(widget, legend)));
+            replaceKeepYScroll(indicatorNode, Components.createRAGIndicator(createRAGIndicatorModel(widget, legend)));
             annotationsNode.hide();
         } else {
-            alertsNode.replaceWith(Components.createAlertTable(createAlertTableModel(widget, alerts, annotations)));
-            legendNode.replaceWith(Components.createLegend(legend));
-            indicatorNode.replaceWith(Components.createIndicator(createIndicatorModel(widget, data)));
-            annotationsNode.replaceWith(Components.createAnnotationTable(createAnnotationTableModel(widget, annotations)));            
+            replaceKeepYScroll(alertsNode, Components.createAlertTable(createAlertTableModel(widget, alerts, annotations)));
+            replaceKeepYScroll(legendNode, Components.createLegend(legend));
+            replaceKeepYScroll(indicatorNode, Components.createIndicator(createIndicatorModel(widget, data)));
+            replaceKeepYScroll(annotationsNode, Components.createAnnotationTable(createAnnotationTableModel(widget, annotations)));            
         }
     }
 
@@ -1429,8 +1434,8 @@ MonitoringConsole.View = (function() {
         // basis sets
         const redConfirmed = MonitoringConsole.Model.Settings.Alerts.confirmedRedAlerts();
         const amberConfirmed = MonitoringConsole.Model.Settings.Alerts.confirmedAmberAlerts();
-        const redCurrent = alerts.ongoingRedAlerts;
-        const amberCurrent = alerts.ongoingAmberAlerts;
+        const redCurrent = alerts.ongoingRedAlerts || [];
+        const amberCurrent = alerts.ongoingAmberAlerts || [];
         const allConfirmed = union(redConfirmed, amberConfirmed);
         const allCurrent = union(redCurrent, amberCurrent);
         // transition sets
