@@ -638,7 +638,7 @@ results          = { *:* }
 closeProperty    = string
 onExit           = fn(*) => ()
 ```
-* `style` is an optional parameter to pass a custom CSS class name that is added to the modal so custom CSS styling can be applied using that class selector or if `style` contains any `:` it is not considered a CSS class name but as CSS properties as used in the `style` attribute of HTML elements
+* `style` is an optional parameter to pass a custom CSS class name that is added to the modal so custom CSS styling can be applied using that class selector. If `style` contains any `:` it is not considered a CSS class name but as CSS properties as used in the `style` attribute of HTML elements
 * when a particular button is clicked the named `property` of that button is extracted from `results` and passed to `onExit` function. This value can be of any type and change while the dialog is open.
 * `closeProperty` is an optional field refering to the property used for the window close (x) button, if it is undefined the window has no such button
 
