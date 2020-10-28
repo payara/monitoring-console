@@ -611,6 +611,14 @@ MonitoringConsole.View.Components = (function() {
 
     function createComponent(model) {
       let legend = $('<ol/>',  {class: 'Legend'});
+      model.sort((a,b) => {
+        let res = 0;
+        if (a.instance && b.instance)
+          res = a.instance.localeCompare(b.instance);
+        if (res == 0 && a.label && b.label)
+          res = a.label.localeCompare(b.label);
+        return res;
+      });
       for (let item of model) {
         legend.append(createItem(item));
       }
