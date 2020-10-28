@@ -657,16 +657,19 @@ MonitoringConsole.View = (function() {
         let format = Units.converter(widget.unit).format;
         let palette = Theme.palette();
         let alpha = Theme.option('opacity') / 100;
+        const instances = data
+            .map(e => e.instance)
+            .filter((value, index, self) => self.indexOf(value) === index);
+        const series = widget.series;
+        const isMultiSeries = Array.isArray(series) && series.length > 1;
+        let showInstance = instances.length > 1 || (data.length == 1 && !isMultiSeries);
         for (let j = 0; j < data.length; j++) {
             const seriesData = data[j];
-            const series = widget.series;
-            const isMultiSeries = Array.isArray(series) && series.length > 1;
-            let label = seriesData.instance;
-            if (isMultiSeries)
-                label += ': ' + seriesData.series.split(" ").pop();
-            if (!isMultiSeries && series.includes('*') && !series.includes('?')) {
-                let tag = seriesData.series.replace(new RegExp(series.replace('*', '(.*)')), '$1').replace('_', ' ');                
-                label = widget.coloring == 'series' ? tag : [label, tag];
+            let label;
+            if (isMultiSeries) {
+                label = seriesData.series.split(" ").pop();
+            } else if (series.includes('*') && !series.includes('?')) {
+                label = seriesData.series.replace(new RegExp(series.replace('*', '(.*)')), '$1').replace('_', ' ');                
             }
             let points = seriesData.points;
             let avgOffN = widget.options.perSec ? Math.min(points.length / 2, 4) : 1;
@@ -694,7 +697,9 @@ MonitoringConsole.View = (function() {
             }
             let status = seriesData.assessments.status;
             let highlight = status === undefined ? undefined : Theme.color(status);
-            let item = { 
+            let item = {
+                instance: seriesData.instance,
+                showInstance: showInstance,
                 label: label, 
                 value: value, 
                 color: color,

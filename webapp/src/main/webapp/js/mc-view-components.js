@@ -573,7 +573,6 @@ MonitoringConsole.View.Components = (function() {
   let Legend = (function() {
 
     function createItem(item) {
-      let label = item.label;
       let value = item.value;
       let color = item.color;
       let strong = value;
@@ -588,13 +587,18 @@ MonitoringConsole.View.Components = (function() {
       let textAttrs = {};
       if (item.highlight)
         textAttrs.style = 'color: '+ item.highlight + ';';
-      let labelText = Array.isArray(label) ? label.join(', ') : label;
-      if (labelText.startsWith('server')) { // special rule for DAS
-        labelText = 'DAS' + labelText.substring(6);
+      if (item.instance == 'server') { // special rule for DAS
+        item.instance = 'DAS';
         attrs.title = "Data for the Domain Administration Server (DAS); plain instance name is 'server'";
       }
+      let label = [];
+      if (item.showInstance)
+        label.push(item.instance);
+      if (item.label)
+        label.push(item.label);
+      const text = label.join(', ');
       return $('<li/>', attrs)
-        .append($('<span/>', { title: labelText }).text(labelText))
+        .append($('<span/>', { title: text }).text(text))
         .append($('<strong/>', textAttrs).text(strong))
         .append($('<span/>').text(normal));
     }

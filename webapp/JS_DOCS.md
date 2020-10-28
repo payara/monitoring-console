@@ -382,15 +382,16 @@ Describes the model expected by the `Legend` component.
 
 ```
 LEGEND          = [LEGEND_ITEM]
-LEGEND_ITEM     = { label, value, color, background, status, highlight }
-label           = string | [ string ]
+LEGEND_ITEM     = { label, instance, value, color, background, status, highlight, showInstance }
+label           = string
+instance        = string
 value           = string | number
 color           = string
 background      = string | [ string ]
 status          = Status
 since           = number
 highlight       = string
-
+showInstance    = boolean
 ```
 * If `value` is a _string_ only the first word is displayed large.
 This is as straight forward as it looks. All members are required. 
