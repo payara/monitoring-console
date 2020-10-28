@@ -51,7 +51,7 @@ MonitoringConsole.View = (function() {
     const Colors = MonitoringConsole.View.Colors;
     const Theme = MonitoringConsole.Model.Theme;
 
-    const WIDGET_TYPE_OPTIONS = { line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status' };
+    const WIDGET_TYPE_OPTIONS = { line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status', top: 'Top N' };
     const WIDGET_TYPE_FILTER_OPTIONS = { _: '(Any)', line: 'Time Curve', bar: 'Range Indicator', alert: 'Alerts', annotation: 'Annotations', rag: 'RAG Status' };
 
     function isFunction(obj) {
@@ -267,6 +267,16 @@ MonitoringConsole.View = (function() {
                 onPageChange(MonitoringConsole.Model.Page.Widgets.configure(widget.id, 
                     widget => widget.series = series.length == 1 ? series[0] : series));
         }
+        function changeType(widget, type) {
+            widget.type = type;
+            if (type == 'top') {
+                widget.limit = 5;
+                widget.ordering = 'dec';
+            } else {
+                widget.limit = undefined;
+                widget.ordering = undefined;
+            }
+        }
         let seriesInput = $('<span/>');
         if (Array.isArray(widget.series)) {
             seriesInput.append(widget.series.join(', ')).append(' ');                    
@@ -277,13 +287,12 @@ MonitoringConsole.View = (function() {
             class: 'btn-icon',
             icon: 'icon-pencil',
             alt: 'Change metric(s)...'
-        })
-                .click(() => showModalDialog(createWizardModalDialogModel({
-                    title: 'Edit Widget Metric Series', 
-                    submit: 'Apply',
-                    series: widget.series, 
-                    onExit: changeSeries
-                }))));
+        }).click(() => showModalDialog(createWizardModalDialogModel({
+            title: 'Edit Widget Metric Series', 
+            submit: 'Apply',
+            series: widget.series, 
+            onExit: changeSeries
+        }))));
         let options = widget.options;
         let unit = widget.unit;
         let thresholds = widget.decorations.thresholds;
@@ -305,7 +314,7 @@ MonitoringConsole.View = (function() {
             }).click(() => onWidgetDelete(widget)) },
         ]});
         settings.push({ id: 'settings-data', caption: 'Data', entries: [
-            { label: 'Type', type: 'dropdown', options: WIDGET_TYPE_OPTIONS, value: widget.type, onChange: (widget, selected) => widget.type = selected},
+            { label: 'Type', type: 'dropdown', options: WIDGET_TYPE_OPTIONS, value: widget.type, onChange: changeType },
             { label: 'Mode', type: 'dropdown', options: modeOptions, value: widget.mode || 'list', onChange: (widget, selected) => widget.mode = selected},
             { label: 'Series', input: seriesInput },
             { label: 'Unit', input: [
@@ -335,8 +344,11 @@ MonitoringConsole.View = (function() {
             { label: 'Coloring', type: 'dropdown', options: { instance: 'Instance Name', series: 'Series Name', index: 'Result Set Index', 'instance-series': 'Instance and Series Name' }, value: widget.coloring, onChange: (widget, value) => widget.coloring = value,
                 description: 'What value is used to select the index from the color palette' },
             { label: 'Legend', input: [
+                { type: 'dropdown', options: { none: 'None', label: 'Alphabetically', inc: 'Increasing Value', dec: 'Decreasing Value' }, value: widget.ordering || 'label', onChange: (widget, selected) => widget.ordering = selected },
                 { label: 'Hide Constant Zero', type: 'checkbox', value: options.noConstantZero, onChange: (widget, checked) => widget.options.noConstantZero = checked },
             ]},
+            { label: 'Top N', type: 'value', unit: 'count', value: widget.limit, onChange: (widget, value) => widget.limit = value,
+                description: 'Limit the number of items shown to the top most N items (useful with legend ordering)' },
         ]});
         const lineExtrasAvailable = widget.type == 'line';
         settings.push({ id: 'settings-decorations', caption: 'Extras', collapsed: true, entries: [
@@ -706,7 +718,8 @@ MonitoringConsole.View = (function() {
                 showInstance: showInstance,
                 item: coloring != 'instance' ? Colors.lookup('instance', instance, palette) : undefined,
                 label: label, 
-                value: value, 
+                value: value,
+                cmp: avg, // not part of the model but used for value based sort later
                 color: color,
                 background: background,
                 status: status,
@@ -718,6 +731,22 @@ MonitoringConsole.View = (function() {
                 legend.push(item);
             seriesData.legend = item;
         }
+        if (widget.ordering === undefined || widget.ordering == 'label') {
+            legend.sort((a,b) => {
+                let res = 0;
+                if (a.instance && b.instance)
+                  res = a.instance.localeCompare(b.instance);
+                if (res == 0 && a.label && b.label)
+                  res = a.label.localeCompare(b.label);
+                return res;
+            });            
+        } else if (widget.ordering == 'inc') {
+            legend.sort((a, b) => a.cmp - b.cmp);
+        } else if (widget.ordering == 'dec') {
+            legend.sort((a, b) => b.cmp - a.cmp);
+        }
+        if (widget.limit > 0)
+            legend.slice(widget.limit).forEach(item => item.hidden = true);
         return legend;
     }
 
@@ -1313,6 +1342,12 @@ MonitoringConsole.View = (function() {
             widgetNode.addClass('chart-selected');
         } else {
             widgetNode.removeClass('chart-selected');
+        }
+        const contentNode = widgetNode.find('.WidgetContent').first();
+        if (widget.type == 'top') {
+            contentNode.addClass('WidgetContentTop');
+        } else {
+            contentNode.removeClass('WidgetContentTop');
         }
         let headerNode = widgetNode.find('.WidgetHeader').first();
         let legendNode = widgetNode.find('.Legend').first();

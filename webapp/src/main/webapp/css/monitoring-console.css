@@ -501,6 +501,9 @@ svg.icon {
   margin: 2px 0;
   min-height: 100px;
 }
+.WidgetContent.WidgetContentTop {
+  display: none;
+}
 
 /**
  * Widget Settings (Sizes and Visibility)
@@ -691,6 +694,9 @@ table.tags th, table.tags td {
   padding: 0;
   width: 100%;
   background-color: var(--widget-part-bg-color);  
+}
+.WidgetContentTop + .Legend {
+  grid-template-columns: 1fr;
 }
 .Legend li {
   position: relative;

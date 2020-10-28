@@ -209,7 +209,7 @@ MonitoringConsole.Data = (function() {
 				{ series: 'ns:monitoring @:* CollectionDuration', unit: 'ms', displayName: 'Sources Time',
 					grid: { column: 0, item: 0, span: 2},
 					axis: { max: 200 },
-					coloring: 'instance-series'},
+					coloring: 'series', ordering: 'dec', limit: 8 },
 				{ series: 'ns:monitoring @:* AlertCount', displayName: 'Alerts',
 					grid: { column: 2, item: 2},
 					coloring: 'series'},

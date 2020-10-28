@@ -82,16 +82,18 @@ amberAlerts     = [ number ]
 ### Widget Model
 
 ```
-WIDGET     = { id, series, type, unit, scaleFactor, target, grid, axis, options, decorations, status, displayName, description, coloring, fields, mode, sort }
+WIDGET     = { id, series, type, unit, scaleFactor, target, grid, axis, options, decorations, status, displayName, description, coloring, ordering, limit, fields, mode, sort }
 id         = string
 series     = string | [string]
 target     = string
 displayName= string
 description= string
-type       = 'line' | 'bar' | 'alert' | 'annotation' | 'rag'
+type       = 'line' | 'bar' | 'alert' | 'annotation' | 'rag' | 'top'
 unit       = UNIT
 UNIT       = 'count' | 'ms' | 'ns' | 'bytes' | 'percent'
 coloring   = 'instance' | 'series' | 'index' | 'instance-series'
+ordering   = 'label' | 'inc' | 'dec' | 'none'
+limit      = number
 fields     = [ string ]
 mode       = 'list' | 'table'
 sort       = 'time' | 'value'
@@ -383,7 +385,7 @@ Describes the model expected by the `Legend` component.
 
 ```
 LEGEND          = [LEGEND_ITEM]
-LEGEND_ITEM     = { label, instance, value, color, background, status, highlight, showInstance, item }
+LEGEND_ITEM     = { label, instance, value, color, background, status, highlight, showInstance, item, hidden }
 label           = string
 instance        = string
 value           = string | number
@@ -394,6 +396,7 @@ since           = number
 highlight       = string
 showInstance    = boolean
 item            = string
+hidden          = boolean
 ```
 * If `value` is a _string_ only the first word is displayed large.
 This is as straight forward as it looks. All members are required. 
@@ -402,6 +405,7 @@ The model creates a new jQuery object that must be inserted into the DOM by the 
 * `background` is the background color of the line or bar should it use a fill, if an array is used those are the start and end color of a linear gradient
 * `highlight` is the color used to highlight the status of the text
 * `item` is the color used for the instance label (if both are defined and `showInstance` is `true`)
+* `hidden` is assumed `false` when not set
 
 
 ### Indicator API
