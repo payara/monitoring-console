@@ -599,8 +599,9 @@ MonitoringConsole.View.Components = (function() {
       const text = label.join(', ');
       return $('<li/>', attrs)
         .append($('<span/>', { title: text }).text(text))
-        .append($('<strong/>', textAttrs).text(strong))
-        .append($('<span/>').text(normal));
+        .append($('<strong/>', textAttrs)
+          .append(strong)
+          .append($('<small/>').text(normal)));
     }
 
     function createComponent(model) {

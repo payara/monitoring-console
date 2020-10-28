@@ -693,7 +693,8 @@ table.tags th, table.tags td {
   background-color: var(--widget-part-bg-color);  
 }
 .Legend li {
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
   list-style:none;
   padding-left: 5px;
   border-left: 5px solid #ccc;
@@ -706,12 +707,16 @@ table.tags th, table.tags td {
   font-size: 180%;
   font-weight: bold;
 }
-.Legend li span:first-child {
+.Legend li span {
   display: block;
+  flex: 1 0 auto;
   font-weight: 600;
   color: rgba(255,255,255,0.8);
   text-overflow: ellipsis;
   overflow: hidden;
+}
+.Legend strong small {
+  font-size: 16px;
 }
 .Legend li.status-missing strong {
   color: #0096D6;
