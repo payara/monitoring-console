@@ -383,7 +383,7 @@ Describes the model expected by the `Legend` component.
 
 ```
 LEGEND          = [LEGEND_ITEM]
-LEGEND_ITEM     = { label, instance, value, color, background, status, highlight, showInstance }
+LEGEND_ITEM     = { label, instance, value, color, background, status, highlight, showInstance, item }
 label           = string
 instance        = string
 value           = string | number
@@ -393,6 +393,7 @@ status          = Status
 since           = number
 highlight       = string
 showInstance    = boolean
+item            = string
 ```
 * If `value` is a _string_ only the first word is displayed large.
 This is as straight forward as it looks. All members are required. 
@@ -400,6 +401,7 @@ The model creates a new jQuery object that must be inserted into the DOM by the 
 * `color` is the color of the line or bar used to indicate the item, 
 * `background` is the background color of the line or bar should it use a fill, if an array is used those are the start and end color of a linear gradient
 * `highlight` is the color used to highlight the status of the text
+* `item` is the color used for the instance label (if both are defined and `showInstance` is `true`)
 
 
 ### Indicator API

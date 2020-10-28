@@ -595,19 +595,18 @@ MonitoringConsole.View.Components = (function() {
         item.instance = 'DAS';
         attrs.title = "Data for the Domain Administration Server (DAS); plain instance name is 'server'";
       }
-      let label = [];
+      const label = $('<div/>', { class: 'LegendLabel' });
       if (item.label)
-        label.push(item.label);
-      if (item.showInstance)
-        label.push(item.instance);
-      const text = label.join(', ');
+        label.append($('<span/>', { title: item.label }).text(item.label));
+      if (item.showInstance) {
+        label.append($('<span/>', { title: item.instance, style: item.item ? `color: ${item.item};` : '' }).text(item.instance));
+      }
+      label.append($('<strong/>', textAttrs)
+            .append(strong)
+            .append($('<small/>').text(normal)));
       return $('<li/>', attrs)
         .append($('<div/>', border))
-        .append($('<div/>', { class: 'LegendLabel' })
-          .append($('<span/>', { title: text }).text(text))
-          .append($('<strong/>', textAttrs)
-            .append(strong)
-            .append($('<small/>').text(normal))));
+        .append(label);
     }
 
     function createComponent(model) {

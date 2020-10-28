@@ -717,12 +717,13 @@ table.tags th, table.tags td {
   font-weight: bold;
 }
 .Legend .LegendLabel > span {
-  display: block;
-  flex: 1 0 auto;
   font-weight: 600;
   color: rgba(255,255,255,0.8);
   text-overflow: ellipsis;
   overflow: hidden;
+}
+.Legend .LegendLabel > span:first-child {
+  flex: 1 0 auto;
 }
 .Legend .LegendLabel strong small {
   font-size: 16px;

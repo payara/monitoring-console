@@ -668,6 +668,7 @@ MonitoringConsole.View = (function() {
         let showInstance = instances.length > 1 || (data.length == 1 && !isMultiSeries);
         for (let j = 0; j < data.length; j++) {
             const seriesData = data[j];
+            const instance = seriesData.instance;
             let label;
             if (isMultiSeries) {
                 label = seriesData.series.split(" ").pop();
@@ -683,14 +684,14 @@ MonitoringConsole.View = (function() {
             let value = format(avg, widget.unit === 'bytes' || widget.unit === 'ns');
             if (widget.options.perSec)
                 value += ' /s';
-            let coloring = widget.coloring;
-            let color = Colors.lookup(coloring, getColorKey(widget, seriesData.series, seriesData.instance, j), palette);
+            let coloring = widget.coloring || 'instance';
+            let color = Colors.lookup(coloring, getColorKey(widget, seriesData.series, instance, j), palette);
             let background = Colors.hex2rgba(color, alpha);
             if (Array.isArray(alerts) && alerts.length > 0) {
                 let level;
                 for (let i = 0; i < alerts.length; i++) {
                     let alert = alerts[i];
-                    if (alert.instance == seriesData.instance && alert.series == seriesData.series && !alert.stopped) {
+                    if (alert.instance == instance && alert.series == seriesData.series && !alert.stopped) {
                         level = Units.Alerts.maxLevel(level, alert.level);
                     }
                 }
@@ -701,8 +702,9 @@ MonitoringConsole.View = (function() {
             let status = seriesData.assessments.status;
             let highlight = status === undefined ? undefined : Theme.color(status);
             let item = {
-                instance: seriesData.instance,
+                instance: instance,
                 showInstance: showInstance,
+                item: coloring != 'instance' ? Colors.lookup('instance', instance, palette) : undefined,
                 label: label, 
                 value: value, 
                 color: color,
