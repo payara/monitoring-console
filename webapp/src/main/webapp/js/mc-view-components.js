@@ -610,8 +610,9 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createComponent(model) {
-      let legend = $('<ol/>',  {class: 'Legend'});
-      for (let item of model) {
+      const legend = $('<ol/>',  {class: 'Legend'});
+      const items = Array.isArray(model) ? model : model.items;
+      for (let item of items) {
         if (item.hidden !== true)
           legend.append(createItem(item));
       }

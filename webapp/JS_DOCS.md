@@ -384,11 +384,13 @@ When provided the `label` is used before the input component.
 Describes the model expected by the `Legend` component.
 
 ```
-LEGEND          = [LEGEND_ITEM]
+LEGEND          = { compact, items } | [LEGEND_ITEM]
+compact         = boolean
+items           = [LEGEND_ITEM]
 LEGEND_ITEM     = { label, instance, value, color, background, status, highlight, showInstance, item, hidden }
 label           = string
 instance        = string
-value           = string | number
+value           = string | number 
 color           = string
 background      = string | [ string ]
 status          = Status

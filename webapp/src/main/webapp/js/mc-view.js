@@ -747,7 +747,7 @@ MonitoringConsole.View = (function() {
         }
         if (widget.limit > 0)
             legend.slice(widget.limit).forEach(item => item.hidden = true);
-        return legend;
+        return { compact: true, items: legend };
     }
 
     function createLegendModelFromAlerts(widget, alerts) {
