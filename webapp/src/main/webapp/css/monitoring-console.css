@@ -693,21 +693,30 @@ table.tags th, table.tags td {
   background-color: var(--widget-part-bg-color);  
 }
 .Legend li {
+  position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   list-style:none;
-  padding-left: 5px;
-  border-left: 5px solid #ccc;
   margin-right: 8px;
   margin-bottom: 2px;
+}
+.Legend .LegendBorder {
+  min-height: 100%;
+  width: 5px;
+  min-width: 5px;
+  margin-right: 5px;
+}
+.Legend .LegendLabel {
+  display: flex;
+  flex-direction: column;
   text-overflow: ellipsis;
   overflow: hidden;
 }
-.Legend li strong {
+.Legend .LegendLabel strong {
   font-size: 180%;
   font-weight: bold;
 }
-.Legend li span {
+.Legend .LegendLabel > span {
   display: block;
   flex: 1 0 auto;
   font-weight: 600;
@@ -715,25 +724,25 @@ table.tags th, table.tags td {
   text-overflow: ellipsis;
   overflow: hidden;
 }
-.Legend strong small {
+.Legend .LegendLabel strong small {
   font-size: 16px;
 }
-.Legend li.status-missing strong {
+.Legend .status-missing strong {
   color: #0096D6;
 }
-.Legend li.status-alarming strong {
+.Legend .status-alarming strong {
   animation: blinker 2s linear infinite;
 }
-.Legend li.status-critical strong {
+.Legend .status-critical strong {
   animation: blinker 1s linear infinite;
 }
-.Legend li.status-red strong {
+.Legend .status-red strong {
   animation: blinker 1s linear infinite;
 }
-.Legend li.status-amber strong {
+.Legend .status-amber strong {
   animation: blinker 2s linear infinite;
 }
-.Legend li.status-error strong {
+.Legend .status-error strong {
     color: red;
 }
 @keyframes blinker {
@@ -1325,7 +1334,6 @@ table.AnnotationTable {
   text-align: center;
   color: #F0981B;
   position: relative;
-  z-index: 102;
 }
 .WidgetHeader h3 .icon {
   padding: 4px;

@@ -116,6 +116,7 @@ options    = {
 	noFill:boolean,
 	noTimeLabels:boolean,
 	noAnnotations:boolean,
+	noConstantZero:boolean,
 }
 decorations= { waterline, thresholds, alerts, annotations }
 waterline  = { value:number color:string }

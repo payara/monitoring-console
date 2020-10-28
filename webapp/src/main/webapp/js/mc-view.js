@@ -334,6 +334,9 @@ MonitoringConsole.View = (function() {
             ]},
             { label: 'Coloring', type: 'dropdown', options: { instance: 'Instance Name', series: 'Series Name', index: 'Result Set Index', 'instance-series': 'Instance and Series Name' }, value: widget.coloring, onChange: (widget, value) => widget.coloring = value,
                 description: 'What value is used to select the index from the color palette' },
+            { label: 'Legend', input: [
+                { label: 'Hide Constant Zero', type: 'checkbox', value: options.noConstantZero, onChange: (widget, checked) => widget.options.noConstantZero = checked },
+            ]},
         ]});
         const lineExtrasAvailable = widget.type == 'line';
         settings.push({ id: 'settings-decorations', caption: 'Extras', collapsed: true, entries: [
@@ -708,7 +711,9 @@ MonitoringConsole.View = (function() {
                 since: seriesData.assessments.since,
                 highlight: highlight,
             };
-            legend.push(item);
+            const isConstantZero = points[points.length-1] == 0 && seriesData.stableCount > 10;
+            if (widget.options.noConstantZero !== true || !isConstantZero)
+                legend.push(item);
             seriesData.legend = item;
         }
         return legend;
@@ -727,7 +732,8 @@ MonitoringConsole.View = (function() {
         return Object.entries(instances).map(function([instance, level]) {
             let color = Colors.lookup('instance', instance, palette);
             return {
-                label: instance,
+                instance: instance,
+                showInstance: true,
                 value: Units.Alerts.name(level),
                 color: color,
                 background: Colors.hex2rgba(color, alpha),

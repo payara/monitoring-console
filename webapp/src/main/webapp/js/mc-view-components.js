@@ -581,7 +581,11 @@ MonitoringConsole.View.Components = (function() {
         strong = value.substring(0, value.indexOf(' '));
         normal = value.substring(value.indexOf(' '));
       }
-      let attrs = { style: 'border-color: ' + color + ';' };
+      const border = { 
+        class: 'LegendBorder', 
+        style: `background-color: ${color};` 
+      }; 
+      let attrs = {};
       if (item.status)
         attrs.class = 'status-' + item.status;
       let textAttrs = {};
@@ -592,16 +596,18 @@ MonitoringConsole.View.Components = (function() {
         attrs.title = "Data for the Domain Administration Server (DAS); plain instance name is 'server'";
       }
       let label = [];
-      if (item.showInstance)
-        label.push(item.instance);
       if (item.label)
         label.push(item.label);
+      if (item.showInstance)
+        label.push(item.instance);
       const text = label.join(', ');
       return $('<li/>', attrs)
-        .append($('<span/>', { title: text }).text(text))
-        .append($('<strong/>', textAttrs)
-          .append(strong)
-          .append($('<small/>').text(normal)));
+        .append($('<div/>', border))
+        .append($('<div/>', { class: 'LegendLabel' })
+          .append($('<span/>', { title: text }).text(text))
+          .append($('<strong/>', textAttrs)
+            .append(strong)
+            .append($('<small/>').text(normal))));
     }
 
     function createComponent(model) {
