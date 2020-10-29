@@ -225,6 +225,9 @@ MonitoringConsole.View = (function() {
                     { input: () => $('<button />', { text: 'Export...'}).click(showExportPagesModalDialog) },
                 ]},
             ]},
+            { id: 'settings-alerts', type: 'app', caption: 'Alerts', entries: [
+                { label: 'Popups', type: 'toggle', options: { false: 'Off', true: 'On' }, value: MonitoringConsole.Model.Settings.Alerts.showPopup(), onChange: (checked) => MonitoringConsole.Model.Settings.Alerts.showPopup(checked)},
+            ]},
         ];
     }
 
@@ -509,7 +512,9 @@ MonitoringConsole.View = (function() {
 
     function showModalDialog(model) {
         const id = model.id || 'ModalDialog';
-        $('#' + id).replaceWith(Components.createModalDialog(model));
+        const dialog = Components.createModalDialog(model);
+        $('#' + id).replaceWith(dialog);
+        return dialog;
     }
 
     function showFeedback(model) {
@@ -824,8 +829,6 @@ MonitoringConsole.View = (function() {
     }
 
     function createAlertTableModel(widget, alerts, annotations) {
-        if (widget.type === 'annotation')
-            return {};
         function createAlertAnnotationsFilter(alert) {
           return (annotation) => widget.options.noAnnotations !== true
                 && annotation.series == alert.series 
@@ -833,12 +836,12 @@ MonitoringConsole.View = (function() {
                 && Math.round(annotation.time / 1000) >= Math.round(alert.since / 1000) // only same second needed
                 && annotation.time <= (alert.until || new Date().getTime());  
         }
+        if (widget.type === 'annotation')
+            return {};
         let items = [];
         if (Array.isArray(alerts)) {
-            let palette = Theme.palette();
             let fields = widget.fields;
-            for (let i = 0; i < alerts.length; i++) {
-                let alert = alerts[i];
+            for (let alert of alerts) {
                 let autoInclude = widget.type === 'alert' || ((alert.level === 'red' || alert.level === 'amber') && !alert.acknowledged);
                 let filters = widget.decorations.alerts;
                 let lastAlertLevel = alert.frames[alert.frames.length - 1].level;
@@ -848,38 +851,51 @@ MonitoringConsole.View = (function() {
                            && (alert.stopped && filters.noStopped !== true || !alert.stopped && filters.noOngoing !== true)
                            && (lastAlertLevel == 'red' && filters.noRed !== true || lastAlertLevel == 'amber' && filters.noAmber !== true);                  
                 if (autoInclude && visible) {
-                    let frames = alert.frames.map(function(frame) {
+                    items.push(createAlertTableItemModel(alert, widget, annotations
+                    .filter(createAlertAnnotationsFilter(alert))
+                    .map(function(annotation) {
                         return {
-                            level: frame.level,
-                            since: frame.start,
-                            until: frame.end,
-                            color: Theme.color(frame.level),
+                            time: annotation.time,
+                            value: annotation.value,
+                            attrs: annotation.attrs,
+                            fields: fields,
                         };
-                    });
-                    let instanceColoring = widget.coloring === 'instance' || widget.coloring === undefined;
-                    items.push({
-                        serial: alert.serial,
-                        name: alert.initiator.name,
-                        unit: alert.initiator.unit,
-                        acknowledged: alert.acknowledged,
-                        series: alert.series == widget.series ? undefined : alert.series,
-                        instance: alert.instance,
-                        color: instanceColoring ? Colors.lookup('instance', alert.instance, palette) : undefined,
-                        frames: frames,
-                        watch: alert.initiator,
-                        annotations: annotations.filter(createAlertAnnotationsFilter(alert)).map(function(annotation) {
-                            return {
-                                time: annotation.time,
-                                value: annotation.value,
-                                attrs: annotation.attrs,
-                                fields: fields,
-                            };
-                        }),
-                    });
+                    })));
                 }
             }
         }
         return { id: widget.target + '_alerts', verbose: widget.type === 'alert', items: items };
+    }
+
+    function createPopupAlertTableModel(alerts) {
+        return { verbose: true, items: alerts.map(alert => createAlertTableItemModel(alert)) };
+    }
+
+    function createAlertTableItemModel(alert, widget, annotations) {
+        const palette = Theme.palette();
+        const instanceColoring = widget === undefined || widget.coloring === 'instance' || widget.coloring === undefined;
+        const series = widget !== undefined && alert.series == widget.series ? undefined : alert.series;
+        const frames = alert.frames.map(function(frame) {
+            return {
+                level: frame.level,
+                since: frame.start,
+                until: frame.end,
+                color: Theme.color(frame.level),
+            };
+        });
+        return {
+            serial: alert.serial,
+            name: alert.initiator.name,
+            unit: alert.initiator.unit,
+            acknowledged: alert.acknowledged,
+            confirmed: alert.confirmed,
+            series: series,
+            instance: alert.instance,
+            color: instanceColoring ? Colors.lookup('instance', alert.instance, palette) : undefined,
+            frames: frames,
+            watch: alert.initiator,
+            annotations: annotations === undefined ? [] : annotations,
+        };
     }
 
     function createAnnotationTableModel(widget, annotations) {
@@ -1292,6 +1308,15 @@ MonitoringConsole.View = (function() {
      * Depending on the update different content is rendered within a chart box.
      */
     function onDataUpdate(update) {
+        function replaceKeepYScroll(replaced, replacement) {
+            const top = replaced.scrollTop();
+            replaced.replaceWith(replacement);
+            replacement.scrollTop(top);
+        }
+        if (update.widget === undefined) {
+            onGlobalUpdate(update);
+            return;
+        }
         let widget = update.widget;
         let data = update.data;
         let alerts = update.alerts;
@@ -1309,19 +1334,138 @@ MonitoringConsole.View = (function() {
         if (data !== undefined && (widget.type === 'line' || widget.type === 'bar')) {
             MonitoringConsole.Chart.getAPI(widget).onDataUpdate(update);
         }
-        headerNode.replaceWith(Components.createWidgetHeader(createWidgetHeaderModel(widget)));
+        replaceKeepYScroll(headerNode, Components.createWidgetHeader(createWidgetHeaderModel(widget)));
         if (widget.type == 'rag') {
             alertsNode.hide();
             legendNode.hide();
-            indicatorNode.replaceWith(Components.createRAGIndicator(createRAGIndicatorModel(widget, legend)));
+            replaceKeepYScroll(indicatorNode, Components.createRAGIndicator(createRAGIndicatorModel(widget, legend)));
             annotationsNode.hide();
         } else {
-            alertsNode.replaceWith(Components.createAlertTable(createAlertTableModel(widget, alerts, annotations)));
-            legendNode.replaceWith(Components.createLegend(legend));
-            indicatorNode.replaceWith(Components.createIndicator(createIndicatorModel(widget, data)));
-            annotationsNode.replaceWith(Components.createAnnotationTable(createAnnotationTableModel(widget, annotations)));            
+            replaceKeepYScroll(alertsNode, Components.createAlertTable(createAlertTableModel(widget, alerts, annotations)));
+            replaceKeepYScroll(legendNode, Components.createLegend(legend));
+            replaceKeepYScroll(indicatorNode, Components.createIndicator(createIndicatorModel(widget, data)));
+            replaceKeepYScroll(annotationsNode, Components.createAnnotationTable(createAnnotationTableModel(widget, annotations)));            
         }
     }
+
+    /**
+     * This function is called once per server polling to update the global page state
+     * (not widget specific state) 
+     */
+    async function onGlobalUpdate(update) {
+        const alertsIndicatorNode = $('#AlertIndicator');
+        const alerts = update.alerts;
+        alertsIndicatorNode.replaceWith(Components.createAlertIndicator({
+            id: 'AlertIndicator',
+            redAlerts: { 
+                acknowledgedCount: alerts.acknowledgedRedAlerts, 
+                unacknowledgedCount: alerts.unacknowledgedRedAlerts,
+                color: Theme.color('red'),
+            },
+            amberAlerts: { 
+                acknowledgedCount: alerts.acknowledgedAmberAlerts, 
+                unacknowledgedCount: alerts.unacknowledgedAmberAlerts,
+                color: Theme.color('amber'),
+            },
+            changeCount: alerts.changeCount,
+        }));
+        const hasRedAlerts = alerts.unacknowledgedRedAlerts > 0;
+        const hasAmberAlerts = alerts.unacknowledgedAmberAlerts > 0;
+        const lastConfirmed = MonitoringConsole.Model.Settings.Alerts.confirmedChangeCount();
+        const isConfirmed = lastConfirmed >= alerts.changeCount;
+        const showPopup = MonitoringConsole.Model.Settings.Alerts.showPopup();
+        const confirm = () => MonitoringConsole.Model.Settings.Alerts.confirm(alerts.changeCount, alerts.ongoingRedAlerts, alerts.ongoingAmberAlerts);
+        if (showPopup && !isConfirmed) {
+            // test: is there already a popup for the current change-count? => done
+            const shownDialog = $('#AlertDialog');
+            if (shownDialog.attr('data-change-count') == alerts.changeCount)
+                return; // we already show the proper popup - do not change it (save potential server requests to fetch alert data)
+            const content = await createGlobalAlertContent(alerts);
+            const dialog = showModalDialog({
+                id: 'AlertDialog',
+                title: 'Alert Status Change',
+                content: content,
+                buttons: [
+                    { property: 'confirm', label: 'OK' },
+                    { property: 'show', label: 'Show', secondary: true },
+                ],
+                results: { confirm: false, show: true },
+                closeProperty: 'confirm',
+                onExit: show => {
+                    confirm();
+                    if (show) {
+                        MonitoringConsole.Model.Settings.Rotation.enabled(false);
+                        onPageChange(MonitoringConsole.Model.Page.changeTo('alerts'));
+                    }
+                }                
+            });
+            dialog.attr('data-change-count', alerts.changeCount);
+        } else {
+            $('#AlertDialog').hide();
+            if (!showPopup || alerts.changeCount + 1000 < lastConfirmed) // most likely a server restart after new year 
+                confirm();
+        }
+    }
+
+    async function createGlobalAlertContent(alerts) {
+        async function createList(serials) {
+            async function requestAll(serials) {
+                return Promise.all(serials.map(serial => {
+                    let alert = alerts.byIdOnPage[serial];
+                    if (alert !== undefined)
+                        return alert;
+                    return new Promise(function(resolve, reject) {
+                        Controller.requestAlertDetails(serial, response => resolve(response.alerts[0]), () => reject());
+                    });
+                }));
+            }
+            const list = await requestAll(serials);
+            return Components.createAlertTable(createPopupAlertTableModel(list.filter(e => e !== undefined)));
+        }
+        function difference(left, right) {
+            return left.filter(e => !right.includes(e));
+        }
+        function intersection(left, right) {
+            return left.filter(e => right.includes(e));
+        }
+        function union(left, right) {
+            return left.concat(right);
+        }
+        // basis sets
+        const redConfirmed = MonitoringConsole.Model.Settings.Alerts.confirmedRedAlerts();
+        const amberConfirmed = MonitoringConsole.Model.Settings.Alerts.confirmedAmberAlerts();
+        const redCurrent = alerts.ongoingRedAlerts || [];
+        const amberCurrent = alerts.ongoingAmberAlerts || [];
+        const allConfirmed = union(redConfirmed, amberConfirmed);
+        const allCurrent = union(redCurrent, amberCurrent);
+        // transition sets
+        const red2green = difference(redConfirmed, allCurrent);
+        const amber2green = difference(amberConfirmed, allCurrent);
+        const red2amber = intersection(redConfirmed, amberCurrent);
+        const amber2red = intersection(amberConfirmed, redCurrent);
+        const green2amber = difference(amberCurrent, allConfirmed);
+        const green2red = difference(redCurrent, allConfirmed);
+        
+        const content = [];
+        const list = async (set, from, to) => {
+            if (set.length > 0) {
+                content.push($('<h3/>')
+                    .append($('<span/>', {style: `color:${Theme.color(from)};`}).text(Units.Alerts.name(from)))
+                    .append(' => ')
+                    .append($('<span/>', {style: `color:${Theme.color(to)};`}).text(Units.Alerts.name(to)))
+                    );
+                content.push(await createList(set));
+            }
+        };
+        await list(green2red, 'green', 'red');
+        await list(amber2red, 'amber', 'red');
+        await list(red2amber, 'red', 'amber');
+        await list(green2amber, 'green', 'amber');
+        await list(red2green, 'red', 'green');
+        await list(amber2green, 'amber', 'green');
+        return content;
+    }
+
 
     /**
      * This function refleshes the page with the given layout.

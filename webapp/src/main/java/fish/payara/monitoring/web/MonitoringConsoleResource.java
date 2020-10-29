@@ -39,13 +39,16 @@
  */
 package fish.payara.monitoring.web;
 
+import static java.lang.Integer.parseInt;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -82,6 +85,7 @@ import fish.payara.monitoring.adapt.MonitoringConsoleFactory;
 import fish.payara.monitoring.adapt.MonitoringConsolePageConfig;
 import fish.payara.monitoring.alert.Alert;
 import fish.payara.monitoring.alert.AlertService;
+import fish.payara.monitoring.alert.AlertService.AlertStatistics;
 import fish.payara.monitoring.alert.Circumstance;
 import fish.payara.monitoring.alert.Condition;
 import fish.payara.monitoring.alert.Condition.Operator;
@@ -324,8 +328,12 @@ public class MonitoringConsoleResource {
 
     @GET
     @Path("/alerts/data/{series}/")
-    public AlertsResponse getAlertsData(@PathParam("series") String series) {
-        return new AlertsResponse(alertService.alertsFor(seriesOrNull(series)));
+    public AlertsResponse getAlertsData(@PathParam("series") String seriesOrSerial) {
+        if (seriesOrSerial.matches("\\d+")) {
+            Alert alert = alertService.alertBySerial(parseInt(seriesOrSerial));
+            return new AlertsResponse(alert == null ? emptyList() : singletonList(alert));
+        }
+        return new AlertsResponse(alertService.alertsFor(seriesOrNull(seriesOrSerial)));
     }
 
     @POST

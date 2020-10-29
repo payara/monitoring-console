@@ -175,6 +175,8 @@ MonitoringConsole.Model = (function() {
 				settings.rotation = {};
 			if (typeof settings.rotation.interval !== 'number')
 				settings.rotation.interval = 60;
+			if (typeof settings.alerts !== 'object')
+				settings.alerts = {};
 			return settings;
 		}
 		
@@ -855,6 +857,26 @@ MonitoringConsole.Model = (function() {
 				doStore();
 			},
 
+			Alerts: {
+				showPopup: function(showPopup) {
+					if (showPopup === undefined)
+						return settings.alerts.noPopup !== true;
+					settings.alerts.noPopup = showPopup !== true;
+					doStore();
+				},			
+
+				confirm: function(changeCount, redAlerts, amberAlerts) {
+					if (settings.alerts.confirmed === undefined || changeCount > settings.alerts.confirmed.changeCount) {
+						settings.alerts.confirmed = { changeCount, redAlerts, amberAlerts };
+						doStore();
+					}
+				},
+
+				confirmedChangeCount: () => settings.alerts.confirmed === undefined ? -1 : settings.alerts.confirmed.changeCount,
+				confirmedRedAlerts: () => settings.alerts.confirmed === undefined ? [] : settings.alerts.confirmed.redAlerts || [],
+				confirmedAmberAlerts: () => settings.alerts.confirmed === undefined ? [] : settings.alerts.confirmed.amberAlerts || [],
+			},
+
 			Navigation: {
 				isCollapsed: () => settings.nav.collapsed === true,
 				isExpanded: () => settings.nav.collapsed !== true,
@@ -1256,8 +1278,9 @@ MonitoringConsole.Model = (function() {
 			});
 		}
 
-		function createOnSuccess(widgets, onDataUpdate) {
+		function createOnSuccess(widgets, onDataUpdate, getConfirmedAlertSerials) {
 			return function(response) {
+				const confirmedAlertsSerials = getConfirmedAlertSerials();
 				Object.values(widgets).forEach(function(widget, index) {
 					let allMatches = response.matches;
 					let widgetMatches = allMatches.filter(match => match.widgetId == widget.id);
@@ -1271,6 +1294,8 @@ MonitoringConsole.Model = (function() {
 						watches = watches.concat(widgetMatches[i].watches);
 						annotations = annotations.concat(widgetMatches[i].annotations);
 					}
+					for (let alert of alerts)
+						alert.confirmed = confirmedAlertsSerials.includes(alert.serial);
 					data = retainCommonTimeFrame(data);
 					if (widget.options.decimalMetric || widget.scaleFactor !== undefined && widget.scaleFactor !== 1)
 						adjustDecimals(data, widget.scaleFactor ? widget.scaleFactor : 1,  widget.options.decimalMetric ? 10000 : 1);
@@ -1286,6 +1311,14 @@ MonitoringConsole.Model = (function() {
 						chart: () => Charts.getOrCreate(widget),
 					});
 				});
+				const alertsStats = response.alerts;
+				alertsStats.byIdOnPage = {};
+				for (let match of response.matches)
+					for (let alert of match.alerts)
+						alertsStats.byIdOnPage[alert.serial] = alert; 
+				// by convention the same function is called for global updates 
+				// in that case it does not have a widget property but just the below:
+				onDataUpdate({ alerts: alertsStats });
 			};
 		}
 
@@ -1366,7 +1399,8 @@ MonitoringConsole.Model = (function() {
 			}
 			let widgets = page.widgets;
 			Controller.requestListOfSeriesData(Update.createQuery(widgets), 
-				Update.createOnSuccess(widgets, onDataUpdate),
+				Update.createOnSuccess(widgets, onDataUpdate, 
+					() => UI.Alerts.confirmedRedAlerts().concat(UI.Alerts.confirmedAmberAlerts())),
 				Update.createOnError(widgets, onDataUpdate));
 		});
 		if (UI.Refresh.interval() === undefined) {
@@ -1476,6 +1510,8 @@ MonitoringConsole.Model = (function() {
 			open: UI.openSettings,
 			close: UI.closeSettings,
 			toggle: () => UI.showSettings() ? UI.closeSettings() : UI.openSettings(),
+
+			Alerts: UI.Alerts,
 
 			Rotation: {
 				isEnabled: UI.Rotation.isEnabled,

@@ -34,7 +34,7 @@ id              = string
 numberOfColumns = number
 rotate          = boolean
 widgets         = [WIDGET] | { *: WIDGET }
-settings        = { display, home, refresh, rotation, theme, role }
+settings        = { display, home, refresh, rotation, theme, role, alerts }
 display         = boolean
 home            = string
 refresh         = { paused, interval }
@@ -59,6 +59,12 @@ maxSize         = number
 expires         = number
 ttl             = number
 filter          = 'line' | 'bar' | 'alert' | 'annotation' | 'rag' | undefined
+alerts          = { noPopup, confirmed }
+noPopup         = boolean
+confirmed       = { changeCount, redAlerts, amberAlerts }
+changeCount     = number
+redAlerts       = [ number ]
+amberAlerts     = [ number ]
 ```
 * `id` is derived from `name` and used as attribute name in `pages` object
 * `widgets` can be omitted for an empty page
@@ -432,13 +438,14 @@ This component gives a tabular overview of alerts that occurred for the widget `
 ALERT_TABLE  = { id, verbose, items }
 brief        = boolean
 items        = [ ALERT_ITEM ]
-ALERT_ITEM   = { serial, name, series, instance, unit, color, acknowledged, frames, watch, annotations }
+ALERT_ITEM   = { serial, name, series, instance, unit, color, acknowledged, confirmed, frames, watch, annotations }
 serial       = number
 name         = string
 series       = string
 instance     = instance
 unit         = UNIT
 acknowledged = boolean
+confirmed    = boolean
 frames       = [ALERT_FRAME]
 ALERT_FRAME  = { level, since, until, color }
 level        = 'red' | 'amber'
@@ -631,7 +638,7 @@ results          = { *:* }
 closeProperty    = string
 onExit           = fn(*) => ()
 ```
-* `style` is an optional parameter to pass a custom CSS class name that is added to the modal so custom CSS styling can be applied using that class selector
+* `style` is an optional parameter to pass a custom CSS class name that is added to the modal so custom CSS styling can be applied using that class selector. If `style` contains any `:` it is not considered a CSS class name but as CSS properties as used in the `style` attribute of HTML elements
 * when a particular button is clicked the named `property` of that button is extracted from `results` and passed to `onExit` function. This value can be of any type and change while the dialog is open.
 * `closeProperty` is an optional field refering to the property used for the window close (x) button, if it is undefined the window has no such button
 
@@ -669,6 +676,7 @@ onRefreshSpeedChange = function (number) => ()
 
 
 ### FeedbackBanner API
+Component that shows a single feedback message.
 
 ```
 FEEDBACK_BANNER = { id, type, message }
@@ -676,11 +684,12 @@ id              = string
 type            = 'success' | 'error'
 message         = string
 ```
-* `message` is HTML
+* `message` is assumed HTML
 
 
 
 ### WidgetHeader API
+Component that is showing the widget title/caption/header and the "edit" or "settings" icon.
 
 ```
 WIDGET_HEADER    = { id, title, description, selected, onClick }
@@ -690,3 +699,18 @@ description      = string
 selected         = function () => boolean
 onClick          = function () => ()
 ```
+
+
+### AlertIndicator API
+Component that shows the global alerts summary at the bottom of the page
+
+```
+ALERTS_INDICATOR = { id, redAlerts, amberAlerts, changeCount }
+redAlerts        = ALERT_LEVEL
+amberAlerts      = ALERT_LEVEL
+ALERT_LEVEL      = { acknowledgedCount, unacknowledgedCount, color }
+color            = string
+acknowledgedCount   = number
+unacknowledgedCount = number
+```
+* `changeCount` increases each time the global alerts status has changed, meaning a new alert has started or an ongoing alert has stopped - this makes it easy to recognise such a change compared to a previous state

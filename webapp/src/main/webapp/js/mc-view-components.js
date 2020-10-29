@@ -65,6 +65,10 @@ MonitoringConsole.View.Components = (function() {
     return typeof obj === 'string';
   }
 
+  function isJQuery(obj) {
+    return obj instanceof jQuery;
+  }
+
   function createIcon(icon) {
     const svgElem = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     const useElem = document.createElementNS('http://www.w3.org/2000/svg', 'use');
@@ -690,13 +694,14 @@ MonitoringConsole.View.Components = (function() {
       if (items.length == 0)
         config.style = 'display: none';
       let table = $('<div/>', config);
-      for (let i = 0; i < items.length; i++) {
-        table.append(createAlertRow(items[i], model.verbose));
+      const prefix = sharedStart(items.map(alert => alert.serial.toString()));
+      for (let item of items) {
+        table.append(createAlertRow(item, model.verbose, prefix));
       }
       return table;
     }
 
-    function createAlertRow(item, verbose) {
+    function createAlertRow(item, verbose, prefix) {
       item.frames = item.frames.sort(sortMostRecentFirst); //NB. even though sortMostUrgetFirst does this as well we have to redo it here - JS...
       let endFrame = item.frames[0];
       let ongoing = endFrame.until === undefined;
@@ -705,19 +710,35 @@ MonitoringConsole.View.Components = (function() {
       let box = $('<div/>', { style: `border-color: ${color};` });
       box.append($('<input/>', { type: 'checkbox', checked: item.acknowledged, disabled: item.acknowledged })
         .change(() => acknowledge(item)));
-      box.append(createGeneralGroup(item, verbose));
+      box.append(createGeneralGroup(item, verbose, prefix));
       box.append(createStatisticsGroup(item, verbose));
       if (ongoing && verbose)
         box.append(createConditionGroup(item));
       if (verbose && Array.isArray(item.annotations) && item.annotations.length > 0)
         box.append(createAnnotationGroup(item));
-      let row = $('<div/>', { id: `Alert-${item.serial}` , class: `Item ${level}` , style: `border-color: ${item.color};` });
+      let row = $('<div/>', { 
+        id: `Alert-${item.serial}`, 
+        class: `Item ${level} ${item.confirmed ? 'AlertTableConfirmed' : ongoing ? 'AlertTableUnconfirmed' : ''}`, 
+        style: `border-color: ${item.color};`,
+      });
       row.append(box);
       return row;
     }
 
     function acknowledge(item) {
       Controller.requestAcknowledgeAlert(item.serial);
+    }
+
+    function sharedStart(arr) {
+      if (arr.length <= 1)
+        return '';
+      const e0 = arr[0];
+      const len0 = e0.length;
+      for (let p = 0; p < len0; p++)
+        for (let i = 1; i < arr.length; i++)
+          if (e0.charAt(p) != arr[i].charAt(p))
+            return e0.substring(0, p);
+      return '';
     }
 
     function createAnnotationGroup(item) {
@@ -771,9 +792,11 @@ MonitoringConsole.View.Components = (function() {
       return group;
     }
 
-    function createGeneralGroup(item, verbose) {
+    function createGeneralGroup(item, verbose, prefix) {
       let group = $('<div/>', { class: 'Group' });
-      appendProperty(group, 'Alert', item.serial);
+      appendProperty(group, 'Alert', $('<strong/>')
+          .append($('<small/>').text(prefix))
+          .append(item.serial.toString().substring(prefix.length)));
       appendProperty(group, 'Watch', item.name);
       if (item.series)
         appendProperty(group, 'Series', item.series);
@@ -1582,7 +1605,8 @@ MonitoringConsole.View.Components = (function() {
       };
       const overlay = $('<div/>', config);
       const dialog = $('<div/>', {
-        class: `ModalDialogContent${(model.style ? ' ' +  model.style : '')}`,
+        class: `ModalDialogContent${(model.style && !model.style.includes(':') ? ' ' +  model.style : '')}`,
+        style: model.style && model.style.includes(':') ? model.style : undefined,
       });
       if (model.title !== undefined && model.title != '')
         dialog.append($('<h2/>').html(model.title));
@@ -1832,6 +1856,47 @@ MonitoringConsole.View.Components = (function() {
   })();
 
 
+  /**
+   * AlertIndicator is the global alerts summary shown at the botton of the page (footer)
+   */ 
+  const AlertIndicator = (function() {
+
+    function createComponent(model) {
+      const config = { class: 'AlertIndicator'};
+      if (model.id)
+        config.id = model.id;
+      addTotal(model.redAlerts);
+      addTotal(model.amberAlerts);
+      if (model.redAlerts.totalCount == 0 && model.amberAlerts.totalCount == 0) {
+        model.class += ' AlertIndicatorNoAlerts';
+      }
+      const indicator = $('<aside/>', config);
+      if (model.redAlerts.totalCount > 0) {
+        indicator.append($('<a/>', { 
+          style: `color: ${model.redAlerts.color};`,
+          class: model.redAlerts.unacknowledgedCount > 0 ? 'AlertIndicatorActive' : undefined,
+          title: `${model.redAlerts.unacknowledgedCount} unacknowledged ongoing red alerts (${model.redAlerts.acknowledgedCount} acknowledged)`,
+          href: '#alerts',
+        }).html(`<b>&#x26a0;</b> ${model.redAlerts.unacknowledgedCount} <small>(${model.redAlerts.acknowledgedCount})</small>`));
+      }
+      if (model.amberAlerts.totalCount > 0) {
+        indicator.append($('<a/>', { 
+          style: `color: ${model.amberAlerts.color};`,
+          class: model.amberAlerts.unacknowledgedCount > 0 ? 'AlertIndicatorActive' : undefined,
+          title: `${model.amberAlerts.unacknowledgedCount} unacknowledged ongoing amber alerts (${model.amberAlerts.acknowledgedCount} acknowledged)`,
+          href: '#alerts',
+        }).html(`<b>&#x26a0;</b> ${model.amberAlerts.unacknowledgedCount} <small>(${model.amberAlerts.acknowledgedCount})</small>`));        
+      }
+      return indicator;
+    }
+
+    function addTotal(level) {
+      level.totalCount = level.acknowledgedCount + level.unacknowledgedCount;
+    }
+
+    return { createComponent: createComponent };
+  })();
+
   /*
    * Shared functions
    */
@@ -1839,7 +1904,7 @@ MonitoringConsole.View.Components = (function() {
   function appendProperty(parent, label, value, tag = "strong") {
     parent.append($('<span/>')
       .append($('<small>', { text: label + ':' }))
-      .append($('<' + tag + '/>').append(value))
+      .append(isJQuery(value) ? value : $('<' + tag + '/>').append(value))
     ).append('\n'); // so browser will line break;
   }
 
@@ -1903,6 +1968,7 @@ MonitoringConsole.View.Components = (function() {
       createNavSidebar: model => NavSidebar.createComponent(model),
       createFeedbackBanner: model => FeedbackBanner.createComponent(model),
       createWidgetHeader: model => WidgetHeader.createComponent(model),
+      createAlertIndicator: model => AlertIndicator.createComponent(model),
       createIconButton: model => createIconButton(model),
   };
 
