@@ -159,7 +159,7 @@ MonitoringConsole.View.Components = (function() {
       function createDropdownInput(model) {
         let config = { id: model.id };
         if (model.description && !model.label)
-          config.title = description;
+          config.title = model.description;
         let dropdown = $('<select/>',  );
         if (Array.isArray(model.options)) {
           model.options.forEach(option => dropdown.append($('<option/>',

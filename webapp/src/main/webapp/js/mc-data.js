@@ -212,7 +212,7 @@ MonitoringConsole.Data = (function() {
 					coloring: 'series', ordering: 'dec', limit: 8 },
 				{ series: 'ns:monitoring @:* AlertCount', displayName: 'Alerts',
 					grid: { column: 2, item: 2},
-					coloring: 'series'},
+					coloring: 'series', colors: 'Amber:amber AmberAck:amber Red:red RedAck:red'},
 				{ series: 'ns:monitoring CollectedSourcesCount', displayName: 'Sources',
 					grid: { column: 0, item: 2}},
 				{ series: 'ns:monitoring CollectedSourcesErrorCount', displayName: 'Sources with Errors', 

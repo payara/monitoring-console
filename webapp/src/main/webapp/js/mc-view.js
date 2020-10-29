@@ -341,14 +341,17 @@ MonitoringConsole.View = (function() {
                 { label: 'Min', type: 'value', unit: unit, value: widget.axis.min, onChange: (widget, value) => widget.axis.min = value},
                 { label: 'Max', type: 'value', unit: unit, value: widget.axis.max, onChange: (widget, value) => widget.axis.max = value},
             ]},
-            { label: 'Coloring', type: 'dropdown', options: { instance: 'Instance Name', series: 'Series Name', index: 'Result Set Index', 'instance-series': 'Instance and Series Name' }, value: widget.coloring, onChange: (widget, value) => widget.coloring = value,
-                description: 'What value is used to select the index from the color palette' },
             { label: 'Legend', input: [
                 { type: 'dropdown', options: { none: 'None', label: 'Alphabetically', inc: 'Increasing Value', dec: 'Decreasing Value' }, value: widget.ordering || 'label', onChange: (widget, selected) => widget.ordering = selected },
                 { label: 'Hide Constant Zero', type: 'checkbox', value: options.noConstantZero, onChange: (widget, checked) => widget.options.noConstantZero = checked },
             ]},
-            { label: 'Top N', type: 'value', unit: 'count', value: widget.limit, onChange: (widget, value) => widget.limit = value,
-                description: 'Limit the number of items shown to the top most N items (useful with legend ordering)' },
+            { label: 'Limit', type: 'value', unit: 'count', value: widget.limit, onChange: (widget, value) => widget.limit = value,
+                description: 'Limits the number of items shown to the top most N items (useful with legend ordering)' },
+            { label: 'Coloring', input:[
+                { type: 'dropdown', options: { instance: 'Instance Name', series: 'Series Name', index: 'Result Set Index', 'instance-series': 'Instance and Series Name' }, value: widget.coloring, onChange: (widget, value) => widget.coloring = value,
+                    description: 'What value is used to select the index from the color palette' },
+                { type: 'textarea', value: widget.colors, onChange: (widget, value) => widget.colors = value },
+            ]},                
         ]});
         const lineExtrasAvailable = widget.type == 'line';
         settings.push({ id: 'settings-decorations', caption: 'Extras', collapsed: true, entries: [
@@ -677,7 +680,14 @@ MonitoringConsole.View = (function() {
             .filter((value, index, self) => self.indexOf(value) === index);
         const series = widget.series;
         const isMultiSeries = Array.isArray(series) && series.length > 1;
-        let showInstance = instances.length > 1 || (data.length == 1 && !isMultiSeries);
+        const showInstance = instances.length > 1 || (data.length == 1 && !isMultiSeries);
+        const colors = {};
+        if (widget.colors) {
+            for (let mapping of widget.colors.split(' ')) {
+                const keyValue = mapping.split(':');
+                colors[keyValue[0]] = keyValue[1];
+            }
+        }
         for (let j = 0; j < data.length; j++) {
             const seriesData = data[j];
             const instance = seriesData.instance;
@@ -698,6 +708,9 @@ MonitoringConsole.View = (function() {
                 value += ' /s';
             let coloring = widget.coloring || 'instance';
             let color = Colors.lookup(coloring, getColorKey(widget, seriesData.series, instance, j), palette);
+            if (label !== undefined && colors[label]) {
+                color = Theme.color(colors[label]) || color;
+            }
             let background = Colors.hex2rgba(color, alpha);
             if (Array.isArray(alerts) && alerts.length > 0) {
                 let level;

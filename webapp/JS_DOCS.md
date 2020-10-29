@@ -82,7 +82,7 @@ amberAlerts     = [ number ]
 ### Widget Model
 
 ```
-WIDGET     = { id, series, type, unit, scaleFactor, target, grid, axis, options, decorations, status, displayName, description, coloring, ordering, limit, fields, mode, sort }
+WIDGET     = { id, series, type, unit, scaleFactor, target, grid, axis, options, decorations, status, displayName, description, colors, coloring, ordering, limit, fields, mode, sort }
 id         = string
 series     = string | [string]
 target     = string
@@ -91,6 +91,7 @@ description= string
 type       = 'line' | 'bar' | 'alert' | 'annotation' | 'rag' | 'top'
 unit       = UNIT
 UNIT       = 'count' | 'ms' | 'ns' | 'bytes' | 'percent'
+colors     = string
 coloring   = 'instance' | 'series' | 'index' | 'instance-series'
 ordering   = 'label' | 'inc' | 'dec' | 'none'
 limit      = number
@@ -149,6 +150,7 @@ annotations = { }
 * if `options`, `grid`, `decorations` or `THRESHOLD` fields aren't defined they are initialised to `{}`
 * `status` is a map from assessment status (key) to a `STATUS` object to add information on the particular status used to help the user to make sense of the current status. For possible keys are those of `Status`
 * `span` can be given instead of `colspan` and `rowspan` when they have the same value
+* `colors` is an optional string for a series to color name mapping, e.g. `Amber:amber AmberAck:amber`
 
 
 #### Decorations
