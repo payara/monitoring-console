@@ -208,6 +208,8 @@ MonitoringConsole.View.Components = (function() {
           config.readonly = true;
         if (model.placeholder)
           config.placeholder = model.placeholder;
+        if (model.description)
+          config.title = model.description;
         const input = $('<textarea/>', config);
         if (model.value)
           input.append(model.value);

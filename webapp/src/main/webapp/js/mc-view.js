@@ -341,16 +341,18 @@ MonitoringConsole.View = (function() {
                 { label: 'Min', type: 'value', unit: unit, value: widget.axis.min, onChange: (widget, value) => widget.axis.min = value},
                 { label: 'Max', type: 'value', unit: unit, value: widget.axis.max, onChange: (widget, value) => widget.axis.max = value},
             ]},
-            { label: 'Legend', input: [
-                { type: 'dropdown', options: { none: 'None', label: 'Alphabetically', inc: 'Increasing Value', dec: 'Decreasing Value' }, value: widget.ordering || 'label', onChange: (widget, selected) => widget.ordering = selected },
-                { label: 'Hide Constant Zero', type: 'checkbox', value: options.noConstantZero, onChange: (widget, checked) => widget.options.noConstantZero = checked },
+            { label: 'Legend', type: 'dropdown', options: { none: 'None', label: 'Alphabetically', inc: 'Increasing Value', dec: 'Decreasing Value' }, value: widget.ordering || 'label', onChange: (widget, selected) => widget.ordering = selected },
+            { label: 'Limit', input: [
+                { type: 'value', unit: 'count', value: widget.limit, onChange: (widget, value) => widget.limit = value,
+                    description: 'Limits the number of items shown to the top most N items (useful with legend ordering)' },
+                { label: 'Hide Constant Zero', type: 'checkbox', value: options.noConstantZero, onChange: (widget, checked) => widget.options.noConstantZero = checked,
+                    description: 'Hides series that have been zero for some amount of time' },
             ]},
-            { label: 'Limit', type: 'value', unit: 'count', value: widget.limit, onChange: (widget, value) => widget.limit = value,
-                description: 'Limits the number of items shown to the top most N items (useful with legend ordering)' },
             { label: 'Coloring', input:[
                 { type: 'dropdown', options: { instance: 'Instance Name', series: 'Series Name', index: 'Result Set Index', 'instance-series': 'Instance and Series Name' }, value: widget.coloring, onChange: (widget, value) => widget.coloring = value,
                     description: 'What value is used to select the index from the color palette' },
-                { type: 'textarea', value: widget.colors, onChange: (widget, value) => widget.colors = value },
+                { type: 'textarea', value: widget.colors, onChange: (widget, value) => widget.colors = value,
+                    placeholder: 'Label:color', description: 'A space separated list of label to colour name mappings, e.g. AmberAck:amber RedAck:red' },
             ]},                
         ]});
         const lineExtrasAvailable = widget.type == 'line';
