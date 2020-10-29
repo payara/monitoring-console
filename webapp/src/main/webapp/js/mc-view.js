@@ -782,26 +782,32 @@ MonitoringConsole.View = (function() {
         let entries = {};
         let index = 1;
         for (let annotation of annotations) {
-            let series = annotation.series;
-            let instance = annotation.instance;
-            let label = coloring === 'series' ? [series] : coloring === 'instance' ? [instance] : [instance, series];
-            let key = label.join('-');
-            let entry = entries[key];
+            const series = annotation.series;
+            const instance = annotation.instance;
+            const key = series;
+            const entry = entries[key];
             if (entry === undefined) {
                 let colorKey = getColorKey(widget, series, instance, index);
-                entries[key] = { label: label, count: 1, color: Colors.lookup(coloring, colorKey, palette) };
+                entries[key] = { 
+                    instance: instance,
+                    label: coloring === 'instance' ? undefined : series, 
+                    count: 1,
+                    color: Colors.lookup(coloring, colorKey, palette) 
+                };
             } else {
                 entry.count += 1;
             }
             index++;
         }
-        return Object.values(entries).map(function(entry) {
+        return { compact: true, items: Object.values(entries).map(function(entry) {
             return {
+                instance: entry.instance,
+                showInstance: true,
                 label: entry.label,
                 value: entry.count + 'x',
                 color: entry.color,                
             };
-        });
+        })};
     }
 
     function getColorKey(widget, series, instance, index) {
@@ -829,7 +835,8 @@ MonitoringConsole.View = (function() {
 
     function createRAGIndicatorModel(widget, legend) {
         const items = [];
-        for (let item of legend) {
+        const src = Array.isArray(legend) ? legend : legend.items;
+        for (let item of src) {
             items.push({
                 label: item.label,
                 status: item.status,

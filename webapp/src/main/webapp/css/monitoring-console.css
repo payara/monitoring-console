@@ -706,50 +706,58 @@ table.tags th, table.tags td {
   margin-right: 8px;
   margin-bottom: 2px;
 }
-.Legend .LegendBorder {
+.Legend .LegendColorIndicator {
   min-height: 100%;
   width: 5px;
   min-width: 5px;
-  margin-right: 5px;
+  margin-right: 1px;
 }
 .Legend .LegendLabel {
   display: flex;
   flex-direction: column;
   text-overflow: ellipsis;
   overflow: hidden;
+  margin-left: 5px;
+}
+.Legend .LegendLabel div {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  grid-column-gap: 8px;
 }
 .Legend .LegendLabel strong {
   font-size: 180%;
   font-weight: bold;
+  grid-row: 2;
 }
-.Legend .LegendLabel > span {
+.Legend .LegendLabel > * {
   font-weight: 600;
   color: rgba(255,255,255,0.8);
   text-overflow: ellipsis;
   overflow: hidden;
 }
-.Legend .LegendLabel > span:first-child {
+.Legend .LegendLabel > span {
   flex: 1 0 auto;
 }
 .Legend .LegendLabel strong small {
   font-size: 16px;
 }
-.Legend .status-missing strong {
+.Legend .status-missing {
   color: #0096D6;
 }
-.Legend .status-alarming strong {
+.Legend .status-alarming {
   animation: blinker 2s linear infinite;
 }
-.Legend .status-critical strong {
+.Legend .status-critical {
   animation: blinker 1s linear infinite;
 }
-.Legend .status-red strong {
+.Legend .status-red {
   animation: blinker 1s linear infinite;
 }
-.Legend .status-amber strong {
+.Legend .status-amber {
   animation: blinker 2s linear infinite;
 }
-.Legend .status-error strong {
+.Legend .status-error {
     color: red;
 }
 @keyframes blinker {

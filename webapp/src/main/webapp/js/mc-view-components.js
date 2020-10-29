@@ -573,48 +573,86 @@ MonitoringConsole.View.Components = (function() {
   let Legend = (function() {
 
     function createItem(item) {
-      let value = item.value;
-      let color = item.color;
-      let strong = value;
-      let normal = '';
-      if (isString(value) && value.indexOf(' ') > 0) {
-        strong = value.substring(0, value.indexOf(' '));
-        normal = value.substring(value.indexOf(' '));
-      }
-      const border = { 
-        class: 'LegendBorder', 
-        style: `background-color: ${color};` 
-      }; 
-      let attrs = {};
-      if (item.status)
-        attrs.class = 'status-' + item.status;
-      let textAttrs = {};
-      if (item.highlight)
-        textAttrs.style = 'color: '+ item.highlight + ';';
-      if (item.instance == 'server') { // special rule for DAS
-        item.instance = 'DAS';
-        attrs.title = "Data for the Domain Administration Server (DAS); plain instance name is 'server'";
-      }
+      const item0 = Array.isArray(item) ? item[0] : item;
       const label = $('<div/>', { class: 'LegendLabel' });
-      if (item.label)
-        label.append($('<span/>', { title: item.label }).text(item.label));
-      if (item.showInstance) {
-        label.append($('<span/>', { title: item.instance, style: item.item ? `color: ${item.item};` : '' }).text(item.instance));
+      if (item0.label)
+        label.append($('<span/>', { title: item0.label }).text(item0.label));
+      const items = Array.isArray(item) ? item : [item];
+      const entry = $('<li/>');
+      const addedColors = [];
+      for (let i of items) {
+        if (!addedColors.includes(i.color)) {
+          entry.append(createLineColorIndicator(i));
+          addedColors.push(i.color);
+        }
       }
-      label.append($('<strong/>', textAttrs)
-            .append(strong)
-            .append($('<small/>').text(normal)));
-      return $('<li/>', attrs)
-        .append($('<div/>', border))
-        .append(label);
+      const isMultiColor = addedColors.length > 1;
+      const groups = $('<div/>');
+      label.append(groups);
+      for (let i of items) {
+        if (isMultiColor)
+          i.item = i.color;
+        groups.append(createItemValue(i));
+      }      
+      return entry.append(label);
+    }
+
+    function createLineColorIndicator(item) {
+      return $('<div/>', { 
+        class: 'LegendColorIndicator', 
+        style: `background-color: ${item.color};` 
+      });
+    }
+
+    function createItemValue(item) {
+      let instance = item.showInstance ? item.instance : undefined;
+      const value = item.value;
+      const status = item.status;
+      const color = item.item;
+      const highlight = item.highlight;
+      let big = value;
+      let small = '';
+      if (isString(value) && value.indexOf(' ') > 0) {
+        big = value.substring(0, value.indexOf(' '));
+        small = value.substring(value.indexOf(' '));
+      }
+      const valueLabel = $('<strong/>', { 
+        class: status ? 'status-' + status : '',
+        style: highlight ? `color: ${highlight};` : ''
+      }).append(big)
+        .append($('<small/>').text(small));
+      let title = instance;
+      if (instance == 'server') { // special rule for DAS
+        instance = 'DAS';
+        title = "Data for the Domain Administration Server (DAS); plain instance name is 'server'";
+      }
+      return instance !== undefined
+        ? [$('<span/>', { title: title, style: color ? `color: ${color};` : '' }).text(instance), valueLabel]
+        : valueLabel;
     }
 
     function createComponent(model) {
+      function sameGroupItems(items, item) {
+        return items.filter(e => e.label == item.label);
+      }
       const legend = $('<ol/>',  {class: 'Legend'});
       const items = Array.isArray(model) ? model : model.items;
+      const compact = Array.isArray(model) ? false : model.compact;
       for (let item of items) {
-        if (item.hidden !== true)
-          legend.append(createItem(item));
+        if (item.hidden !== true && item.grouped !== true) {
+          if (compact && item.label !== undefined) {
+            const group = sameGroupItems(items, item);
+            // search for all item with similar label and group them
+            if (group.length == 1) {
+              legend.append(createItem(item));
+            } else {
+              legend.append(createItem(group));
+              group.forEach(e => e.grouped = true); // mark to avoid occur twice          
+            }
+          } else { // plain add all not hidden
+            legend.append(createItem(item));
+          }
+        }
       }
       return legend;
     }
