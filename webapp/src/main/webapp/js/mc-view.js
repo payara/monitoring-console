@@ -167,8 +167,9 @@ MonitoringConsole.View = (function() {
     function createAppSettings() {
         const pushAvailable = MonitoringConsole.Model.Role.isAdmin();
         const pullAvailable = !MonitoringConsole.Model.Role.isGuest();
+        const collapsed = MonitoringConsole.Model.Page.Widgets.Selection.isSingle();
         return [
-            { id: 'settings-general', type: 'app', caption: 'General', entries: [
+            { id: 'settings-general', type: 'app', caption: 'General', collapsed: collapsed, entries: [
                 { label: 'Data Refresh', input: [
                     { type: 'value', unit: 'sec', value: MonitoringConsole.Model.Refresh.interval(), onChange: (val) => MonitoringConsole.Model.Refresh.interval(val) },
                     { type: 'toggle', options: { false: 'Pause', true: 'Play'}, value: !MonitoringConsole.Model.Refresh.isPaused(), onChange: (checked) => MonitoringConsole.Model.Refresh.paused(!checked) },

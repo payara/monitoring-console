@@ -453,6 +453,10 @@ MonitoringConsole.View.Components = (function() {
             caption.toggleClass('state-collapsed');
           });
           box.append(caption);
+          if (groups[0].collapsed) { // first tab controlls if entire group is initially collapsed
+            caption.addClass('state-collapsed');
+            list.css('display', 'none');
+          }
         }
         box.append(list);
         const containers = [];
