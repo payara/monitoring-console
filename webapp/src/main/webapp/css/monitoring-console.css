@@ -729,6 +729,8 @@ table.tags th, table.tags td {
   font-size: 180%;
   font-weight: bold;
   grid-row: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .Legend .LegendLabel > * {
   font-weight: 600;
