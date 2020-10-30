@@ -159,7 +159,7 @@ MonitoringConsole.View.Components = (function() {
       function createDropdownInput(model) {
         let config = { id: model.id };
         if (model.description && !model.label)
-          config.title = description;
+          config.title = model.description;
         let dropdown = $('<select/>',  );
         if (Array.isArray(model.options)) {
           model.options.forEach(option => dropdown.append($('<option/>',
@@ -208,6 +208,8 @@ MonitoringConsole.View.Components = (function() {
           config.readonly = true;
         if (model.placeholder)
           config.placeholder = model.placeholder;
+        if (model.description)
+          config.title = model.description;
         const input = $('<textarea/>', config);
         if (model.value)
           input.append(model.value);
@@ -451,6 +453,10 @@ MonitoringConsole.View.Components = (function() {
             caption.toggleClass('state-collapsed');
           });
           box.append(caption);
+          if (groups[0].collapsed) { // first tab controlls if entire group is initially collapsed
+            caption.addClass('state-collapsed');
+            list.css('display', 'none');
+          }
         }
         box.append(list);
         const containers = [];
@@ -573,44 +579,86 @@ MonitoringConsole.View.Components = (function() {
   let Legend = (function() {
 
     function createItem(item) {
-      let label = item.label;
-      let value = item.value;
-      let color = item.color;
-      let strong = value;
-      let normal = '';
-      if (isString(value) && value.indexOf(' ') > 0) {
-        strong = value.substring(0, value.indexOf(' '));
-        normal = value.substring(value.indexOf(' '));
-      }
-      let attrs = { style: 'border-color: ' + color + ';' };
-      if (item.status)
-        attrs.class = 'status-' + item.status;
-      let label0 = Array.isArray(label) ? label[0] : label;
-      if (label0 === 'server') { // special rule for DAS
-        label0 = 'DAS'; 
-        attrs.title = "Data for the Domain Administration Server (DAS); plain instance name is 'server'";
-      } else if (label0.startsWith('server:')) {
-        label0 = 'DAS:' + label0.substring(7);
-      }
-      let textAttrs = {};
-      if (item.highlight)
-       textAttrs.style = 'color: '+ item.highlight + ';';
-      let mainLabel = $('<span/>').text(label0);
-      if (Array.isArray(label) && label.length > 1) {
-        for (let i = 1; i < label.length; i++) {
-          mainLabel.append(' - ' + label[i]);
+      const item0 = Array.isArray(item) ? item[0] : item;
+      const label = $('<div/>', { class: 'LegendLabel' });
+      if (item0.label)
+        label.append($('<span/>', { title: item0.label }).text(item0.label));
+      const items = Array.isArray(item) ? item : [item];
+      const entry = $('<li/>');
+      const addedColors = [];
+      for (let i of items) {
+        if (!addedColors.includes(i.color)) {
+          entry.append(createLineColorIndicator(i));
+          addedColors.push(i.color);
         }
       }
-      return $('<li/>', attrs)
-        .append(mainLabel)
-        .append($('<strong/>', textAttrs).text(strong))
-        .append($('<span/>').text(normal));
+      const isMultiColor = addedColors.length > 1;
+      const groups = $('<div/>');
+      label.append(groups);
+      for (let i of items) {
+        if (isMultiColor)
+          i.item = i.color;
+        groups.append(createItemValue(i));
+      }      
+      return entry.append(label);
+    }
+
+    function createLineColorIndicator(item) {
+      return $('<div/>', { 
+        class: 'LegendColorIndicator', 
+        style: `background-color: ${item.color};` 
+      });
+    }
+
+    function createItemValue(item) {
+      let instance = item.showInstance ? item.instance : undefined;
+      const value = item.value;
+      const status = item.status;
+      const color = item.item;
+      const highlight = item.highlight;
+      let big = value;
+      let small = '';
+      if (isString(value) && value.indexOf(' ') > 0) {
+        big = value.substring(0, value.indexOf(' '));
+        small = value.substring(value.indexOf(' '));
+      }
+      const valueLabel = $('<strong/>', { 
+        class: status ? 'status-' + status : '',
+        style: highlight ? `color: ${highlight};` : ''
+      }).append(big)
+        .append($('<small/>').text(small));
+      let title = instance;
+      if (instance == 'server') { // special rule for DAS
+        instance = 'DAS';
+        title = "Data for the Domain Administration Server (DAS); plain instance name is 'server'";
+      }
+      return instance !== undefined
+        ? [$('<span/>', { title: title, style: color ? `color: ${color};` : '' }).text(instance), valueLabel]
+        : valueLabel;
     }
 
     function createComponent(model) {
-      let legend = $('<ol/>',  {class: 'Legend'});
-      for (let item of model) {
-        legend.append(createItem(item));
+      function sameGroupItems(items, item) {
+        return items.filter(e => e.label == item.label);
+      }
+      const legend = $('<ol/>',  {class: 'Legend'});
+      const items = Array.isArray(model) ? model : model.items;
+      const compact = Array.isArray(model) ? false : model.compact;
+      for (let item of items) {
+        if (item.hidden !== true && item.grouped !== true) {
+          if (compact && item.label !== undefined) {
+            const group = sameGroupItems(items, item);
+            // search for all item with similar label and group them
+            if (group.length == 1) {
+              legend.append(createItem(item));
+            } else {
+              legend.append(createItem(group));
+              group.forEach(e => e.grouped = true); // mark to avoid occur twice          
+            }
+          } else { // plain add all not hidden
+            legend.append(createItem(item));
+          }
+        }
       }
       return legend;
     }
@@ -1636,7 +1684,10 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createButton(model, button) {
-      const config = { text: button.label };
+      const config = { 
+        id: model.id + '-' + button.property,
+        text: button.label 
+      };
       if (!button.secondary)
         config['class'] = 'primary';
       return $('<button/>', config).click(createClickHandler(model, button.property));

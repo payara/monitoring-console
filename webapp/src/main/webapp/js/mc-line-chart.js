@@ -411,7 +411,9 @@ MonitoringConsole.Chart.Line = (function() {
     let chart = update.chart();
     let datasets = [];
     for (let j = 0; j < data.length; j++) {
-      datasets = datasets.concat(createSeriesDatasets(widget, data[j], update.watches));
+      const seriesData = data[j];
+      if (seriesData.legend.hidden !== true)
+        datasets = datasets.concat(createSeriesDatasets(widget, seriesData, update.watches));
     }
     chart.data.datasets = datasets;
     chart.data.areas = createBackgroundAreas(widget, update.watches);

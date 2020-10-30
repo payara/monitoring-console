@@ -82,16 +82,19 @@ amberAlerts     = [ number ]
 ### Widget Model
 
 ```
-WIDGET     = { id, series, type, unit, scaleFactor, target, grid, axis, options, decorations, status, displayName, description, coloring, fields, mode, sort }
+WIDGET     = { id, series, type, unit, scaleFactor, target, grid, axis, options, decorations, status, displayName, description, colors, coloring, ordering, limit, fields, mode, sort }
 id         = string
 series     = string | [string]
 target     = string
 displayName= string
 description= string
-type       = 'line' | 'bar' | 'alert' | 'annotation' | 'rag'
+type       = 'line' | 'bar' | 'alert' | 'annotation' | 'rag' | 'top'
 unit       = UNIT
 UNIT       = 'count' | 'ms' | 'ns' | 'bytes' | 'percent'
+colors     = string
 coloring   = 'instance' | 'series' | 'index' | 'instance-series'
+ordering   = 'label' | 'inc' | 'dec' | 'none'
+limit      = number
 fields     = [ string ]
 mode       = 'list' | 'table'
 sort       = 'time' | 'value'
@@ -116,6 +119,7 @@ options    = {
 	noFill:boolean,
 	noTimeLabels:boolean,
 	noAnnotations:boolean,
+	noConstantZero:boolean,
 }
 decorations= { waterline, thresholds, alerts, annotations }
 waterline  = { value:number color:string }
@@ -146,6 +150,7 @@ annotations = { }
 * if `options`, `grid`, `decorations` or `THRESHOLD` fields aren't defined they are initialised to `{}`
 * `status` is a map from assessment status (key) to a `STATUS` object to add information on the particular status used to help the user to make sense of the current status. For possible keys are those of `Status`
 * `span` can be given instead of `colspan` and `rowspan` when they have the same value
+* `colors` is an optional string for a series to color name mapping, e.g. `Amber:amber AmberAck:amber`
 
 
 #### Decorations
@@ -381,16 +386,21 @@ When provided the `label` is used before the input component.
 Describes the model expected by the `Legend` component.
 
 ```
-LEGEND          = [LEGEND_ITEM]
-LEGEND_ITEM     = { label, value, color, background, status, highlight }
-label           = string | [ string ]
-value           = string | number
+LEGEND          = { compact, items } | [LEGEND_ITEM]
+compact         = boolean
+items           = [LEGEND_ITEM]
+LEGEND_ITEM     = { label, instance, value, color, background, status, highlight, showInstance, item, hidden }
+label           = string
+instance        = string
+value           = string | number 
 color           = string
 background      = string | [ string ]
 status          = Status
 since           = number
 highlight       = string
-
+showInstance    = boolean
+item            = string
+hidden          = boolean
 ```
 * If `value` is a _string_ only the first word is displayed large.
 This is as straight forward as it looks. All members are required. 
@@ -398,6 +408,8 @@ The model creates a new jQuery object that must be inserted into the DOM by the 
 * `color` is the color of the line or bar used to indicate the item, 
 * `background` is the background color of the line or bar should it use a fill, if an array is used those are the start and end color of a linear gradient
 * `highlight` is the color used to highlight the status of the text
+* `item` is the color used for the instance label (if both are defined and `showInstance` is `true`)
+* `hidden` is assumed `false` when not set
 
 
 ### Indicator API
