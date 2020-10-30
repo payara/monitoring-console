@@ -1684,7 +1684,10 @@ MonitoringConsole.View.Components = (function() {
     }
 
     function createButton(model, button) {
-      const config = { text: button.label };
+      const config = { 
+        id: model.id + '-' + button.property,
+        text: button.label 
+      };
       if (!button.secondary)
         config['class'] = 'primary';
       return $('<button/>', config).click(createClickHandler(model, button.property));

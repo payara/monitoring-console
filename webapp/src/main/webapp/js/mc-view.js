@@ -964,6 +964,11 @@ MonitoringConsole.View = (function() {
         const results = {};
         const input = $('<input/>', { type: 'text'});
         input.change(() => results.input = input.val());
+        input.keyup(event => {
+            if(event.key !== "Enter") return;
+            $('#ModalDialog-input').click();
+            event.preventDefault();    
+        });
         showModalDialog({
             title: 'Add Page',
             content: () => $('<form/>')
