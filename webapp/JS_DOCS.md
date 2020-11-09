@@ -636,8 +636,9 @@ filter           = string | fn (string) => boolean | fn (string, string) => bool
 ### ModalDialoge API
 
 ```
-MODAL_DIALOG     = { id, style, title, content, buttons, results, closeProperty, onExit }
+MODAL_DIALOG     = { id, style, icon, title, content, buttons, results, closeProperty, onExit }
 style            = string
+icon             = string
 title            = string
 content          = fn () => jQuery | jQuery
 buttons          = [ DIALOG_BUTTON ]

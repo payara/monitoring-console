@@ -469,6 +469,7 @@ MonitoringConsole.View = (function() {
     function createYesNoModualDialog(model) {
         return {
             style: model.dangerzone ? 'danger-zone' : undefined,
+            icon: model.dangerzone ? 'icon-alert' : undefined,
             title: model.title,
             content: () => model.question.split('\n').map(par => $('<p/>').html(par)),
             buttons: [
@@ -654,6 +655,7 @@ MonitoringConsole.View = (function() {
         content.push(list);
         showModalDialog({
             style: model.dangerzone ? 'danger-zone' : undefined,
+            icon: model.dangerzone ? 'icon-alert' : undefined,
             title: model.title,
             content: content,
             buttons: [
