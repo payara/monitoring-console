@@ -1656,10 +1656,10 @@ MonitoringConsole.View.Components = (function() {
         class: `ModalDialogContent${(model.style && !model.style.includes(':') ? ' ' +  model.style : '')}`,
         style: model.style && model.style.includes(':') ? model.style : undefined,
       });
-      if (model.icon !== undefined)
-        dialog.append(createIcon(model.icon));
       if (model.title !== undefined && model.title != '')
         dialog.append($('<h2/>').html(model.title));
+      if (model.icon !== undefined)
+        dialog.append(createIcon(model.icon));
       if (isString(model.closeProperty)) {
         const button = model.buttons.find(button => button.property == model.closeProperty);
         dialog.append(createIconButton({
