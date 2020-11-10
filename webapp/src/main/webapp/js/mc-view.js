@@ -989,6 +989,7 @@ MonitoringConsole.View = (function() {
                 }
             }
         });
+        input.focus();
     }
 
     function showRoleSelectionModalDialog(onExitCall) {
