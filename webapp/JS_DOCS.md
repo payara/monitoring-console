@@ -28,8 +28,11 @@ state changes in case of reload.
 ```
 UI              = { pages, settings }
 pages           = { *: PAGE }
-PAGE            = { name, id, numberOfColumns, rotate, widgets, sync, content }
+PAGE            = { name, id, numberOfColumns, rotate, widgets, sync, content, options }
 name            = string
+options         = { 
+	fillEmptyCells:boolean
+}
 id              = string
 numberOfColumns = number
 rotate          = boolean

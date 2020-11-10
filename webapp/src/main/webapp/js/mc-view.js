@@ -447,6 +447,7 @@ MonitoringConsole.View = (function() {
             { label: 'Type', type: 'dropdown', options: {manual: 'Manual', query: 'Query'}, value: page.type, onChange: (type) => { onPageUpdate(configure(page => page.type = type)); updateSettings(); } },            
             { label: 'Number of Columns', type: 'range', min: 1, max: 8, value: page.numberOfColumns, onChange: columns =>  { onPageUpdate(Page.arrange(columns)); updatePageNavigation(); }},
             { label: 'Include in Rotation', type: 'toggle', options: { false: 'No', true: 'Yes' }, value: Page.rotate(), onChange: (checked) => Page.rotate(checked) },
+            { label: 'Fill Empty Cells', type: 'toggle', options: { false: 'No', true: 'Yes' }, value: page.options.fillEmptyCells === true, onChange: (checked) => configure(page => page.options.fillEmptyCells = checked) },
             { label: 'Max Size', available: queryAvailable, type: 'value', min: 1, unit: 'count', value: page.content.maxSize,  onChange: (value) => configure(page => page.content.maxSize = value) },
             { label: 'Query Series', available: queryAvailable, type: 'text', value: page.content.series, onChange: (value) => configure(page => page.content.series = value) },
             { label: 'Query Interval', available: queryAvailable, input: [
