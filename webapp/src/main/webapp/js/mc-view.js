@@ -1327,6 +1327,7 @@ MonitoringConsole.View = (function() {
                 onExit: series => onSelection(series[0]),
             })),
         };
+        const watchID = watch.name;
         showModalDialog({
             id: 'WatchBuilder',
             style: !isAdd ? 'danger-zone' : undefined,
@@ -1339,10 +1340,16 @@ MonitoringConsole.View = (function() {
             results: { save: watch },
             closeProperty: 'cancel',
             onExit: watch => {
-                if (watch)
+                if (watch) {
+                    const extendedOnSuccess = isAdd || watchID == watch.name ? onSuccess : () => {
+                        Controller.requestDeleteWatch(watchID, 
+                        wrapOnSuccess(onSuccess, `Successfully removed watch with old name <em>${watchID}</em>.`), 
+                        wrapOnError(onError, `Failed to remove watch with old name <em>${watchID}</em>.`));
+                    };
                     Controller.requestCreateWatch(watch, 
-                        wrapOnSuccess(onSuccess, `Successfully saved watch <em>${watch.name}</em>.`), 
+                        wrapOnSuccess(extendedOnSuccess, `Successfully saved watch <em>${watch.name}</em>.`), 
                         wrapOnError(onError, `Failed to saved watch <em>${watch.name}</em>.`));
+                }
             },
         });
     }
