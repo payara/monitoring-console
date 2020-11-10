@@ -270,6 +270,11 @@ button.big-plus {
   color: white;
   box-shadow: none;
   outline: none;
+  flex: 1 1 auto;
+  align-self: center;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;  
 }
 button.big-plus:hover {
   background-color: transparent;
@@ -484,8 +489,7 @@ svg.icon {
     position: relative;
 }
 #chart-grid .Widget.empty {
-  text-align: center;
-  vertical-align: middle;
+  display: flex;
 }
 
 .Widget {

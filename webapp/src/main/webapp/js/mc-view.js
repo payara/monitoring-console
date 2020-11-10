@@ -1533,8 +1533,12 @@ MonitoringConsole.View = (function() {
                 .click(() => showAddWidgetModalDialog({ column: col, item: row })); 
         }              
         let numberOfColumns = layout.length;
+        if (layout[0].length == 0) {
+            for (let i = 0; i < layout.length; i++)
+                layout[i] = [null];
+        }
         let maxRows = layout[0].length;
-        let table = $("<table/>", { id: 'chart-grid', 'class': 'columns-'+numberOfColumns + ' rows-'+maxRows });
+        let table = $("<table/>", { id: 'chart-grid' });
         let padding = 32;
         let headerHeight = 48;
         let minRowHeight = 160;
