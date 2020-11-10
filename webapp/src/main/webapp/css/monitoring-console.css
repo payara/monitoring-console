@@ -655,9 +655,6 @@ svg.icon {
   height: 28px;
   width: 28px;
 }
-.Settings table td {
-  font-size: 14px;
-}
 .Settings table td:first-child {
   padding-right: 4px;
 }
@@ -730,7 +727,7 @@ table.tags th, table.tags td {
   grid-column-gap: 8px;
 }
 .Legend .LegendLabel strong {
-  font-size: 180%;
+  font-size: 28px;
   font-weight: bold;
   grid-row: 2;
   overflow: hidden;
@@ -899,6 +896,7 @@ table.tags th, table.tags td {
   color: rgba(255,255,255,0.8);
   background-color: var(--widget-part-bg-color);
   font-weight: normal;
+  font-size: 14px;
 }
 .AlertTable .Item span {
   white-space: nowrap;
@@ -1344,14 +1342,14 @@ table.AnnotationTable {
   color: white;
 }
 .WidgetHeader h3 {
-  font-size: 130%;
+  font-size: 24px;
   font-weight: bold;
   margin: 0;
   cursor: pointer;
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
-  padding: 1px 5px;
+  padding: 2px 5px;
   text-align: center;
   color: #F0981B;
   position: relative;
@@ -1476,6 +1474,10 @@ table.AnnotationTable {
 }
 .ModalDialog .ModalDialogContent > h2 {
   margin: 0 28px 16px 0;
+  font-size: 24px;
+}
+.ModalDialog .ModalDialogContent h3 {
+  font-size: 16px;
 }
 .ModalDialog .ModalDialogContent > svg {
   position: absolute;
