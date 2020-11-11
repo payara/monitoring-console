@@ -1476,21 +1476,23 @@ table.AnnotationTable {
   margin: 0 28px 16px 0;
   font-size: 24px;
 }
-.ModalDialog .ModalDialogContent h3 {
-  font-size: 16px;
+.ModalDialog .ModalDialogContent.ModalDialogIcon > h2 {
+  display: grid;
+  grid-template-columns: 48px auto;
+  align-items: center;
+  margin-bottom: 0;
 }
-.ModalDialog .ModalDialogContent > svg {
-  position: absolute;
-  top: 50px;
-  left: 30px;
-  width: 60px;
-  height: 60px;
+.ModalDialog .ModalDialogIcon > .ModalDialogScroll {
+  width: calc(100% - 48px);
+  margin-left: 48px;
+}
+.ModalDialog .ModalDialogIcon h2 svg {
+  width: 24px;
+  height: 24px;
   fill: rgba(255,255,255,1);
 }
-.ModalDialog .ModalDialogContent > svg + .ModalDialogScroll {
-  width: calc(100% - 120px);
-  margin-left: 120px;
-  min-height: 60px;
+.ModalDialog .ModalDialogContent h3 {
+  font-size: 16px;
 }
 .ModalDialog .ModalDialogButtons {
   padding: 10px 0;
