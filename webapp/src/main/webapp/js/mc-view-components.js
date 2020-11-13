@@ -1653,11 +1653,15 @@ MonitoringConsole.View.Components = (function() {
       };
       const overlay = $('<div/>', config);
       const dialog = $('<div/>', {
-        class: `ModalDialogContent${(model.style && !model.style.includes(':') ? ' ' +  model.style : '')}`,
+        class: `ModalDialogContent${(model.style && !model.style.includes(':') ? ' ' +  model.style : '')}${model.icon ? ' ModalDialogIcon' : ''}`,
         style: model.style && model.style.includes(':') ? model.style : undefined,
       });
-      if (model.title !== undefined && model.title != '')
-        dialog.append($('<h2/>').html(model.title));
+      if (model.title !== undefined && model.title != '') {
+        const header = $('<h2/>').html(model.title);
+        if (model.icon !== undefined)
+          header.prepend(createIcon(model.icon));
+        dialog.append(header);
+      }
       if (isString(model.closeProperty)) {
         const button = model.buttons.find(button => button.property == model.closeProperty);
         dialog.append(createIconButton({

@@ -101,6 +101,8 @@ MonitoringConsole.Model = (function() {
 				page.numberOfColumns = 1;
 			if (page.rotate === undefined)
 				page.rotate = true;
+			if (typeof page.options !== 'object')
+				page.options = {};
 			page.widgets = sanityCheckWidgets(page.widgets);
 			return page;
 		}
@@ -419,7 +421,36 @@ MonitoringConsole.Model = (function() {
 					layout[col].push(null);
 				}
 			}
+			if (page.options.fillEmptyCells === true)
+				fillEmptyCells(layout, numberOfColumns);
 			return layout;
+      	}
+
+      	function fillEmptyCells(layout) {
+			for (let col = 0; col < layout.length; col++) {
+				let row = 0;
+				let len = layout[col].length;
+				while (row < len) {
+					while (row < len && layout[col][row] !== null)
+						row++;
+					if (row < len) {
+						const row0 = row - 1;
+						const cell = layout[col][row0];
+						if (cell != null) {
+							while (row < len && layout[col][row] == null)
+								row++;
+							const diff = row - row0;
+							if (diff > 1 && cell.colspan == 1) {
+								cell.rowspan += diff - 1;
+								for (let r = row0 + 1; r < row; r++)
+									layout[col][r] = undefined;
+							}
+						} else {
+							row = len;
+						}
+					}
+				}
+			}
       	}
 
       	function getRowSpan(widget) {
@@ -464,6 +495,7 @@ MonitoringConsole.Model = (function() {
 	      per_second: 'sec',
 	      milliseconds: 'ms',
 	      microseconds: 'us',
+
 	      nanoseconds: 'ns',
 	      percent: 'percent',
 	      bytes: 'bytes',

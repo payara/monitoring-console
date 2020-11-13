@@ -447,6 +447,7 @@ MonitoringConsole.View = (function() {
             { label: 'Type', type: 'dropdown', options: {manual: 'Manual', query: 'Query'}, value: page.type, onChange: (type) => { onPageUpdate(configure(page => page.type = type)); updateSettings(); } },            
             { label: 'Number of Columns', type: 'range', min: 1, max: 8, value: page.numberOfColumns, onChange: columns =>  { onPageUpdate(Page.arrange(columns)); updatePageNavigation(); }},
             { label: 'Include in Rotation', type: 'toggle', options: { false: 'No', true: 'Yes' }, value: Page.rotate(), onChange: (checked) => Page.rotate(checked) },
+            { label: 'Fill Empty Cells', type: 'toggle', options: { false: 'No', true: 'Yes' }, value: page.options.fillEmptyCells === true, onChange: (checked) => configure(page => page.options.fillEmptyCells = checked) },
             { label: 'Max Size', available: queryAvailable, type: 'value', min: 1, unit: 'count', value: page.content.maxSize,  onChange: (value) => configure(page => page.content.maxSize = value) },
             { label: 'Query Series', available: queryAvailable, type: 'text', value: page.content.series, onChange: (value) => configure(page => page.content.series = value) },
             { label: 'Query Interval', available: queryAvailable, input: [
@@ -469,6 +470,7 @@ MonitoringConsole.View = (function() {
     function createYesNoModualDialog(model) {
         return {
             style: model.dangerzone ? 'danger-zone' : undefined,
+            icon: model.dangerzone ? 'icon-alert' : undefined,
             title: model.title,
             content: () => model.question.split('\n').map(par => $('<p/>').html(par)),
             buttons: [
@@ -654,6 +656,7 @@ MonitoringConsole.View = (function() {
         content.push(list);
         showModalDialog({
             style: model.dangerzone ? 'danger-zone' : undefined,
+            icon: model.dangerzone ? 'icon-alert' : undefined,
             title: model.title,
             content: content,
             buttons: [
@@ -987,6 +990,7 @@ MonitoringConsole.View = (function() {
                 }
             }
         });
+        input.focus();
     }
 
     function showRoleSelectionModalDialog(onExitCall) {
@@ -1324,6 +1328,7 @@ MonitoringConsole.View = (function() {
                 onExit: series => onSelection(series[0]),
             })),
         };
+        const watchID = watch.name;
         showModalDialog({
             id: 'WatchBuilder',
             style: !isAdd ? 'danger-zone' : undefined,
@@ -1336,10 +1341,16 @@ MonitoringConsole.View = (function() {
             results: { save: watch },
             closeProperty: 'cancel',
             onExit: watch => {
-                if (watch)
+                if (watch) {
+                    const extendedOnSuccess = isAdd || watchID == watch.name ? onSuccess : () => {
+                        Controller.requestDeleteWatch(watchID, 
+                        wrapOnSuccess(onSuccess, `Successfully removed watch with old name <em>${watchID}</em>.`), 
+                        wrapOnError(onError, `Failed to remove watch with old name <em>${watchID}</em>.`));
+                    };
                     Controller.requestCreateWatch(watch, 
-                        wrapOnSuccess(onSuccess, `Successfully saved watch <em>${watch.name}</em>.`), 
+                        wrapOnSuccess(extendedOnSuccess, `Successfully saved watch <em>${watch.name}</em>.`), 
                         wrapOnError(onError, `Failed to saved watch <em>${watch.name}</em>.`));
+                }
             },
         });
     }
@@ -1531,8 +1542,12 @@ MonitoringConsole.View = (function() {
                 .click(() => showAddWidgetModalDialog({ column: col, item: row })); 
         }              
         let numberOfColumns = layout.length;
+        if (layout[0].length == 0) {
+            for (let i = 0; i < layout.length; i++)
+                layout[i] = [null];
+        }
         let maxRows = layout[0].length;
-        let table = $("<table/>", { id: 'chart-grid', 'class': 'columns-'+numberOfColumns + ' rows-'+maxRows });
+        let table = $("<table/>", { id: 'chart-grid' });
         let padding = 32;
         let headerHeight = 48;
         let minRowHeight = 160;
