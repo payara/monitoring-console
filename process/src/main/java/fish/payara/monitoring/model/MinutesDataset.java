@@ -21,47 +21,72 @@ import java.time.ZoneOffset;
  */
 public final class MinutesDataset extends AggregateDataset<MinutesDataset> {
 
+    private static final int SINGLE_CAPACITY = 60;
+    private static final int DOUBLE_CAPACITY = 2 * SINGLE_CAPACITY;
+
     private static final long MILLIS_IN_ONE_MINUTE = Duration.ofMinutes(1).toMillis();
 
-    /**
-     * Creates an empty {@link MinutesDataset}.
-     */
-    public MinutesDataset() {
-        super(60);
+    public static final MinutesDataset EMPTY = new MinutesDataset();
+
+    private MinutesDataset() {
+        super();
     }
 
     private MinutesDataset(MinutesDataset predecessor, SeriesDataset minute) {
-        super(predecessor, offset(predecessor, minute), firstTime(predecessor, minute));
+        super(predecessor, SINGLE_CAPACITY, offset(predecessor, minute), firstTime(predecessor, minute));
         if (lastIndex() != minuteOfHour(minute)) {
             throw new IllegalArgumentException("Minute did not directly continue the end of the predecessor");
         }
         aggregate(minute);
     }
 
+    private MinutesDataset(MinutesDataset predecessor, SeriesDataset minute, int newCapacity) {
+        super(predecessor, newCapacity);
+        aggregate(minute);
+    }
+
+    private MinutesDataset(SeriesDataset minute, MinutesDataset predecessor) {
+        super(predecessor);
+        aggregate(minute);
+    }
+
     private static int offset(MinutesDataset predecessor, SeriesDataset minute) {
-        return predecessor.length > 0
+        return predecessor.size() > 0
             ? predecessor.offset
             : minuteOfHour(minute);
     }
 
     private static long firstTime(MinutesDataset predecessor, SeriesDataset minute) {
-        return predecessor.length > 0
-            ? predecessor.firstTime
-            : lastDateTime(minute).withSecond(0).withNano(0).toInstant().toEpochMilli();
+        return predecessor.size() > 0
+            ? predecessor.firstTime()
+            : atEndOfMinute(minute).withSecond(0).withNano(0).toInstant().toEpochMilli();
     }
 
     private static int minuteOfHour(SeriesDataset minute) {
-        return lastDateTime(minute).getMinute();
+        return atEndOfMinute(minute).getMinute();
     }
 
-    private static OffsetDateTime lastDateTime(SeriesDataset minute) {
+    private static OffsetDateTime atEndOfMinute(SeriesDataset minute) {
         return Instant.ofEpochMilli(minute.lastTime()).atOffset(ZoneOffset.UTC);
     }
 
     public MinutesDataset add(SeriesDataset minute) {
-        if (capacity() == 60) {
+        if (!minute.isEndOfMinute()) {
+            throw new IllegalArgumentException("Only add a complete minute to a MinutesDataset; ends at second "
+                    + Instant.ofEpochMilli(minute.lastTime()).atOffset(ZoneOffset.UTC).getSecond());
         }
-        return new MinutesDataset(this, minute);
+        if (capacity() == 0) {
+            return new MinutesDataset(this, minute);
+        }
+        if (capacity() == SINGLE_CAPACITY) { // offset => end, start => offset
+            return size() == SINGLE_CAPACITY
+                ? new MinutesDataset(this, minute, DOUBLE_CAPACITY) // complete, start sliding
+                : new MinutesDataset(this, minute); // add (with wrap)
+        }
+        // double capacity
+        return isEndOfHour()
+                ? new MinutesDataset(this, minute, DOUBLE_CAPACITY)
+                : new MinutesDataset(minute, this);
     }
 
     private void aggregate(SeriesDataset minute) {
@@ -84,7 +109,7 @@ public final class MinutesDataset extends AggregateDataset<MinutesDataset> {
      * @return true if this dataset contains data up to and including the last minute of the hour, else false
      */
     public boolean isEndOfHour() {
-        return lastIndex() == 59;
+        return lastIndex() == SINGLE_CAPACITY - 1;
     }
 
     @Override
@@ -93,7 +118,11 @@ public final class MinutesDataset extends AggregateDataset<MinutesDataset> {
         if (minutesIn < 0) { // next hour
             minutesIn = (capacity() - offset) + minuteOfHour;
         }
-        return firstTime + (minutesIn * MILLIS_IN_ONE_MINUTE);
+        return firstTime() + (minutesIn * MILLIS_IN_ONE_MINUTE);
     }
 
+    @Override
+    public long getIntervalLength() {
+        return MILLIS_IN_ONE_MINUTE;
+    }
 }

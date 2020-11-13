@@ -14,53 +14,75 @@ import java.time.ZoneOffset;
  */
 public final class HoursDataset extends AggregateDataset<HoursDataset> {
 
+    private static final int SINGLE_CAPACITY = 24;
+    private static final int DOUBLE_CAPACITY = 2 * SINGLE_CAPACITY;
+
     private static final long MILLIS_IN_ONE_HOUR = Duration.ofHours(1).toMillis();
 
-    /**
-     * Creates an empty {@link HoursDataset}.
-     */
-    public HoursDataset() {
-        super(24);
+    public static final HoursDataset EMPTY = new HoursDataset();
+
+    private HoursDataset() {
+        super();
     }
 
     private HoursDataset(HoursDataset predecessor, MinutesDataset hour) {
-        super(predecessor, offset(predecessor, hour), firstTime(predecessor, hour));
+        super(predecessor, SINGLE_CAPACITY, offset(predecessor, hour), firstTime(predecessor, hour));
         if (lastIndex() != hourOfDay(hour)) {
             throw new IllegalArgumentException("Hour did not directly follow the end of the predecessor");
         }
         aggregate(hour);
     }
 
+    private HoursDataset(HoursDataset predecessor, MinutesDataset hour, int newCapacity) {
+        super(predecessor, newCapacity);
+        aggregate(hour);
+    }
+
+    private HoursDataset(MinutesDataset hour, HoursDataset predecessor) {
+        super(predecessor);
+        aggregate(hour);
+    }
+
     private static int offset(HoursDataset predecessor, MinutesDataset hour) {
-        return predecessor.length > 0
+        return predecessor.size() > 0
             ? predecessor.offset
             : hourOfDay(hour);
     }
 
     private static long firstTime(HoursDataset predecessor, MinutesDataset hour) {
-        return predecessor.length > 0
-                ? predecessor.firstTime
-                : lastDateTime(hour).withMinute(0).withSecond(0).withNano(0).toInstant().toEpochMilli();
+        return predecessor.size() > 0
+                ? predecessor.firstTime()
+                : atStartOfHour(hour).withMinute(0).withSecond(0).withNano(0).toInstant().toEpochMilli();
     }
 
     private static int hourOfDay(MinutesDataset hour) {
-        return lastDateTime(hour).getHour();
+        return atStartOfHour(hour).getHour();
     }
 
-    private static OffsetDateTime lastDateTime(MinutesDataset hour) {
+    private static OffsetDateTime atStartOfHour(MinutesDataset hour) {
         return Instant.ofEpochMilli(hour.firstTime()).atOffset(ZoneOffset.UTC);
     }
 
     public HoursDataset add(MinutesDataset hour) {
         if (!hour.isEndOfHour()) {
-            throw new IllegalArgumentException("Only add complete hour to an HoursDataset");
+            throw new IllegalArgumentException("Only add complete hour to an HoursDataset; ends at minute "
+                    + Instant.ofEpochMilli(hour.getTime(hour.lastIndex())).atOffset(ZoneOffset.UTC).getSecond());
         }
-        //TODO
-        return new HoursDataset(this, hour);
+        if (capacity() == 0) {
+            return new HoursDataset(this, hour);
+        }
+        if (capacity() == SINGLE_CAPACITY) {
+            return size() == SINGLE_CAPACITY
+                    ? new HoursDataset(this, hour, DOUBLE_CAPACITY)
+                    : new HoursDataset(this, hour);
+        }
+        return isEndOfDay()
+                ? new HoursDataset(this, hour, DOUBLE_CAPACITY)
+                : new HoursDataset(hour, this);
     }
 
     private void aggregate(MinutesDataset hour) {
-        int numberOfMinutesInAggregate = hour.length; // might be less then 60 when first starting to record in the middle of an hour
+        int numberOfMinutesInAggregate = hour.size(); // might be less then 60 when first starting to record in the middle of an hour
         int firstMinuteOfHour = hour.offset;
         int lastMiniteOfHour = Math.max(59, firstMinuteOfHour + numberOfMinutesInAggregate);
         int points = hour.getNumberOfPoints(firstMinuteOfHour);
@@ -81,7 +103,7 @@ public final class HoursDataset extends AggregateDataset<HoursDataset> {
      * @return true if this dataset contains data up to and including the last hour of the day, else false
      */
     public boolean isEndOfDay() {
-        return lastIndex() == 23;
+        return lastIndex() == SINGLE_CAPACITY - 1;
     }
 
     @Override
@@ -90,6 +112,12 @@ public final class HoursDataset extends AggregateDataset<HoursDataset> {
         if (hoursIn < 0) { // next day
             hoursIn = (capacity() - offset) + hourOfDay;
         }
-        return firstTime + (hoursIn * MILLIS_IN_ONE_HOUR);
+        return firstTime() + (hoursIn * MILLIS_IN_ONE_HOUR);
     }
+
+    @Override
+    public long getIntervalLength() {
+        return MILLIS_IN_ONE_HOUR;
+    }
+
 }
