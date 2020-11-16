@@ -55,6 +55,10 @@ import java.math.BigInteger;
  */
 public abstract class SeriesDataset implements Serializable {
 
+    static MinutesDataset aggregate(SeriesDataset predecessor, SeriesDataset successor, boolean aggregate) {
+        return aggregate ? predecessor.getRecentMinutes().add(successor) : MinutesDataset.EMPTY;
+    }
+
     private final Series series;
     private final String instance;
     private final long observedSince;
@@ -120,7 +124,13 @@ public abstract class SeriesDataset implements Serializable {
      */
     public abstract long[] points();
 
-    public abstract SeriesDataset add(long time, long value);
+    public final SeriesDataset add(long time, long value) {
+        return add(time, value, false);
+    }
+
+    public abstract SeriesDataset add(long time, long value, boolean aggregate);
+
+    public abstract MinutesDataset getRecentMinutes();
 
     /**
      * @return The smallest value observed so far. If no value was observed {@link Long#MAX_VALUE}.

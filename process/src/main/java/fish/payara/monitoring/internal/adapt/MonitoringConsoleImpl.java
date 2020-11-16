@@ -121,6 +121,11 @@ public class MonitoringConsoleImpl implements MonitoringConsole, MonitoringDataS
         alerts.setEnabled(enabled);
     }
 
+    @Override
+    public void setHistoryEnabled(boolean enabled) {
+        data.setHistoryEnabled(enabled);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T> T getService(Class<T> type) throws NoSuchElementException {

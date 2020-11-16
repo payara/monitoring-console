@@ -21,8 +21,11 @@ public final class HoursDataset extends AggregateDataset<HoursDataset> {
 
     public static final HoursDataset EMPTY = new HoursDataset();
 
+    private final DaysDataset recentDays;
+
     private HoursDataset() {
         super();
+        this.recentDays = DaysDataset.EMPTY;
     }
 
     private HoursDataset(HoursDataset predecessor, MinutesDataset hour) {
@@ -31,26 +34,29 @@ public final class HoursDataset extends AggregateDataset<HoursDataset> {
             throw new IllegalArgumentException("Hour did not directly follow the end of the predecessor");
         }
         aggregate(hour);
+        this.recentDays = predecessor.recentDays.add(this);
     }
 
     private HoursDataset(HoursDataset predecessor, MinutesDataset hour, int newCapacity) {
         super(predecessor, newCapacity);
         aggregate(hour);
+        this.recentDays = predecessor.recentDays.add(this);
     }
 
     private HoursDataset(MinutesDataset hour, HoursDataset predecessor) {
         super(predecessor);
         aggregate(hour);
+        this.recentDays = predecessor.recentDays.add(this);
     }
 
     private static int offset(HoursDataset predecessor, MinutesDataset hour) {
-        return predecessor.size() > 0
+        return !predecessor.isEmpty()
             ? predecessor.offset
             : hourOfDay(hour);
     }
 
     private static long firstTime(HoursDataset predecessor, MinutesDataset hour) {
-        return predecessor.size() > 0
+        return !predecessor.isEmpty()
                 ? predecessor.firstTime()
                 : atStartOfHour(hour).withMinute(0).withSecond(0).withNano(0).toInstant().toEpochMilli();
     }
@@ -63,10 +69,16 @@ public final class HoursDataset extends AggregateDataset<HoursDataset> {
         return Instant.ofEpochMilli(hour.firstTime()).atOffset(ZoneOffset.UTC);
     }
 
+    /**
+     * @return the history of the recent days up to this hour (if it has been recorded)
+     */
+    public DaysDataset getRecentDays() {
+        return recentDays;
+    }
+
     public HoursDataset add(MinutesDataset hour) {
         if (!hour.isEndOfHour()) {
-            throw new IllegalArgumentException("Only add complete hour to an HoursDataset; ends at minute "
-                    + Instant.ofEpochMilli(hour.getTime(hour.lastIndex())).atOffset(ZoneOffset.UTC).getSecond());
+            return this;
         }
         if (capacity() == 0) {
             return new HoursDataset(this, hour);
@@ -86,7 +98,7 @@ public final class HoursDataset extends AggregateDataset<HoursDataset> {
         int firstMinuteOfHour = hour.offset;
         int lastMiniteOfHour = Math.max(59, firstMinuteOfHour + numberOfMinutesInAggregate);
         int points = hour.getNumberOfPoints(firstMinuteOfHour);
-        long min = hour.getMaximum(firstMinuteOfHour);
+        long min = hour.getMinimum(firstMinuteOfHour);
         long max = hour.getMaximum(firstMinuteOfHour);
         BigDecimal avg = BigDecimal.valueOf(hour.getAverage(firstMinuteOfHour));
         for (int i = firstMinuteOfHour + 1; i <= lastMiniteOfHour; i++) {

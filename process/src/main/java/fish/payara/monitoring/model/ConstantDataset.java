@@ -44,18 +44,18 @@ import java.math.BigInteger;
 
 /**
  * A special {@link SeriesDataset} for {@link Series} for only same value was observed so far.
- * 
+ *
  * The main advantage over a {@link PartialDataset} is the low memory footprint and overall smaller object size for
  * values that do not change anyway. Should they change the {@link #add(long, long)} method returns a
  * {@link PartialDataset}.
- * 
+ *
  * A minor second advantage is that the observed span can have any length and still be represented with just two points.
  * So in contrast to a {@link PartialDataset} which only has information for a fixed sliding time-frame the constant
  * nature allows the {@link ConstantDataset} to span any time-frame giving the user a more information while using less
  * resources.
- * 
+ *
  * Last but not least the {@link ConstantDataset} does not risk to become {@link PartialDataset#isOutdated()}.
- * 
+ *
  * @author Jan Bernitt
  */
 public class ConstantDataset extends SeriesDataset {
@@ -75,20 +75,24 @@ public class ConstantDataset extends SeriesDataset {
 
     private final int capacity;
 
-    public ConstantDataset(SeriesDataset predecessor, long time) {
+    private final MinutesDataset recentMinute;
+
+    public ConstantDataset(SeriesDataset predecessor, long time, boolean aggregate) {
         super(predecessor);
         this.capacity = predecessor.capacity();
         this.stableSince = predecessor.getStableSince();
         this.time = time;
         this.value = predecessor.lastValue();
+        this.recentMinute = aggregate(predecessor, this, aggregate);
     }
 
-    public ConstantDataset(EmptyDataset predecessor, long time, long value) {
+    public ConstantDataset(EmptyDataset predecessor, long time, long value, boolean aggregate) {
         super(predecessor.getSeries(), predecessor.getInstance(), time, 1);
         this.capacity = predecessor.capacity();
         this.stableSince = time;
         this.time = time;
         this.value = value;
+        this.recentMinute = aggregate(predecessor, this, aggregate);
     }
 
     @Override
@@ -99,11 +103,18 @@ public class ConstantDataset extends SeriesDataset {
     }
 
     @Override
-    public SeriesDataset add(long time, long value) {
+    public SeriesDataset add(long time, long value, boolean aggregate) {
         if (time == lastTime()) {
-            return new PartialDataset(this, time, value + lastValue());
+            return new PartialDataset(this, time, value + lastValue(), aggregate);
         }
-        return value == lastValue() ? new ConstantDataset(this, time) : new PartialDataset(this, time, value);
+        return value == lastValue()
+                ? new ConstantDataset(this, time, aggregate)
+                : new PartialDataset(this, time, value, aggregate);
+    }
+
+    @Override
+    public final MinutesDataset getRecentMinutes() {
+        return recentMinute;
     }
 
     @Override

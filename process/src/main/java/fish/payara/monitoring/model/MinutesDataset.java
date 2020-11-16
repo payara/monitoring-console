@@ -28,8 +28,11 @@ public final class MinutesDataset extends AggregateDataset<MinutesDataset> {
 
     public static final MinutesDataset EMPTY = new MinutesDataset();
 
+    private final HoursDataset recentHours;
+
     private MinutesDataset() {
         super();
+        this.recentHours = HoursDataset.EMPTY;
     }
 
     private MinutesDataset(MinutesDataset predecessor, SeriesDataset minute) {
@@ -38,26 +41,29 @@ public final class MinutesDataset extends AggregateDataset<MinutesDataset> {
             throw new IllegalArgumentException("Minute did not directly continue the end of the predecessor");
         }
         aggregate(minute);
+        this.recentHours = predecessor.recentHours.add(this);
     }
 
     private MinutesDataset(MinutesDataset predecessor, SeriesDataset minute, int newCapacity) {
         super(predecessor, newCapacity);
         aggregate(minute);
+        this.recentHours = predecessor.recentHours.add(this);
     }
 
     private MinutesDataset(SeriesDataset minute, MinutesDataset predecessor) {
         super(predecessor);
         aggregate(minute);
+        this.recentHours = predecessor.recentHours.add(this);
     }
 
     private static int offset(MinutesDataset predecessor, SeriesDataset minute) {
-        return predecessor.size() > 0
+        return !predecessor.isEmpty()
             ? predecessor.offset
             : minuteOfHour(minute);
     }
 
     private static long firstTime(MinutesDataset predecessor, SeriesDataset minute) {
-        return predecessor.size() > 0
+        return !predecessor.isEmpty()
             ? predecessor.firstTime()
             : atEndOfMinute(minute).withSecond(0).withNano(0).toInstant().toEpochMilli();
     }
@@ -70,10 +76,18 @@ public final class MinutesDataset extends AggregateDataset<MinutesDataset> {
         return Instant.ofEpochMilli(minute.lastTime()).atOffset(ZoneOffset.UTC);
     }
 
+    /**
+     * @return the history of the recent hours up to this minute (if it has been recorded)
+     *
+     *         Indirectly this gives also access to the {@link HoursDataset#getRecentDays()} history.
+     */
+    public HoursDataset getRecentHours() {
+        return recentHours;
+    }
+
     public MinutesDataset add(SeriesDataset minute) {
         if (!minute.isEndOfMinute()) {
-            throw new IllegalArgumentException("Only add a complete minute to a MinutesDataset; ends at second "
-                    + Instant.ofEpochMilli(minute.lastTime()).atOffset(ZoneOffset.UTC).getSecond());
+            return this;
         }
         if (capacity() == 0) {
             return new MinutesDataset(this, minute);

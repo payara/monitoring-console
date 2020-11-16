@@ -45,18 +45,18 @@ import java.util.Arrays;
 
 /**
  * Keeps point data for a fixed window size.
- * 
+ *
  * The implementation is "effectively immutable". While all primitive fields are immutable the sliding window itself is
  * shared. This does not affect the immutability of the observable window as long as the number of added points since
  * the instance was created is less than the window size. An outdated window can be detected though using
  * {@link #isOutdated()}. In practice the instances can be treated as if they are fully immutable as long as they are
  * monotonically updated and reading is done from the more recent instances.
- * 
+ *
  * When {@link #add(long, long)}ing points the window is first filled to it capacity. Since the buffers are twice the
  * window size they start to slide once the {@link #size()} reaches the {@link #capacity()}. When the sliding window
  * reaches the end of the buffer the most recent halve is copied to the first half and sliding starts from there again.
  * This keeps copying memory only occur every {@link #capacity()} points.
- * 
+ *
  * @author Jan Bernitt
  */
 public final class PartialDataset extends SeriesDataset {
@@ -67,7 +67,7 @@ public final class PartialDataset extends SeriesDataset {
     private final long time0;
     /**
      * Sliding window twice the observable {@link #capacity()} for time and values alternating: [t1,v1,t2,v2,...]
-     * 
+     *
      * Using a single array has the advantage of data being co-located in memory and copying while rolling over is
      * reduced to just one operation. Also a snapshot of the points can be created in a single copy operation and
      * represented efficiently in memory as a long[].
@@ -76,15 +76,16 @@ public final class PartialDataset extends SeriesDataset {
     private final int offset;
     private final int size;
 
-    // further statistics 
+    // further statistics
     private final int observedValueChanges;
     private final long observedMax;
     private final long observedMin;
     private final BigInteger observedSum;
     private final int stableCount;
     private final long stableSince;
+    private final MinutesDataset recentMinutes;
 
-    PartialDataset(ConstantDataset predecessor, long time, long value) {
+    PartialDataset(ConstantDataset predecessor, long time, long value, boolean aggregate) {
         super(predecessor);
         long lastTime = predecessor.lastTime();
         this.size = predecessor.size() + (lastTime == time ? 0 : 1);
@@ -106,9 +107,10 @@ public final class PartialDataset extends SeriesDataset {
         this.observedSum = predecessor.getObservedSum().add(BigInteger.valueOf(value));
         this.stableCount = 1;
         this.stableSince = time;
+        this.recentMinutes = aggregate(predecessor, this, aggregate);
     }
 
-    private PartialDataset(PartialDataset predecessor, int size, int offset, long time, long value) {
+    private PartialDataset(PartialDataset predecessor, int size, int offset, long time, long value, boolean aggregate) {
         super(predecessor);
         this.size = size;
         this.offset = offset;
@@ -129,6 +131,7 @@ public final class PartialDataset extends SeriesDataset {
             this.stableCount = stable ? predecessor.stableCount + 1 : 1;
             this.stableSince = stable ? predecessor.stableSince : time;
         }
+        this.recentMinutes = aggregate(predecessor, this, aggregate);
     }
 
     @Override
@@ -205,9 +208,9 @@ public final class PartialDataset extends SeriesDataset {
     }
 
     @Override
-    public SeriesDataset add(long time, long value) {
+    public SeriesDataset add(long time, long value, boolean aggregate) {
         if (time == lastTime()) {
-            return new PartialDataset(this, size, offset, time, value);
+            return new PartialDataset(this, size, offset, time, value, aggregate);
         }
         int newOffset = offset;
         int newSize = size;
@@ -219,7 +222,7 @@ public final class PartialDataset extends SeriesDataset {
             if (offset == size) { // is it time to roll over?
                 if (isStable(value)) { // never observed a different value ?
                     // go back to stable form, no point in occupying memory for something stable
-                    return new StableDataset(this, time);
+                    return new StableDataset(this, time, aggregate);
                 }
                 System.arraycopy(data, offset * 2, data, 0, size * 2);
                 newOffset = 0;
@@ -228,7 +231,12 @@ public final class PartialDataset extends SeriesDataset {
             data[2 * (newOffset + size) + 1] = value;
             newOffset++; // slide the window towards the end
         }
-        return new PartialDataset(this, newSize, newOffset, time, value);
+        return new PartialDataset(this, newSize, newOffset, time, value, aggregate);
+    }
+
+    @Override
+    public MinutesDataset getRecentMinutes() {
+        return recentMinutes;
     }
 
     private boolean isStable(long value) {

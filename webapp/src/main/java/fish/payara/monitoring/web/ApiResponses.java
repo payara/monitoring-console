@@ -61,6 +61,9 @@ import fish.payara.monitoring.alert.Alert.Level;
 import fish.payara.monitoring.alert.AlertService.AlertStatistics;
 import fish.payara.monitoring.alert.Circumstance;
 import fish.payara.monitoring.alert.Condition;
+import fish.payara.monitoring.model.AggregateDataset;
+import fish.payara.monitoring.model.HoursDataset;
+import fish.payara.monitoring.model.MinutesDataset;
 import fish.payara.monitoring.model.SeriesAnnotation;
 import fish.payara.monitoring.model.SeriesDataset;
 import fish.payara.monitoring.web.ApiRequests.SeriesQuery;
@@ -278,6 +281,9 @@ public final class ApiResponses {
         public final long observedSince;
         public final int stableCount;
         public final long stableSince;
+        public final AggregatedSeriesData minutes;
+        public final AggregatedSeriesData hours;
+        public final AggregatedSeriesData days;
 
         public SeriesData(SeriesDataset set) {
             this(set, false);
@@ -295,6 +301,17 @@ public final class ApiResponses {
             this.observedSince = set.getObservedSince();
             this.stableCount = set.getStableCount();
             this.stableSince = set.getStableSince();
+            if (truncatePoints) {
+                this.minutes = null;
+                this.hours = null;
+                this.days = null;
+            } else {
+                MinutesDataset minutes = set.getRecentMinutes();
+                this.minutes = AggregatedSeriesData.of(minutes);
+                HoursDataset hours = minutes.getRecentHours();
+                this.hours = AggregatedSeriesData.of(hours);
+                this.days = AggregatedSeriesData.of(hours.getRecentDays());
+            }
         }
     }
 
@@ -416,6 +433,29 @@ public final class ApiResponses {
 
         public WatchesResponse(Collection<Watch> watches) {
             this.watches = watches.stream().map(WatchData::new).collect(toList());
+        }
+    }
+
+    public static final class AggregatedSeriesData {
+
+        static AggregatedSeriesData of(AggregateDataset<?> data) {
+            return data.isEmpty() ? null : new AggregatedSeriesData(data);
+        }
+
+        public final long start;
+        public final long interval;
+        public final long[] mins;
+        public final long[] maxs;
+        public final double[] avgs;
+        public final int[] points;
+
+        public AggregatedSeriesData(AggregateDataset<?> data) {
+            this.start = data.firstTime();
+            this.interval = data.getIntervalLength();
+            this.mins = data.mins();
+            this.maxs = data.maxs();
+            this.avgs = data.avgs();
+            this.points = data.numberOfPoints();
         }
     }
 }

@@ -168,6 +168,10 @@ public abstract class AggregateDataset<T extends AggregateDataset<T>> {
         return firstTime;
     }
 
+    public final boolean isEmpty() {
+        return size == 0;
+    }
+
     /**
      * @return the number of data points in this set.
      *
@@ -237,5 +241,45 @@ public abstract class AggregateDataset<T extends AggregateDataset<T>> {
      *         of the indexes as the interval aggregated is constant/regular.
      */
     public abstract long getIntervalLength();
+
+    /**
+     * @return minimum values in chronological order
+     */
+    public long[] mins() {
+        return copy(mins, new long[size]);
+    }
+
+    /**
+     * @return maximum values in chronological order
+     */
+    public long[] maxs() {
+        return copy(maxs, new long[size]);
+    }
+
+    /**
+     * @return average values in chronological order
+     */
+    public double[] avgs() {
+        return copy(avgs, new double[size]);
+    }
+
+    /**
+     * @return number of points aggregated into min/max/avg in chronological order
+     */
+    public int[] numberOfPoints() {
+        return copy(points, new int[size]);
+    }
+
+    private <A> A copy(A src, A dest) {
+        int from = firstIndex();
+        if (!isWrapped()) {
+            arraycopy(src, from, dest, 0, size);
+            return dest;
+        }
+        int len = capacity() - from;
+        arraycopy(src, from, dest, 0, len);
+        arraycopy(src, 0, dest, len, size - len);
+        return dest;
+    }
 
 }

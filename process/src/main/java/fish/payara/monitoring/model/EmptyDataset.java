@@ -46,7 +46,7 @@ import java.math.BigInteger;
  * The {@link EmptyDataset} is the starting point for any of the other {@link SeriesDataset} implementations.
  *
  * When first point is added to the {@link EmptyDataset} it becomes a {@link ConstantDataset}.
- * 
+ *
  * {@link EmptyDataset} are initialised with a {@link #capacity} so it can be passed on as the set eventually evolves
  * into a {@link PartialDataset} which has a {@link #capacity()} limit.
  *
@@ -72,8 +72,13 @@ public final class EmptyDataset extends SeriesDataset {
     }
 
     @Override
-    public SeriesDataset add(long time, long value) {
-        return new ConstantDataset(this, time, value);
+    public SeriesDataset add(long time, long value, boolean aggregate) {
+        return new ConstantDataset(this, time, value, aggregate);
+    }
+
+    @Override
+    public MinutesDataset getRecentMinutes() {
+        return MinutesDataset.EMPTY;
     }
 
     @Override

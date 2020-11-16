@@ -1,5 +1,6 @@
 package fish.payara.monitoring.model;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -35,13 +36,13 @@ public final class DaysDataset extends AggregateDataset<DaysDataset> {
     }
 
     private static long firstTime(DaysDataset predecessor, HoursDataset day) {
-        return predecessor.size() > 0
+        return !predecessor.isEmpty()
                 ? predecessor.firstTime()
                 : atStartOfDay(day).withMinute(0).withSecond(0).withNano(0).toInstant().toEpochMilli();
     }
 
     private static int offset(DaysDataset predecessor, HoursDataset day) {
-        return predecessor.size() > 0
+        return !predecessor.isEmpty()
                 ? predecessor.offset
                 : dayOfMonth(day);
     }
@@ -54,8 +55,39 @@ public final class DaysDataset extends AggregateDataset<DaysDataset> {
         return Instant.ofEpochMilli(day.firstTime()).atOffset(ZoneOffset.UTC);
     }
 
-    private void aggregate(HoursDataset day) {
+    public DaysDataset add(HoursDataset day) {
+        if (!day.isEndOfDay()) {
+            return this;
+        }
+        if (capacity() == 0) {
+            return new DaysDataset(this, day);
+        }
+        if (capacity() == SINGLE_CAPACITY) {
+            return size() == SINGLE_CAPACITY
+                    ? new DaysDataset(this, day, DOUBLE_CAPACITY)
+                    : new DaysDataset(this, day);
+        }
+        return isEndOfMonth()
+                ? new DaysDataset(this, day, DOUBLE_CAPACITY)
+                : new DaysDataset(day, this);
+    }
 
+    private void aggregate(HoursDataset day) {
+        int numberOfHoursInAggregate = day.size();
+        int firstHourOfDay = day.offset;
+        int lastHourOfDay = Math.max(23, firstHourOfDay + numberOfHoursInAggregate);
+        int points = day.getNumberOfPoints(firstHourOfDay);
+        long min = day.getMinimum(firstHourOfDay);
+        long max = day.getMaximum(firstHourOfDay);
+        BigDecimal avg = BigDecimal.valueOf(day.getAverage(firstHourOfDay));
+        for (int i = firstHourOfDay + 1; i <= lastHourOfDay; i++) {
+            points += day.getNumberOfPoints(i);
+            min = Math.min(min, day.getMinimum(i));
+            max = Math.max(max, day.getMaximum(i));
+            avg = avg.add(BigDecimal.valueOf(day.getAverage(i)));
+        }
+        setEntry(points, min, max,
+                avg.divide(BigDecimal.valueOf(numberOfHoursInAggregate)).doubleValue());
     }
 
     /**
