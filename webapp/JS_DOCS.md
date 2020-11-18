@@ -112,6 +112,7 @@ options    = {
 	drawMinLine:boolean,
 	drawMaxLine:boolean,
 	drawAvgLine:boolean,
+	drawAggregates:boolean,
 	perSec:boolean,
 	decimalMetric:boolean,
 	drawCurves:boolean,

@@ -358,6 +358,7 @@ MonitoringConsole.View = (function() {
         ]});
         const lineExtrasAvailable = widget.type == 'line';
         settings.push({ id: 'settings-decorations', caption: 'Extras', collapsed: true, entries: [
+            { label: 'History', type: 'toggle', options: { true: 'Yes', false: 'No'}, value: widget.options.drawAggregates || false, onChange: (widget, checked) => widget.options.drawAggregates = checked },
             { label: 'Annotations', input: [
                 { label: 'show', type: 'checkbox', value: !options.noAnnotations, onChange: (widget, checked) => widget.options.noAnnotations = !checked},
             ]},
@@ -367,7 +368,7 @@ MonitoringConsole.View = (function() {
                 { label: 'Min', type: 'checkbox', value: options.drawMinLine, onChange: (widget, checked) => widget.options.drawMinLine = checked},
                 { label: 'Max', type: 'checkbox', value: options.drawMaxLine, onChange: (widget, checked) => widget.options.drawMaxLine = checked},
                 { label: 'Avg', type: 'checkbox', value: options.drawAvgLine, onChange: (widget, checked) => widget.options.drawAvgLine = checked},            
-            ]},            
+            ]},
             { label: 'Waterline', available: lineExtrasAvailable, input: [
                 { type: 'value', unit: unit, value: widget.decorations.waterline.value, onChange: (widget, value) => widget.decorations.waterline.value = value },
                 { type: 'color', value: widget.decorations.waterline.color, defaultValue: Theme.color('waterline'), onChange: (widget, value) => widget.decorations.waterline.color = value },
@@ -1105,7 +1106,8 @@ MonitoringConsole.View = (function() {
                     widgetId: 'auto', 
                     series: '?:* *',
                     truncate: ['ALERTS', 'POINTS'],
-                    exclude: []
+                    exclude: [],
+                    history: false,
                 }]}, 
                 (response) => resolve(response.matches),
                 () => reject(undefined));

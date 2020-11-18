@@ -2,6 +2,10 @@ package fish.payara.monitoring.model;
 
 import static java.lang.System.arraycopy;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+
 /**
  * Base class for specific {@link AggregateDataset}s.
  *
@@ -49,61 +53,43 @@ public abstract class AggregateDataset<T extends AggregateDataset<T>> {
         this.size = 0;
     }
 
-    /**
-     * Used when appending a new point to a dataset of single capacity.
-     *
-     * @param predecessor The dataset which has 1 datapoint less than this will have
-     * @param capacity    the single capacity (no sliding window) only used in case the predecessor was the empty set
-     * @param offset      the offset of this dataset; this is the same as the one of the predecessor (if set) or the one
-     *                    of the first datapoint
-     * @param firstTime   the first time of this dataset; this is the same as the one of the predecessor (if set) or the
-     *                    one of the first datapoint
-     */
-    protected AggregateDataset(AggregateDataset<T> predecessor, int capacity, int offset, long firstTime) {
-        boolean first = predecessor.size == 0;
-        this.mins = first ? new long[capacity] : predecessor.mins;
-        this.maxs = first ? new long[capacity] : predecessor.maxs;
-        this.avgs = first ? new double[capacity] : predecessor.avgs;
-        this.points = first ? new int[capacity] : predecessor.points;
-        this.offset = offset;
-        this.size = predecessor.size + 1;
-        this.firstTime = firstTime;
+    protected AggregateDataset(int windowSize, AggregateDataset<T> predecessor, long time) {
+        boolean empty = predecessor.isEmpty();
+        int requiredSize = empty ? 1 : predecessor.indexOf(time) + 1;
+        if (!empty && time < predecessor.lastTime()) {
+            throw new IllegalArgumentException("Cannot set data in the past");
+        }
+        int availableSize = empty ? 0 : predecessor.capacity() - predecessor.offset;
+        int requiredSizeInc = requiredSize - predecessor.size;
+        this.size = Math.min(windowSize, requiredSize);
+        if (requiredSize <= availableSize) {
+            int lastIndex = predecessor.lastIndex() +  requiredSizeInc;
+            this.mins = predecessor.mins;
+            this.maxs = predecessor.maxs;
+            this.avgs = predecessor.avgs;
+            this.points = predecessor.points;
+            this.offset = Math.max(predecessor.offset, lastIndex + 1 - windowSize);
+            this.firstTime = predecessor.getTime(this.offset);
+        } else {
+            int newCapacity = empty ? windowSize : windowSize * 2;
+            this.mins = new long[newCapacity];
+            this.maxs = new long[newCapacity];
+            this.avgs = new double[newCapacity];
+            this.points = new int[newCapacity];
+            int copyLength = Math.min(predecessor.size, windowSize - 1);
+            int from = predecessor.lastIndex() - copyLength + 1;
+            AggregateDataset<T> src = predecessor;
+            arraycopy(src.mins, from, mins, 0, copyLength);
+            arraycopy(src.maxs, from, maxs, 0, copyLength);
+            arraycopy(src.avgs, from, avgs, 0, copyLength);
+            arraycopy(src.points, from, points, 0, copyLength);
+            this.offset = 0;
+            this.firstTime = predecessor.isEmpty() ? time : predecessor.getTime(from);
+        }
     }
 
-    /**
-     * Used when copying a section of the base dataset as a basis for a new sliding window dataset
-     *
-     * @param predecessor The dataset which has the number of points that should be used as sliding window, all but the
-     *                    oldest point of this will be copied as a basis for the created dataset
-     * @param newCapacity must be reasonable larger then the length of the base dataset (usually 1.5 to 2 times
-     *                    the length)
-     */
-    protected AggregateDataset(AggregateDataset<T> predecessor, int newCapacity) {
-        if (newCapacity <= predecessor.size) {
-            throw new IllegalArgumentException("Capacity must be larger than the sliding window size (length of base dataset)");
-        }
-        this.size = predecessor.size; // window length stays the same and is the single capacity
-        this.offset = 0; // a copy should always occur when a full interval has been recorded, this is either when single capacity is filled up or when double capacity has slided to the end
-        this.mins = new long[newCapacity];
-        this.maxs = new long[newCapacity];
-        this.avgs = new double[newCapacity];
-        this.points = new int[newCapacity];
-        AggregateDataset<T> src = predecessor;
-        int from = src.firstIndex();
-        int to = Math.max(from + src.size, src.capacity());
-        int copyLength = to - from;
-        this.firstTime = predecessor.getTime(from);
-        arraycopy(src.mins, from, mins, 0, copyLength);
-        arraycopy(src.maxs, from, maxs, 0, copyLength);
-        arraycopy(src.avgs, from, avgs, 0, copyLength);
-        arraycopy(src.points, from, points, 0, copyLength);
-        if (copyLength < src.size) { // there was a wrap that needs copying as well
-            copyLength = src.size - copyLength;
-            arraycopy(src.mins, 0, mins, to, copyLength);
-            arraycopy(src.maxs, 0, maxs, to, copyLength);
-            arraycopy(src.avgs, 0, avgs, to, copyLength);
-            arraycopy(src.points,0, points, to, copyLength);
-        }
+    private int indexOf(long time) {
+        return (int)((time - getTime(firstIndex())) / getIntervalLength());
     }
 
     /**
@@ -168,6 +154,10 @@ public abstract class AggregateDataset<T extends AggregateDataset<T>> {
         return firstTime;
     }
 
+    public final long lastTime() {
+        return getTime(lastIndex());
+    }
+
     public final boolean isEmpty() {
         return size == 0;
     }
@@ -215,7 +205,7 @@ public abstract class AggregateDataset<T extends AggregateDataset<T>> {
      *         An empty set returns -1
      */
     public final int lastIndex() {
-        return size == 0 ? -1 : (offset + size - 1) % capacity();
+        return capacity() == 0 ? -1 : (offset + size - 1) % capacity();
     }
 
     /**
@@ -234,7 +224,11 @@ public abstract class AggregateDataset<T extends AggregateDataset<T>> {
      *         This value is computed based on the {@link #firstTime()}, the {@link #firstIndex()} and the interval
      *         between data points which depends on the subclass.
      */
-    public abstract long getTime(int index);
+    public final long getTime(int index) {
+        if (index < offset)
+            throw new IllegalArgumentException("No data availabel for absolute index");
+        return firstTime() + ((index - offset) * getIntervalLength());
+    }
 
     /**
      * @return The duration of the time-span that got aggregated into one data point (index). This is the same for any
@@ -271,15 +265,27 @@ public abstract class AggregateDataset<T extends AggregateDataset<T>> {
     }
 
     private <A> A copy(A src, A dest) {
-        int from = firstIndex();
-        if (!isWrapped()) {
-            arraycopy(src, from, dest, 0, size);
-            return dest;
-        }
-        int len = capacity() - from;
-        arraycopy(src, from, dest, 0, len);
-        arraycopy(src, 0, dest, len, size - len);
+        arraycopy(src, firstIndex(), dest, 0, size);
         return dest;
     }
 
+    /**
+     * @return the estimated memory in bytes used by this dataset. Since the object layout in memory is a JVM internal
+     *         this is only a rough estimation based on the fields. References are assumed to use 8 bytes. Padding is
+     *         not included.
+     */
+    public int estimatedBytesMemory() {
+        return size * 8 * 3 + size * 4 + 16;
+    }
+
+    @Override
+    public String toString() {
+        String str = getClass().getSimpleName() + "["+ size() + "]";
+        if (!isEmpty()) {
+            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+            str += "[" + formatter.format(Instant.ofEpochMilli(firstTime()).atOffset(ZoneOffset.UTC)) + "-"
+                    + formatter.format(Instant.ofEpochMilli(lastTime()).atOffset(ZoneOffset.UTC)) + "]";
+        }
+        return str;
+    }
 }

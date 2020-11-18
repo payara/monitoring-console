@@ -252,7 +252,7 @@ public final class PartialDataset extends SeriesDataset {
 
     @Override
     public int estimatedBytesMemory() {
-        return 108 + (data.length * 8);
+        return 116 + (data.length * 8) + recentMinutes.estimatedBytesMemory();
     }
 
     @Override

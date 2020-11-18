@@ -327,7 +327,7 @@ public class SeriesDatasetTest {
         for (int i = 0; i < 120; i++) {
             set = set.add(nowNoMillis, i + 1);
             assertEquals(Instant.ofEpochMilli(nowNoMillis).atOffset(ZoneOffset.UTC).getSecond() == 59,
-                    set.isEndOfMinute());
+                    set.endsWithLastSecondOfMinute());
             nowNoMillis += 1000L;
         }
     }

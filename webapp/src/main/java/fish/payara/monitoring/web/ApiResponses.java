@@ -139,7 +139,7 @@ public final class ApiResponses {
             this.series = series;
             this.alerts = alerts.stream().map(alert -> new AlertData(alert, query.truncates(ALERTS))).collect(toList());
             this.watches = watches.stream().map(WatchData::new).collect(toList());
-            this.data = data.stream().map(set -> new SeriesData(set, query.truncates(POINTS))).collect(toList());
+            this.data = data.stream().map(set -> new SeriesData(set, query.truncates(POINTS), query.history)).collect(toList());
             this.annotations = annotations.stream().map(AnnotationData::new).collect(toList());
         }
 
@@ -286,10 +286,10 @@ public final class ApiResponses {
         public final AggregatedSeriesData days;
 
         public SeriesData(SeriesDataset set) {
-            this(set, false);
+            this(set, false, false);
         }
 
-        public SeriesData(SeriesDataset set, boolean truncatePoints) {
+        public SeriesData(SeriesDataset set, boolean truncatePoints, boolean history) {
             this.instance = set.getInstance();
             this.series = set.getSeries().toString();
             this.points = truncatePoints ? new long[] {set.lastTime(), set.lastValue()} : set.points();
@@ -301,7 +301,7 @@ public final class ApiResponses {
             this.observedSince = set.getObservedSince();
             this.stableCount = set.getStableCount();
             this.stableSince = set.getStableSince();
-            if (truncatePoints) {
+            if (!history || truncatePoints) {
                 this.minutes = null;
                 this.hours = null;
                 this.days = null;
@@ -418,12 +418,12 @@ public final class ApiResponses {
 
         public AlertFrame(Alert.Frame frame) {
             this.level = frame.level.name().toLowerCase();
-            this.cause = new SeriesData(frame.cause, true); // for now the points data isn't used, change to false if needed
+            this.cause = new SeriesData(frame.cause, true, false); // for now the points data isn't used, change to false if needed
             this.start = frame.start;
             this.end = frame.getEnd() <= 0 ? null : frame.getEnd();
             this.captured = new ArrayList<>();
             for (SeriesDataset capture : frame) {
-                this.captured.add(new SeriesData(capture, true)); // for now the points data isn't used, change to false if needed
+                this.captured.add(new SeriesData(capture, true, false)); // for now the points data isn't used, change to false if needed
             }
         }
     }

@@ -179,6 +179,6 @@ public class ConstantDataset extends SeriesDataset {
 
     @Override
     public int estimatedBytesMemory() {
-        return 56;
+        return 64 + recentMinute.estimatedBytesMemory();
     }
 }

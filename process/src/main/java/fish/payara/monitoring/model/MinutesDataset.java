@@ -1,11 +1,11 @@
 package fish.payara.monitoring.model;
 
+import static java.time.ZoneOffset.UTC;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 
 /**
  * A {@link MinutesDataset} contains up to 60 minutes of statistical data with one data point per minute for minimum,
@@ -21,9 +21,7 @@ import java.time.ZoneOffset;
  */
 public final class MinutesDataset extends AggregateDataset<MinutesDataset> {
 
-    private static final int SINGLE_CAPACITY = 60;
-    private static final int DOUBLE_CAPACITY = 2 * SINGLE_CAPACITY;
-
+    private static final int MINUTES_PER_HOUR = 60;
     private static final long MILLIS_IN_ONE_MINUTE = Duration.ofMinutes(1).toMillis();
 
     public static final MinutesDataset EMPTY = new MinutesDataset();
@@ -36,44 +34,16 @@ public final class MinutesDataset extends AggregateDataset<MinutesDataset> {
     }
 
     private MinutesDataset(MinutesDataset predecessor, SeriesDataset minute) {
-        super(predecessor, SINGLE_CAPACITY, offset(predecessor, minute), firstTime(predecessor, minute));
-        if (lastIndex() != minuteOfHour(minute)) {
-            throw new IllegalArgumentException("Minute did not directly continue the end of the predecessor");
-        }
+        super(MINUTES_PER_HOUR, predecessor, atStartOfMinute(minute.lastTime()));
         aggregate(minute);
         this.recentHours = predecessor.recentHours.add(this);
     }
 
-    private MinutesDataset(MinutesDataset predecessor, SeriesDataset minute, int newCapacity) {
-        super(predecessor, newCapacity);
-        aggregate(minute);
-        this.recentHours = predecessor.recentHours.add(this);
-    }
-
-    private MinutesDataset(SeriesDataset minute, MinutesDataset predecessor) {
-        super(predecessor);
-        aggregate(minute);
-        this.recentHours = predecessor.recentHours.add(this);
-    }
-
-    private static int offset(MinutesDataset predecessor, SeriesDataset minute) {
-        return !predecessor.isEmpty()
-            ? predecessor.offset
-            : minuteOfHour(minute);
-    }
-
-    private static long firstTime(MinutesDataset predecessor, SeriesDataset minute) {
-        return !predecessor.isEmpty()
-            ? predecessor.firstTime()
-            : atEndOfMinute(minute).withSecond(0).withNano(0).toInstant().toEpochMilli();
-    }
-
-    private static int minuteOfHour(SeriesDataset minute) {
-        return atEndOfMinute(minute).getMinute();
-    }
-
-    private static OffsetDateTime atEndOfMinute(SeriesDataset minute) {
-        return Instant.ofEpochMilli(minute.lastTime()).atOffset(ZoneOffset.UTC);
+    private static long atStartOfMinute(long time) {
+        return Instant.ofEpochMilli(time).atOffset(UTC)
+                .withNano(0)
+                .withSecond(0)
+                .toInstant().toEpochMilli();
     }
 
     /**
@@ -86,21 +56,10 @@ public final class MinutesDataset extends AggregateDataset<MinutesDataset> {
     }
 
     public MinutesDataset add(SeriesDataset minute) {
-        if (!minute.isEndOfMinute()) {
+        if (!minute.endsWithLastSecondOfMinute()) {
             return this;
         }
-        if (capacity() == 0) {
-            return new MinutesDataset(this, minute);
-        }
-        if (capacity() == SINGLE_CAPACITY) { // offset => end, start => offset
-            return size() == SINGLE_CAPACITY
-                ? new MinutesDataset(this, minute, DOUBLE_CAPACITY) // complete, start sliding
-                : new MinutesDataset(this, minute); // add (with wrap)
-        }
-        // double capacity
-        return isEndOfHour()
-                ? new MinutesDataset(this, minute, DOUBLE_CAPACITY)
-                : new MinutesDataset(minute, this);
+        return new MinutesDataset(this, minute);
     }
 
     private void aggregate(SeriesDataset minute) {
@@ -116,23 +75,16 @@ public final class MinutesDataset extends AggregateDataset<MinutesDataset> {
             avg = avg.add(BigInteger.valueOf(val));
         }
         setEntry(numberOfPointsInAggregate, min, max,
-                new BigDecimal(avg).divide(BigDecimal.valueOf(numberOfPointsInAggregate)).doubleValue());
+                new BigDecimal(avg).divide(BigDecimal.valueOf(numberOfPointsInAggregate), BigDecimal.ROUND_DOWN).doubleValue());
     }
 
     /**
      * @return true if this dataset contains data up to and including the last minute of the hour, else false
      */
-    public boolean isEndOfHour() {
-        return lastIndex() == SINGLE_CAPACITY - 1;
-    }
-
-    @Override
-    public long getTime(int minuteOfHour) {
-        int minutesIn = minuteOfHour - offset;
-        if (minutesIn < 0) { // next hour
-            minutesIn = (capacity() - offset) + minuteOfHour;
-        }
-        return firstTime() + (minutesIn * MILLIS_IN_ONE_MINUTE);
+    public boolean endsWithLastMinuteOfHour() {
+        return isEmpty()
+                ? false
+                : Instant.ofEpochMilli(lastTime()).atOffset(UTC).getMinute() == 59;
     }
 
     @Override

@@ -42,6 +42,8 @@ package fish.payara.monitoring.model;
 
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A {@link SeriesDataset} contains data observed so far for a particular {@link Series}.
@@ -55,8 +57,15 @@ import java.math.BigInteger;
  */
 public abstract class SeriesDataset implements Serializable {
 
+    private static final Logger LOGGER = Logger.getLogger("monitoring-console-core");
+
     static MinutesDataset aggregate(SeriesDataset predecessor, SeriesDataset successor, boolean aggregate) {
-        return aggregate ? predecessor.getRecentMinutes().add(successor) : MinutesDataset.EMPTY;
+        try  {
+            return aggregate ? predecessor.getRecentMinutes().add(successor) : MinutesDataset.EMPTY;
+        } catch (RuntimeException ex) {
+            LOGGER.log(Level.WARNING, "Failed to compute aggreagte: ", ex);
+            return predecessor.getRecentMinutes();
+        }
     }
 
     private final Series series;
@@ -207,9 +216,8 @@ public abstract class SeriesDataset implements Serializable {
     /**
      * @return true when this dataset ends with the last second of a minute, else false
      */
-    public final boolean isEndOfMinute() {
-        long rest = lastTime() % 60000L;
-        return rest >= 59000L && rest < 60000L;
+    public final boolean endsWithLastSecondOfMinute() {
+        return (lastTime() % 60000L) >= 59000L;
     }
 
     @Override

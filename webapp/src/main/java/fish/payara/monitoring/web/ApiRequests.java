@@ -105,6 +105,8 @@ public final class ApiRequests {
 
         public DataType[] exclude;
 
+        public boolean history;
+
         public SeriesQuery() {
             // from JSON
         }

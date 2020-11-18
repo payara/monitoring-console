@@ -506,7 +506,8 @@ MonitoringConsole.Model = (function() {
 	      			widgetId: 'auto', 
 	      			series: page.content.series,
 	      			truncate: ['ALERTS'],
-	      			exclude: []
+	      			exclude: [],
+	      			history: false,
       			}]}, 
       			(response) => resolve(response.matches),
       			() => reject(undefined));
@@ -1368,11 +1369,12 @@ MonitoringConsole.Model = (function() {
 
 		function pushQueryItems(widget, queries, truncate, exclude) {
 			const series = widget.series;
+			const history = widget.options.drawAggregates === true;
 			const id = widget.id;
 			if (Array.isArray(series)) {
-				series.forEach(s => queries.push({ widgetId: id, series: s, truncate: truncate, exclude: exclude, instances: undefined}));
+				series.forEach(s => queries.push({ widgetId: id, series: s, truncate: truncate, exclude: exclude, instances: undefined, history: history }));
 			} else {
-				queries.push({ widgetId: id, series: series, truncate: truncate, exclude: exclude, instances: undefined}); 
+				queries.push({ widgetId: id, series: series, truncate: truncate, exclude: exclude, instances: undefined, history: history }); 
 			}
 		}
 
