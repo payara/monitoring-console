@@ -358,7 +358,8 @@ MonitoringConsole.View = (function() {
         ]});
         const lineExtrasAvailable = widget.type == 'line';
         settings.push({ id: 'settings-decorations', caption: 'Extras', collapsed: true, entries: [
-            { label: 'History', type: 'toggle', options: { true: 'Yes', false: 'No'}, value: widget.options.drawAggregates || false, onChange: (widget, checked) => widget.options.drawAggregates = checked },
+            { label: 'History', type: 'dropdown', options: { _: 'None', hour: '1 Hour', day: '1 Day', month: '1 Month'}, value: widget.options.drawAggregates || '_', onChange: (widget, checked) => widget.options.drawAggregates = checked,
+                description: 'What period of aggregated history to show in the graph' },
             { label: 'Annotations', input: [
                 { label: 'show', type: 'checkbox', value: !options.noAnnotations, onChange: (widget, checked) => widget.options.noAnnotations = !checked},
             ]},

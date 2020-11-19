@@ -170,8 +170,11 @@ MonitoringConsole.View.Components = (function() {
         }
         let onChange = enhancedOnChange(model.onChange, true);
         dropdown.change(() => {
-          const val = dropdown.val(); 
-          onChange(val == '_' ? undefined : val);
+          let val = dropdown.val();
+          if (val === '_') val = undefined;
+          if (val === 'false') val = false;
+          if (val === 'true') val = true;
+          onChange(val);
         });
         return dropdown;
       }
