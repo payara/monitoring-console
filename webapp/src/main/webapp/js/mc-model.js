@@ -538,7 +538,8 @@ MonitoringConsole.Model = (function() {
 	      			widgetId: 'auto', 
 	      			series: page.content.series,
 	      			truncate: ['ALERTS'],
-	      			exclude: []
+	      			exclude: [],
+	      			history: false,
       			}]}, 
       			(response) => resolve(response.matches),
       			() => reject(undefined));
@@ -1173,12 +1174,40 @@ MonitoringConsole.Model = (function() {
 	 */ 
 	let Update = (function() {
 
+		function addHistory(widget, data) {
+			function prependPoints(dest, src, time0, interval) {
+				let mostPastTime = dest[0];
+				let time = time0;
+				const prepended = [];
+				for (let i = 0; i < src.length; i++) {
+					if (time < mostPastTime) {
+						prepended.push(time);
+						prepended.push(src[i]);
+					}
+					time += interval;
+				}
+				return prepended.length == 0 ? dest : prepended.concat(dest);
+			}
+			const aggregates = widget.options.drawAggregates;
+			data.forEach(function(seriesData) {
+				if (seriesData.minutes && aggregates !== false)
+					seriesData.points = prependPoints(seriesData.points, seriesData.minutes.avgs, seriesData.minutes.start, seriesData.minutes.interval);
+				if (seriesData.hours && (aggregates === true || aggregates == 'day' || aggregates == 'month'))
+					seriesData.points = prependPoints(seriesData.points, seriesData.hours.avgs, seriesData.hours.start, seriesData.hours.interval);
+				if (seriesData.days && (aggregates === true || aggregates == 'month'))
+					seriesData.points = prependPoints(seriesData.points, seriesData.days.avgs, seriesData.days.start, seriesData.days.interval);
+			});
+			return data;		
+		}
+
 		/**
 		 * Shortens the shown time frame to one common to all series but at least to the last minute.
 		 */
-		function retainCommonTimeFrame(data) {
+		function retainCommonTimeFrame(widget, data) {
 			if (!data || data.length == 0)
 				return [];
+			if (widget.options.drawAggregates !== false && widget.options.drawAggregates !== undefined)
+				return addHistory(widget, data);
 			let now = Date.now();
 			let startOfLastMinute = now - 60000;
 			let startOfShortestSeries = data.reduce((high, e) => Math.max(e.points[0], high), 0);
@@ -1328,7 +1357,7 @@ MonitoringConsole.Model = (function() {
 					}
 					for (let alert of alerts)
 						alert.confirmed = confirmedAlertsSerials.includes(alert.serial);
-					data = retainCommonTimeFrame(data);
+					data = retainCommonTimeFrame(widget, data);
 					if (widget.options.decimalMetric || widget.scaleFactor !== undefined && widget.scaleFactor !== 1)
 						adjustDecimals(data, widget.scaleFactor ? widget.scaleFactor : 1,  widget.options.decimalMetric ? 10000 : 1);
 					if (widget.options.perSec)
@@ -1400,11 +1429,12 @@ MonitoringConsole.Model = (function() {
 
 		function pushQueryItems(widget, queries, truncate, exclude) {
 			const series = widget.series;
+			const history = widget.options.drawAggregates !== false && widget.options.drawAggregates !== undefined;
 			const id = widget.id;
 			if (Array.isArray(series)) {
-				series.forEach(s => queries.push({ widgetId: id, series: s, truncate: truncate, exclude: exclude, instances: undefined}));
+				series.forEach(s => queries.push({ widgetId: id, series: s, truncate: truncate, exclude: exclude, instances: undefined, history: history }));
 			} else {
-				queries.push({ widgetId: id, series: series, truncate: truncate, exclude: exclude, instances: undefined}); 
+				queries.push({ widgetId: id, series: series, truncate: truncate, exclude: exclude, instances: undefined, history: history }); 
 			}
 		}
 

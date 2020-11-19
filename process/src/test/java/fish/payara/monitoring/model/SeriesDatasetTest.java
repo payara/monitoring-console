@@ -45,6 +45,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 import org.junit.Test;
 
@@ -55,7 +57,7 @@ import fish.payara.monitoring.model.SeriesDataset;
 /**
  * Tests the basic correctness of {@link SeriesDataset} implementation, in particular the correctness of the sliding
  * window mechanism.
- * 
+ *
  * @author Jan Bernitt
  */
 public class SeriesDatasetTest {
@@ -119,7 +121,7 @@ public class SeriesDatasetTest {
         set = set.add(6, 6);
         assertFalse(set1.isOutdated());
         assertValues(set, 4, 5, 6);
-        // did slide by capacity 
+        // did slide by capacity
         set = set.add(7, 7);
         assertTrue(set.isOutdated());
         assertValues(set, 5, 6, 7);
@@ -315,6 +317,18 @@ public class SeriesDatasetTest {
             assertEquals(msg, i, set.lastTime());
             assertEquals(msg, 5, set.lastValue());
             assertEquals(msg, 2 + ((i - 2) * 2), set.getObservedValues());
+        }
+    }
+
+    @Test
+    public void endOfMinuteIdentifiedCorrectly() {
+        SeriesDataset set = new EmptyDataset(INSTANCE, SERIES, 120);
+        long nowNoMillis = System.currentTimeMillis() / 1000 * 1000;
+        for (int i = 0; i < 120; i++) {
+            set = set.add(nowNoMillis, i + 1);
+            assertEquals(Instant.ofEpochMilli(nowNoMillis).atOffset(ZoneOffset.UTC).getSecond() == 59,
+                    set.endsWithLastSecondOfMinute());
+            nowNoMillis += 1000L;
         }
     }
 

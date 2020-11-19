@@ -42,18 +42,31 @@ package fish.payara.monitoring.model;
 
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A {@link SeriesDataset} contains data observed so far for a particular {@link Series}.
- * 
+ *
  * @author Jan Bernitt
- * 
+ *
  * @see EmptyDataset
  * @see ConstantDataset
  * @see StableDataset
  * @see PartialDataset
  */
 public abstract class SeriesDataset implements Serializable {
+
+    private static final Logger LOGGER = Logger.getLogger("monitoring-console-core");
+
+    static MinutesDataset aggregate(SeriesDataset predecessor, SeriesDataset successor, boolean aggregate) {
+        try  {
+            return aggregate ? predecessor.getRecentMinutes().add(successor) : MinutesDataset.EMPTY;
+        } catch (RuntimeException ex) {
+            LOGGER.log(Level.WARNING, "Failed to compute aggreagte: ", ex);
+            return predecessor.getRecentMinutes();
+        }
+    }
 
     private final Series series;
     private final String instance;
@@ -102,25 +115,31 @@ public abstract class SeriesDataset implements Serializable {
 
     /**
      * Note that minimum is 1 (changing from unknown to know value). Zero means no values have been observed yet.
-     * 
+     *
      * Note also that change count of 1 does not imply
      * that the value never did change just that such a change was never observed.
-     * 
+     *
      * @return Number of times the value as altered since it has been monitored.
      */
     public abstract int getObservedValueChanges();
 
     /**
-     * Example: 
+     * Example:
      * <pre>
      * [t0, v0, t1, v1, t2, v2]
      * </pre>
-     * 
+     *
      * @return this dataset as flat array with alternating time and value data.
      */
     public abstract long[] points();
 
-    public abstract SeriesDataset add(long time, long value);
+    public final SeriesDataset add(long time, long value) {
+        return add(time, value, false);
+    }
+
+    public abstract SeriesDataset add(long time, long value, boolean aggregate);
+
+    public abstract MinutesDataset getRecentMinutes();
 
     /**
      * @return The smallest value observed so far. If no value was observed {@link Long#MAX_VALUE}.
@@ -173,7 +192,7 @@ public abstract class SeriesDataset implements Serializable {
      * @return the time value of the last of the {@link #points()}
      */
     public abstract long lastTime();
-    
+
     /**
      * @return the maximum number of points in a dataset before adding a new point does remove the oldest point
      */
@@ -192,6 +211,13 @@ public abstract class SeriesDataset implements Serializable {
 
     public final boolean isStableZero() {
         return isStable() && lastValue() == 0L;
+    }
+
+    /**
+     * @return true when this dataset ends with the last second of a minute, else false
+     */
+    public final boolean endsWithLastSecondOfMinute() {
+        return (lastTime() % 60000L) >= 59000L;
     }
 
     @Override
@@ -228,7 +254,7 @@ public abstract class SeriesDataset implements Serializable {
      * Converts an array of {@link SeriesDataset#points()} to one reflecting the change per second. For each pair of
      * points this is the delta between the earlier and later point of the pair. Since this is a delta the result array
      * contains one less point.
-     * 
+     *
      * @param points point data as returned by {@link SeriesDataset#points()}
      * @return Points representing the delta or per-second change of the provided input data. The delta is associated
      *         with the end point time of each pair.
