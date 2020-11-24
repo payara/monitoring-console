@@ -115,6 +115,7 @@ options    = {
 	drawMinLine:boolean,
 	drawMaxLine:boolean,
 	drawAvgLine:boolean,
+	drawAggregates,
 	perSec:boolean,
 	decimalMetric:boolean,
 	drawCurves:boolean,
@@ -124,6 +125,7 @@ options    = {
 	noAnnotations:boolean,
 	noConstantZero:boolean,
 }
+drawAggregates = boolean | 'hour' | 'day' | 'month'
 decorations= { waterline, thresholds, alerts, annotations }
 waterline  = { value:number color:string }
 thresholds = { reference, alarming, critical }

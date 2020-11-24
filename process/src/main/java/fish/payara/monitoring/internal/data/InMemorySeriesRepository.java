@@ -60,6 +60,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -116,6 +117,7 @@ public class InMemorySeriesRepository implements SeriesRepository {
     private final JobHandle dataCollectionJob = new JobHandle("monitoring data collection");
     private long collectedSecond;
     private int estimatedNumberOfSeries = 50;
+    private final AtomicBoolean aggregate = new AtomicBoolean();
 
     public InMemorySeriesRepository(String instanceName, boolean receiver, MonitoringConsoleRuntime runtime,
             Supplier<? extends List<MonitoringDataSource>> sources) {
@@ -135,6 +137,10 @@ public class InMemorySeriesRepository implements SeriesRepository {
         }
     }
 
+    public void setHistoryEnabled(boolean enabled) {
+        aggregate.set(enabled);
+    }
+
     @Override
     public Set<String> instances() {
         return instances;
@@ -149,6 +155,7 @@ public class InMemorySeriesRepository implements SeriesRepository {
                 addRemoteAnnotation(a);
             }
         }
+        final boolean aggregate = this.aggregate.get();
         for (int i = 0; i < snapshot.numberOfSeries; i++) {
             Series series = null;
             try {
@@ -159,24 +166,25 @@ public class InMemorySeriesRepository implements SeriesRepository {
             if (series != null) {
                 long value = snapshot.values[i];
                 remoteInstanceDatasets.compute(series, //
-                        (key, seriesByInstance) -> addRemotePoint(seriesByInstance, instance, key, time, value));
+                        (key, seriesByInstance) -> addRemotePoint(seriesByInstance, instance, key, time, value, aggregate));
             }
         }
     }
 
-    private static SeriesDataset[] addRemotePoint(SeriesDataset[] seriesByInstance, String instance, Series series, long time, long value) {
+    private static SeriesDataset[] addRemotePoint(SeriesDataset[] seriesByInstance, String instance, Series series,
+            long time, long value, boolean aggregate) {
         if (seriesByInstance == null) {
             return new SeriesDataset[] { new EmptyDataset(instance, series, 60).add(time, value) };
         }
         for (int i = 0; i < seriesByInstance.length; i++) {
             SeriesDataset instanceSet = seriesByInstance[i];
             if (instanceSet.getInstance().equals(instance)) {
-                seriesByInstance[i] = seriesByInstance[i].add(time, value);
+                seriesByInstance[i] = seriesByInstance[i].add(time, value, aggregate);
                 return seriesByInstance;
             }
         }
         seriesByInstance = Arrays.copyOf(seriesByInstance, seriesByInstance.length + 1);
-        seriesByInstance[seriesByInstance.length - 1] = new EmptyDataset(instance, series, 60).add(time, value);
+        seriesByInstance[seriesByInstance.length - 1] = new EmptyDataset(instance, series, 60).add(time, value, aggregate);
         return seriesByInstance;
     }
 
@@ -279,8 +287,8 @@ public class InMemorySeriesRepository implements SeriesRepository {
         Series series = seriesOrNull(key);
         if (series != null) {
             secondsWrite.compute(series, (s, dataset) -> dataset == null
-                ?  emptySet(s).add(collectedSecond, value)
-                : dataset.add(collectedSecond, value));
+                ?  emptySet(s).add(collectedSecond, value, aggregate.get())
+                : dataset.add(collectedSecond, value, aggregate.get()));
         }
     }
 
