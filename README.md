@@ -1,1 +1,1 @@
-# Payara Monitoring Console
+# Payara InSight
