@@ -50,7 +50,6 @@
     </parent>
 
     <artifactId>monitoring-console-api</artifactId>
-    <version>1.3-SNAPSHOT</version><!-- OBS: The API uses its own version as it usually is stable -->
     <name>monitoring-console-api</name>
 
     <description>
