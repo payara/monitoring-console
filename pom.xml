@@ -117,6 +117,17 @@
         </repository>
 
         <repository>
+            <id>payara-nexus-artifacts</id>
+            <url>https://nexus.payara.fish/repository/payara-artifacts</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+
+        <repository>
             <id>jvnet-nexus-releases</id>
             <name>Java.net Releases Repositories</name>
             <url>https://maven.java.net/content/repositories/releases/</url>
