@@ -141,6 +141,16 @@
             </snapshots>
         </repository>
 
+        <repository>
+            <id>payara-nexus-snapshots</id>
+            <url>https://nexus.dev.payara.fish/repository/payara-snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
     <modules>
