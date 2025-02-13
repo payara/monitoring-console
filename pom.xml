@@ -96,11 +96,11 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>ossrh</id>
+            <id>payara-nexus-enterprise-snapshots</id>
             <url>https://nexus.dev.payara.fish/repository/payara-enterprise-snapshots-private</url>
         </snapshotRepository>
         <repository>
-            <id>ossrh</id>
+            <id>payara-nexus-enterprise-artifacts</id>
             <url>https://nexus.dev.payara.fish/repository/payara-enterprise-artifacts-private</url>
         </repository>
     </distributionManagement>

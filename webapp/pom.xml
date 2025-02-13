@@ -49,6 +49,7 @@
     </parent>
         
     <artifactId>monitoring-console-webapp</artifactId>
+    <version>1.10-SNAPSHOT</version>
 
     <packaging>war</packaging>
 
@@ -70,7 +71,7 @@
         <dependency>
             <groupId>fish.payara.monitoring-console</groupId>
             <artifactId>monitoring-console-process</artifactId>
-            <version>${project.version}</version>
+            <version>1.10-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
