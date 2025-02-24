@@ -2,7 +2,7 @@
 <!--
   DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 
-  Copyright (c) [2020-2021] Payara Foundation and/or its affiliates. All rights reserved.
+  Copyright (c) [2020-2025] Payara Foundation and/or its affiliates. All rights reserved.
 
   The contents of this file are subject to the terms of either the GNU
   General Public License Version 2 only ("GPL") or the Common Development
@@ -46,10 +46,11 @@
     <parent>
         <groupId>fish.payara.monitoring-console</groupId>
         <artifactId>parent</artifactId>
-        <version>1.9</version>
+        <version>1.11-SNAPSHOT</version>
     </parent>
         
     <artifactId>monitoring-console-process</artifactId>
+    <version>1.10-SNAPSHOT</version>
     <name>monitoring-console-process</name>
 
     <description>
