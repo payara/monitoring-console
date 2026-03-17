@@ -7,7 +7,7 @@ pipeline {
     }
     tools {
         jdk "zulu-21"
-        maven "maven-3.6.3"
+        maven "maven-3.9.9"
     }
     environment {
         JAVA_HOME = tool("zulu-21")
