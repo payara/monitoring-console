@@ -7,7 +7,7 @@ pipeline {
     }
     tools {
         jdk "zulu-21"
-        maven "maven-3.6.3"
+        maven "maven-3.9.9"
     }
     environment {
         JAVA_HOME = tool("zulu-21")
@@ -33,7 +33,7 @@ pipeline {
                 script {
                     echo '*#*#*#*#*#*#*#*#*#*#*#*#  Building SRC  *#*#*#*#*#*#*#*#*#*#*#*#*#*#*#'
                     sh """mvn -B -V -ff -e clean install --strict-checksums \
-                        -Djavadoc.skip -Dsource.skip"""
+                        -Dmaven.javadoc.skip -Dsource.skip"""
                     echo '*#*#*#*#*#*#*#*#*#*#*#*#    Built SRC   *#*#*#*#*#*#*#*#*#*#*#*#*#*#*#'
                 }
             }
